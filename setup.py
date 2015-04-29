@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 import setuptools
 from setuptools import setup
 
@@ -17,6 +18,7 @@ classifiers = [
 
 with open('README.rst') as fd:
     long_description = fd.read()
+
 
 def get_version():
     p = os.path.join(os.path.dirname(

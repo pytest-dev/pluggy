@@ -11,9 +11,11 @@ from pluggy import (_MultiCall, _TagTracer, _HookFunction)
 hookspec = Hookspec("example")
 hookimpl = Hookimpl("example")
 
+
 @pytest.fixture
 def pm():
     return PluginManager("example")
+
 
 @pytest.fixture
 def he_pm(pm):
@@ -24,6 +26,7 @@ def he_pm(pm):
 
     pm.addhooks(Hooks)
     return pm
+
 
 class TestPluginManager:
     def test_plugin_double_register(self, pm):
@@ -527,11 +530,13 @@ def test_varnames():
     assert varnames(A().f) == ('y',)
     assert varnames(B()) == ('z',)
 
+
 def test_varnames_default():
     def f(x, y=3):
         pass
 
     assert varnames(f) == ("x",)
+
 
 def test_varnames_class():
     class C:
@@ -543,6 +548,7 @@ def test_varnames_class():
 
     assert varnames(C) == ("x",)
     assert varnames(D) == ()
+
 
 class Test_MultiCall:
     def test_uses_copy_of_methods(self):
@@ -793,6 +799,7 @@ class TestHookRelay:
         res = pm.hook.hello(arg=3)
         assert res == 4
 
+
 class TestTracer:
     def test_simple(self):
         rootlogger = _TagTracer()
@@ -834,8 +841,8 @@ class TestTracer:
         out = rootlogger.format_message(['test'], [1])
         assert out == ['1 [test]\n']
 
-        out2= rootlogger.format_message(['test'], ['test', {'a': 1}])
-        assert out2 ==[
+        out2 = rootlogger.format_message(['test'], ['test', {'a': 1}])
+        assert out2 == [
             'test [test]\n',
             '    a: 1\n'
         ]

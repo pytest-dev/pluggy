@@ -125,7 +125,7 @@ class _TagTracer:
         indent = "  " * self.indent
 
         lines = [
-            "%s%s [%s]\n" %(indent, content, ":".join(tags))
+            "%s%s [%s]\n" % (indent, content, ":".join(tags))
         ]
 
         for name, value in extra.items():
@@ -222,6 +222,7 @@ if not _py3:
 def _reraise(cls, val, tb):
     raise cls, val, tb
 """)
+
 
 class _TracedHookExecution:
     def __init__(self, pluginmanager, before, after):
@@ -384,8 +385,8 @@ class PluginManager(object):
                 names.append(name)
 
         if not names:
-            raise ValueError("did not find any %r hooks in %r"
-                             %(self.system_name, module_or_class))
+            raise ValueError("did not find any %r hooks in %r" %
+                             (self.system_name, module_or_class))
 
     def get_hook_spec_opts(self, module_or_class, name):
         res = getattr(getattr(module_or_class, name),
@@ -502,7 +503,7 @@ class _MultiCall:
         status = "%d meths" % (len(self.methods),)
         if hasattr(self, "results"):
             status = ("%d results, " % len(self.results)) + status
-        return "<_MultiCall %s, kwargs=%r>" %(status, self.kwargs)
+        return "<_MultiCall %s, kwargs=%r>" % (status, self.kwargs)
 
 
 def varnames(func, startindex=None):
@@ -586,15 +587,14 @@ class _HookCaller(object):
         return hasattr(self, "_call_history")
 
     def _remove_plugin(self, plugin):
-        for i, method in enumerate(self._wrappers):
-            if method.plugin == plugin:
-                del self._wrappers[i]
-                return
-        for i, method in enumerate(self._nonwrappers):
-            if method.plugin == plugin:
-                del self._nonwrappers[i]
-                return
-        raise ValueError("plugin %r not found" %(plugin,))
+        def remove(wrappers):
+            for i, method in enumerate(wrappers):
+                if method.plugin == plugin:
+                    del wrappers[i]
+                    return True
+        if remove(self._wrappers) is None:
+            if remove(self._nonwrappers) is None:
+                raise ValueError("plugin %r not found" % (plugin,))
 
     def _add_hookmethod(self, hookmethod):
         if hookmethod.hookwrapper:
@@ -614,7 +614,7 @@ class _HookCaller(object):
             methods.insert(i + 1, hookmethod)
 
     def __repr__(self):
-        return "<_HookCaller %r>" %(self.name,)
+        return "<_HookCaller %r>" % (self.name,)
 
     def __call__(self, **kwargs):
         assert not self.is_historic()
@@ -653,6 +653,7 @@ class _HookFunction:
         self.plugin = plugin
         self.opts = hook_impl_opts
         self.__dict__.update(hook_impl_opts)
+
 
 class PluginValidationError(Exception):
     """ plugin failed validation. """
