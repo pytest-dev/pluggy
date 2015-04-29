@@ -327,7 +327,18 @@ class PluginManager(object):
         return plugin_name
 
     def get_hookimpl_opts(self, plugin, name):
-        return getattr(getattr(plugin, name), self.system_name + "_impl", None)
+        res = getattr(getattr(plugin, name), self.system_name + "_impl", None)
+        if res is not None and not isinstance(res, dict):
+            # false positive
+            res = None
+        return res
+
+    def get_hookspec_opts(self, module_or_class, name):
+        return getattr(getattr(module_or_class, name),
+                       self.system_name + "_spec", None)
+
+    def get_hookcallers(self, plugin):
+        return self._plugin2hookcallers.get(plugin)
 
     def unregister(self, plugin=None, name=None):
         """ unregister a plugin object and all its contained hook implementations
@@ -358,7 +369,7 @@ class PluginManager(object):
         the prefix/excludefunc with which the PluginManager was initialized. """
         names = []
         for name in dir(module_or_class):
-            spec_opts = self.get_hook_spec_opts(module_or_class, name)
+            spec_opts = self.get_hookspec_opts(module_or_class, name)
             if spec_opts is not None:
                 hc = getattr(self.hook, name, None)
                 if hc is None:
@@ -374,11 +385,6 @@ class PluginManager(object):
         if not names:
             raise ValueError("did not find any %r hooks in %r" %
                              (self.system_name, module_or_class))
-
-    def get_hook_spec_opts(self, module_or_class, name):
-        res = getattr(getattr(module_or_class, name),
-                      self.system_name + "_spec", None)
-        return res
 
     def get_plugins(self):
         """ return the set of registered plugins. """

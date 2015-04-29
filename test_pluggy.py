@@ -52,6 +52,17 @@ class TestPluginManager:
         assert pm.unregister(a1) == a1
         assert not pm.is_registered(a1)
 
+    def test_register_dynamic_attr(self, he_pm):
+        class A:
+            def __getattr__(self, name):
+                if name[0] != "_":
+                    return 42
+                raise AttributeError()
+
+        a = A()
+        he_pm.register(a)
+        assert not he_pm.get_hookcallers(a)
+
     def test_pm_name(self, pm):
         class A:
             pass
@@ -125,7 +136,7 @@ class TestPluginManager:
             def he_method1(self, arg):
                 return arg + 1
 
-        pm.register(Plugin1())
+        pname = pm.register(Plugin1())
 
         class Hooks:
             @hookspec
@@ -135,6 +146,7 @@ class TestPluginManager:
         pm.addhooks(Hooks)
         # assert not pm._unverified_hooks
         assert pm.hook.he_method1(arg=1) == [2]
+        assert len(pm.get_hookcallers(pm.get_plugin(pname))) == 1
 
     def test_register_historic(self, pm):
         class Hooks:
