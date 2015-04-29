@@ -9,58 +9,100 @@ __all__ = ["PluginManager", "hookspec_opts", "hookimpl_opts", "PluginValidationE
 
 _py3 = sys.version_info > (3, 0)
 
-def hookspec_opts(firstresult=False, historic=False):
-    """ returns a decorator which will define a function as a hook specfication.
 
-    If firstresult is True the 1:N hook call (N being the number of registered
-    hook implementation functions) will stop at I<=N when the I'th function
-    returns a non-None result.
+class Hookspec:
+    """ Decorator helper class for marking functions as hook specifications.
 
-    If historic is True calls to a hook will be memorized and replayed
-    on later registered plugins.
+    You can instantiate it to get a decorator.
+
     """
-    def setattr_hookspec_opts(func):
-        if historic and firstresult:
-            raise ValueError("cannot have a historic firstresult hook")
-        if firstresult:
-            func.firstresult = firstresult
-        if historic:
-            func.historic = historic
-        return func
-    return setattr_hookspec_opts
+
+    def __init__(self, system_name):
+        self.system_name = system_name
+
+    def __call__(self, function=None, firstresult=False, historic=False):
+        """ if passed a function, directly sets attributes on the function
+        which will make it discoverable to add_hookspecs().  If passed no
+        function, returns a decorator which can be applied to a function
+        later using the attributes supplied.
+
+        If firstresult is True the 1:N hook call (N being the number of registered
+        hook implementation functions) will stop at I<=N when the I'th function
+        returns a non-None result.
+
+        If historic is True calls to a hook will be memorized and replayed
+        on later registered plugins.
+
+        """
+        def setattr_hookspec_opts(func):
+            if historic and firstresult:
+                raise ValueError("cannot have a historic firstresult hook")
+            if firstresult:
+                func.firstresult = firstresult
+            if historic:
+                func.historic = historic
+            setattr(func, self.system_name + "_spec",
+                   dict(firstresult=firstresult, historic=historic))
+            return func
+
+        if function is not None:
+            return setattr_hookspec_opts(function)
+        else:
+            return setattr_hookspec_opts
 
 
-def hookimpl_opts(hookwrapper=False, optionalhook=False,
-                  tryfirst=False, trylast=False):
-    """ Return a decorator which marks a function as a hook implementation.
+class Hookimpl:
+    """ Decorator helper class for marking functions as hook implementations.
 
-    If optionalhook is True a missing matching hook specification will not result
-    in an error (by default it is an error if no matching spec is found).
+    You can instantiate it to get a decorator.
 
-    If tryfirst is True this hook implementation will run as early as possible
-    in the chain of N hook implementations for a specfication.
-
-    If trylast is True this hook implementation will run as late as possible
-    in the chain of N hook implementations.
-
-    If hookwrapper is True the hook implementations needs to execute exactly
-    one "yield".  The code before the yield is run early before any non-hookwrapper
-    function is run.  The code after the yield is run after all non-hookwrapper
-    function have run.  The yield receives an ``_CallOutcome`` object representing
-    the exception or result outcome of the inner calls (including other hookwrapper
-    calls).
     """
-    def setattr_hookimpl_opts(func):
-        if hookwrapper:
-            func.hookwrapper = True
-        if optionalhook:
-            func.optionalhook = True
-        if tryfirst:
-            func.tryfirst = True
-        if trylast:
-            func.trylast = True
-        return func
-    return setattr_hookimpl_opts
+    def __init__(self, system_name):
+        self.system_name = system_name
+
+    def __call__(self, function=None, hookwrapper=False, optionalhook=False,
+                 tryfirst=False, trylast=False):
+
+        """ if passed a function, directly sets attributes on the function
+        which will make it discoverable to register().  If passed no function,
+        returns a decorator which can be applied to a function later using
+        the attributes supplied.
+
+        If optionalhook is True a missing matching hook specification will not result
+        in an error (by default it is an error if no matching spec is found).
+
+        If tryfirst is True this hook implementation will run as early as possible
+        in the chain of N hook implementations for a specfication.
+
+        If trylast is True this hook implementation will run as late as possible
+        in the chain of N hook implementations.
+
+        If hookwrapper is True the hook implementations needs to execute exactly
+        one "yield".  The code before the yield is run early before any non-hookwrapper
+        function is run.  The code after the yield is run after all non-hookwrapper
+        function have run.  The yield receives an ``_CallOutcome`` object representing
+        the exception or result outcome of the inner calls (including other hookwrapper
+        calls).
+
+        """
+        def setattr_hookimpl_opts(func):
+            if hookwrapper:
+                func.hookwrapper = True
+            if optionalhook:
+                func.optionalhook = True
+            if tryfirst:
+                func.tryfirst = True
+            if trylast:
+                func.trylast = True
+            setattr(func, self.system_name + "_impl",
+                   dict(hookwrapper=hookwrapper, optionalhook=optionalhook,
+                        tryfirst=tryfirst, trylast=trylast))
+            return func
+
+        if function is None:
+            return setattr_hookimpl_opts
+        else:
+            return setattr_hookimpl_opts(function)
 
 
 class _TagTracer:

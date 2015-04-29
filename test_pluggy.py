@@ -4,9 +4,12 @@ import types
 import pytest
 
 from pluggy import (PluginManager, varnames, PluginValidationError,
-                    hookimpl_opts, hookspec_opts)
+                    Hookimpl, Hookspec)
 
 from pluggy import (_MultiCall, _TagTracer)
+
+hookspec = Hookspec("example")
+hookimpl = Hookimpl("example")
 
 @pytest.fixture
 def pm():
@@ -127,7 +130,7 @@ class TestPluginManager:
 
     def test_register_historic(self, pm):
         class Hooks:
-            @hookspec_opts(historic=True)
+            @hookspec(historic=True)
             def he_method1(self, arg):
                 pass
         pm.addhooks(Hooks)
@@ -153,7 +156,7 @@ class TestPluginManager:
 
     def test_with_result_memorized(self, pm):
         class Hooks:
-            @hookspec_opts(historic=True)
+            @hookspec(historic=True)
             def he_method1(self, arg):
                 pass
         pm.addhooks(Hooks)
@@ -171,7 +174,7 @@ class TestPluginManager:
 
     def test_register_historic_incompat_hookwrapper(self, pm):
         class Hooks:
-            @hookspec_opts(historic=True)
+            @hookspec(historic=True)
             def he_method1(self, arg):
                 pass
 
@@ -180,7 +183,7 @@ class TestPluginManager:
         l = []
 
         class Plugin:
-            @hookimpl_opts(hookwrapper=True)
+            @hookimpl(hookwrapper=True)
             def he_method1(self, arg):
                 l.append(arg)
 
@@ -378,17 +381,17 @@ class TestAddMethodOrdering:
         assert hc._nonwrappers == []
         assert hc._wrappers == [he_method2, he_method1]
 
-    def test_hookspec_opts(self, pm):
+    def test_hookspec(self, pm):
         class HookSpec:
-            @hookspec_opts()
+            @hookspec()
             def he_myhook1(self, arg1):
                 pass
 
-            @hookspec_opts(firstresult=True)
+            @hookspec(firstresult=True)
             def he_myhook2(self, arg1):
                 pass
 
-            @hookspec_opts(firstresult=False)
+            @hookspec(firstresult=False)
             def he_myhook3(self, arg1):
                 pass
 
@@ -397,10 +400,10 @@ class TestAddMethodOrdering:
         assert pm.hook.he_myhook2.firstresult
         assert not pm.hook.he_myhook3.firstresult
 
-    def test_hookimpl_opts(self):
+    def test_hookimpl(self):
         for name in ["hookwrapper", "optionalhook", "tryfirst", "trylast"]:
             for val in [True, False]:
-                @hookimpl_opts(**{name: val})
+                @hookimpl(**{name: val})
                 def he_myhook1(self, arg1):
                     pass
                 if val:
@@ -410,14 +413,14 @@ class TestAddMethodOrdering:
 
     def test_decorator_functional(self, pm):
         class HookSpec:
-            @hookspec_opts(firstresult=True)
+            @hookspec(firstresult=True)
             def he_myhook(self, arg1):
                 """ add to arg1 """
 
         pm.addhooks(HookSpec)
 
         class Plugin:
-            @hookimpl_opts()
+            @hookimpl()
             def he_myhook(self, arg1):
                 return arg1 + 1
 
@@ -607,7 +610,7 @@ class Test_MultiCall:
     def test_hookwrapper(self):
         l = []
 
-        @hookimpl_opts(hookwrapper=True)
+        @hookimpl(hookwrapper=True)
         def m1():
             l.append("m1 init")
             yield None
@@ -628,13 +631,13 @@ class Test_MultiCall:
     def test_hookwrapper_order(self):
         l = []
 
-        @hookimpl_opts(hookwrapper=True)
+        @hookimpl(hookwrapper=True)
         def m1():
             l.append("m1 init")
             yield 1
             l.append("m1 finish")
 
-        @hookimpl_opts(hookwrapper=True)
+        @hookimpl(hookwrapper=True)
         def m2():
             l.append("m2 init")
             yield 2
@@ -645,7 +648,7 @@ class Test_MultiCall:
         assert l == ["m1 init", "m2 init", "m2 finish", "m1 finish"]
 
     def test_hookwrapper_not_yield(self):
-        @hookimpl_opts(hookwrapper=True)
+        @hookimpl(hookwrapper=True)
         def m1():
             pass
 
@@ -654,7 +657,7 @@ class Test_MultiCall:
             mc.execute()
 
     def test_hookwrapper_too_many_yield(self):
-        @hookimpl_opts(hookwrapper=True)
+        @hookimpl(hookwrapper=True)
         def m1():
             yield 1
             yield 2
@@ -669,7 +672,7 @@ class Test_MultiCall:
     def test_hookwrapper_exception(self, exc):
         l = []
 
-        @hookimpl_opts(hookwrapper=True)
+        @hookimpl(hookwrapper=True)
         def m1():
             l.append("m1 init")
             yield None
