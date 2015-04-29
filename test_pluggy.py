@@ -425,7 +425,7 @@ class TestAddMethodOrdering:
                 def he_myhook1(self, arg1):
                     pass
                 if val:
-                    assert getattr(he_myhook1, name)
+                    assert he_myhook1.example_impl.get(name)
                 else:
                     assert not hasattr(he_myhook1, name)
 

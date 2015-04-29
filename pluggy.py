@@ -5,7 +5,7 @@ import sys
 import inspect
 
 __version__ = '0.1.0'
-__all__ = ["PluginManager", "hookspec_opts", "hookimpl_opts", "PluginValidationError"]
+__all__ = ["PluginManager", "PluginValidationError", "Hookspec", "Hookimpl"]
 
 _py3 = sys.version_info > (3, 0)
 
@@ -37,10 +37,6 @@ class Hookspec:
         def setattr_hookspec_opts(func):
             if historic and firstresult:
                 raise ValueError("cannot have a historic firstresult hook")
-            if firstresult:
-                func.firstresult = firstresult
-            if historic:
-                func.historic = historic
             setattr(func, self.system_name + "_spec",
                    dict(firstresult=firstresult, historic=historic))
             return func
@@ -86,14 +82,6 @@ class Hookimpl:
 
         """
         def setattr_hookimpl_opts(func):
-            if hookwrapper:
-                func.hookwrapper = True
-            if optionalhook:
-                func.optionalhook = True
-            if tryfirst:
-                func.tryfirst = True
-            if trylast:
-                func.trylast = True
             setattr(func, self.system_name + "_impl",
                    dict(hookwrapper=hookwrapper, optionalhook=optionalhook,
                         tryfirst=tryfirst, trylast=trylast))
@@ -339,7 +327,6 @@ class PluginManager(object):
         return plugin_name
 
     def get_hookimpl_opts(self, plugin, name):
-        method = getattr(plugin, name)
         return getattr(getattr(plugin, name), self.system_name + "_impl", None)
 
     def unregister(self, plugin=None, name=None):
@@ -580,7 +567,7 @@ class _HookCaller(object):
         assert "self" not in argnames  # sanity check
         self.argnames = ["__multicall__"] + list(argnames)
         self.spec_opts = spec_opts
-        if hasattr(specfunc, "historic"):
+        if spec_opts.get("historic"):
             self._call_history = []
 
     def is_historic(self):
