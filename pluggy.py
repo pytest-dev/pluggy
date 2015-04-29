@@ -257,16 +257,15 @@ class PluginManager(object):
     which will subsequently send debug information to the trace helper.
     """
 
-    def __init__(self, prefix, excludefunc=None):
-        self._prefix = prefix
-        self._excludefunc = excludefunc
+    def __init__(self, system_name):
+        self.system_name = system_name
         self._name2plugin = {}
         self._plugin2hookcallers = {}
         self._plugin_distinfo = []
         self.trace = _TagTracer().get("pluginmanage")
         self.hook = _HookRelay(self.trace.root.get("hook"))
         self._inner_hookexec = lambda hook, methods, kwargs: \
-            _MultiCall(methods, kwargs, hook.firstresult).execute()
+            _MultiCall(methods, kwargs, hook.spec_opts).execute()
 
     def _hookexec(self, hook, methods, kwargs):
         # called from all hookcaller instances.
@@ -295,7 +294,8 @@ class PluginManager(object):
         orig = getattr(self.hook, name)
         plugins_to_remove = [plug for plug in remove_plugins if hasattr(plug, name)]
         if plugins_to_remove:
-            hc = _HookCaller(orig.name, orig._hookexec, orig._specmodule_or_class)
+            hc = _HookCaller(orig.name, orig._hookexec, orig._specmodule_or_class,
+                             orig.spec_opts)
             for plugin in orig._plugins:
                 if plugin not in plugins_to_remove:
                     hc._add_plugin(plugin)
@@ -319,22 +319,25 @@ class PluginManager(object):
 
         self._name2plugin[plugin_name] = plugin
 
-        # register prefix-matching hook specs of the plugin
+        # register matching hook implementations of the plugin
         self._plugin2hookcallers[plugin] = hookcallers = []
         for name in dir(plugin):
-            if name.startswith(self._prefix):
+            hookimpl_opts = self.get_hook_impl_opts(plugin, name)
+            if hookimpl_opts is not None:
                 hook = getattr(self.hook, name, None)
                 if hook is None:
-                    if self._excludefunc is not None and self._excludefunc(name):
-                        continue
                     hook = _HookCaller(name, self._hookexec)
                     setattr(self.hook, name, hook)
                 elif hook.has_spec():
-                    self._verify_hook(hook, plugin)
+                    self._verify_hook(hook, plugin, hookimpl_opts)
                     hook._maybe_apply_history(getattr(plugin, name))
                 hookcallers.append(hook)
                 hook._add_plugin(plugin)
         return plugin_name
+
+    def get_hook_impl_opts(self, plugin, name):
+        method = getattr(plugin, name)
+        return getattr(getattr(plugin, name), self.system_name + "_impl", None)
 
     def unregister(self, plugin=None, name=None):
         """ unregister a plugin object and all its contained hook implementations
@@ -365,21 +368,28 @@ class PluginManager(object):
         the prefix/excludefunc with which the PluginManager was initialized. """
         names = []
         for name in dir(module_or_class):
-            if name.startswith(self._prefix):
+            spec_opts = self.get_hook_spec_opts(module_or_class, name)
+            if spec_opts is not None:
                 hc = getattr(self.hook, name, None)
                 if hc is None:
-                    hc = _HookCaller(name, self._hookexec, module_or_class)
+                    hc = _HookCaller(name, self._hookexec, module_or_class, spec_opts)
                     setattr(self.hook, name, hc)
                 else:
                     # plugins registered this hook without knowing the spec
-                    hc.set_specification(module_or_class)
+                    hc.set_specification(module_or_class, spec_opts)
                     for plugin in hc._plugins:
-                        self._verify_hook(hc, plugin)
+                        hookspec_opts = self.get_hook_spec_opts(module_or_class, hc.name)
+                        self._verify_hook(hc, plugin, hookspec_opts)
                 names.append(name)
 
         if not names:
-            raise ValueError("did not find new %r hooks in %r"
-                             %(self._prefix, module_or_class))
+            raise ValueError("did not find any %r hooks in %r"
+                             %(self.system_name, module_or_class))
+
+    def get_hook_spec_opts(self, module_or_class, name):
+        res = getattr(getattr(module_or_class, name),
+                      self.system_name + "_spec", None)
+        return res
 
     def get_plugins(self):
         """ return the set of registered plugins. """
@@ -406,11 +416,11 @@ class PluginManager(object):
             if plugin == val:
                 return name
 
-    def _verify_hook(self, hook, plugin):
+    def _verify_hook(self, hook, plugin, hookimpl_opts):
         method = getattr(plugin, hook.name)
         pluginname = self.get_name(plugin)
 
-        if hook.is_historic() and hasattr(method, "hookwrapper"):
+        if hook.is_historic() and hookimpl_opts["hookwrapper"]:
             raise PluginValidationError(
                 "Plugin %r\nhook %r\nhistoric incompatible to hookwrapper" %
                 (pluginname, hook.name))
@@ -428,7 +438,7 @@ class PluginManager(object):
         """ Verify that all hooks which have not been verified against
         a hook specification are optional, otherwise raise PluginValidationError"""
         for name in self.hook.__dict__:
-            if name.startswith(self._prefix):
+            if name[0] != "_":
                 hook = getattr(self.hook, name)
                 if not hook.has_spec():
                     for plugin in hook._plugins:
@@ -463,16 +473,16 @@ class _MultiCall:
     # so we can remove it soon, allowing to avoid the below recursion
     # in execute() and simplify/speed up the execute loop.
 
-    def __init__(self, methods, kwargs, firstresult=False):
+    def __init__(self, methods, kwargs, specopts={}):
         self.methods = methods
         self.kwargs = kwargs
         self.kwargs["__multicall__"] = self
-        self.firstresult = firstresult
+        self.specopts = specopts
 
     def execute(self):
         all_kwargs = self.kwargs
         self.results = results = []
-        firstresult = self.firstresult
+        firstresult = self.specopts.get("firstresult")
 
         while self.methods:
             method = self.methods.pop()
@@ -549,26 +559,27 @@ class _HookRelay:
 
 
 class _HookCaller(object):
-    def __init__(self, name, hook_execute, specmodule_or_class=None):
+    def __init__(self, name, hook_execute, specmodule_or_class=None, spec_opts=None):
         self.name = name
         self._plugins = []
         self._wrappers = []
         self._nonwrappers = []
         self._hookexec = hook_execute
         if specmodule_or_class is not None:
-            self.set_specification(specmodule_or_class)
+            assert spec_opts is not None
+            self.set_specification(specmodule_or_class, spec_opts)
 
     def has_spec(self):
         return hasattr(self, "_specmodule_or_class")
 
-    def set_specification(self, specmodule_or_class):
+    def set_specification(self, specmodule_or_class, spec_opts):
         assert not self.has_spec()
         self._specmodule_or_class = specmodule_or_class
         specfunc = getattr(specmodule_or_class, self.name)
         argnames = varnames(specfunc, startindex=inspect.isclass(specmodule_or_class))
         assert "self" not in argnames  # sanity check
         self.argnames = ["__multicall__"] + list(argnames)
-        self.firstresult = getattr(specfunc, 'firstresult', False)
+        self.spec_opts = spec_opts
         if hasattr(specfunc, "historic"):
             self._call_history = []
 

@@ -13,11 +13,12 @@ hookimpl = Hookimpl("example")
 
 @pytest.fixture
 def pm():
-    return PluginManager("he")
+    return PluginManager("example")
 
 @pytest.fixture
 def he_pm(pm):
     class Hooks:
+        @hookspec
         def he_method1(self, arg):
             return arg + 1
 
@@ -82,6 +83,7 @@ class TestPluginManager:
 
     def test_register_mismatch_method(self, he_pm):
         class hello:
+            @hookimpl
             def he_method_notexists(self):
                 pass
 
@@ -91,6 +93,7 @@ class TestPluginManager:
 
     def test_register_mismatch_arg(self, he_pm):
         class hello:
+            @hookimpl
             def he_method1(self, qlwkje):
                 pass
 
@@ -115,12 +118,14 @@ class TestPluginManager:
 
     def test_register_unknown_hooks(self, pm):
         class Plugin1:
+            @hookimpl
             def he_method1(self, arg):
                 return arg + 1
 
         pm.register(Plugin1())
 
         class Hooks:
+            @hookspec
             def he_method1(self, arg):
                 pass
 
@@ -139,6 +144,7 @@ class TestPluginManager:
         l = []
 
         class Plugin:
+            @hookimpl
             def he_method1(self, arg):
                 l.append(arg)
 
@@ -146,6 +152,7 @@ class TestPluginManager:
         assert l == [1]
 
         class Plugin2:
+            @hookimpl
             def he_method1(self, arg):
                 l.append(arg * 10)
 
@@ -166,6 +173,7 @@ class TestPluginManager:
         l = []
 
         class Plugin:
+            @hookimpl
             def he_method1(self, arg):
                 return arg * 10
 
@@ -192,6 +200,7 @@ class TestPluginManager:
 
     def test_call_extra(self, pm):
         class Hooks:
+            @hookspec
             def he_method1(self, arg):
                 pass
 
@@ -205,6 +214,7 @@ class TestPluginManager:
 
     def test_subset_hook_caller(self, pm):
         class Hooks:
+            @hookspec
             def he_method1(self, arg):
                 pass
 
@@ -213,10 +223,12 @@ class TestPluginManager:
         l = []
 
         class Plugin1:
+            @hookimpl
             def he_method1(self, arg):
                 l.append(arg)
 
         class Plugin2:
+            @hookimpl
             def he_method1(self, arg):
                 l.append(arg * 10)
 
@@ -258,6 +270,7 @@ class TestAddMethodOrdering:
     @pytest.fixture
     def hc(self, pm):
         class Hooks:
+            @hookspec
             def he_method1(self, arg):
                 pass
         pm.addhooks(Hooks)
@@ -267,12 +280,8 @@ class TestAddMethodOrdering:
     def addmeth(self, hc):
         def addmeth(tryfirst=False, trylast=False, hookwrapper=False):
             def wrap(func):
-                if tryfirst:
-                    func.tryfirst = True
-                if trylast:
-                    func.trylast = True
-                if hookwrapper:
-                    func.hookwrapper = True
+                hookimpl(tryfirst=tryfirst, trylast=trylast,
+                         hookwrapper=hookwrapper)(func)
                 hc._add_method(func)
                 return func
             return wrap
@@ -396,9 +405,9 @@ class TestAddMethodOrdering:
                 pass
 
         pm.addhooks(HookSpec)
-        assert not pm.hook.he_myhook1.firstresult
-        assert pm.hook.he_myhook2.firstresult
-        assert not pm.hook.he_myhook3.firstresult
+        assert not pm.hook.he_myhook1.spec_opts["firstresult"]
+        assert pm.hook.he_myhook2.spec_opts["firstresult"]
+        assert not pm.hook.he_myhook3.spec_opts["firstresult"]
 
     def test_hookimpl(self):
         for name in ["hookwrapper", "optionalhook", "tryfirst", "trylast"]:
@@ -463,10 +472,12 @@ class TestAddMethodOrdering:
         saveindent = []
 
         class api1:
+            @hookimpl
             def he_method1(self):
                 saveindent.append(he_pm.trace.root.indent)
 
         class api2:
+            @hookimpl
             def he_method1(self):
                 saveindent.append(he_pm.trace.root.indent)
                 raise ValueError()
@@ -551,7 +562,7 @@ class Test_MultiCall:
 
         p1 = P1()
         p2 = P2()
-        multicall = _MultiCall([p1.m, p2.m], {'x': 23})
+        multicall = _MultiCall([p1.m, p2.m], {'x': 23}, {})
         assert "23" in repr(multicall)
         reslist = multicall.execute()
         assert len(reslist) == 2
@@ -591,7 +602,7 @@ class Test_MultiCall:
         def n():
             return 1
 
-        call = _MultiCall([n, m], {}, firstresult=True)
+        call = _MultiCall([n, m], {}, {"firstresult": True})
         res = call.execute()
         assert res == 2
 
@@ -602,9 +613,9 @@ class Test_MultiCall:
         def m2():
             return None
 
-        res = _MultiCall([m1, m2], {}, firstresult=True).execute()
+        res = _MultiCall([m1, m2], {}, {"firstresult": True}).execute()
         assert res == 1
-        res = _MultiCall([m1, m2], {}).execute()
+        res = _MultiCall([m1, m2], {}, {}).execute()
         assert res == [1]
 
     def test_hookwrapper(self):
@@ -624,7 +635,7 @@ class Test_MultiCall:
         assert res == [2]
         assert l == ["m1 init", "m2", "m1 finish"]
         l[:] = []
-        res = _MultiCall([m2, m1], {}, firstresult=True).execute()
+        res = _MultiCall([m2, m1], {}, {"firstresult": True}).execute()
         assert res == 2
         assert l == ["m1 init", "m2", "m1 finish"]
 
@@ -687,17 +698,19 @@ class Test_MultiCall:
 
 
 class TestHookRelay:
-    def test_hapmypath(self):
+    def test_hapmypath(self, pm):
         class Api:
+            @hookspec
             def hello(self, arg):
                 "api hook 1"
-        pm = PluginManager("he")
+
         pm.addhooks(Api)
         hook = pm.hook
         assert hasattr(hook, 'hello')
         assert repr(hook.hello).find("hello") != -1
 
         class Plugin:
+            @hookimpl
             def hello(self, arg):
                 return arg + 1
 
@@ -709,40 +722,43 @@ class TestHookRelay:
         pm.unregister(plugin)
         assert hook.hello(arg=3) == []
 
-    def test_argmismatch(self):
+    def test_argmismatch(self, pm):
         class Api:
+            @hookspec
             def hello(self, arg):
                 "api hook 1"
-        pm = PluginManager("he")
+
         pm.addhooks(Api)
 
         class Plugin:
+            @hookimpl
             def hello(self, argwrong):
                 pass
 
         with pytest.raises(PluginValidationError) as exc:
             pm.register(Plugin())
+
         assert "argwrong" in str(exc.value)
 
-    def test_only_kwargs(self):
-        pm = PluginManager("he")
-
+    def test_only_kwargs(self, pm):
         class Api:
+            @hookspec
             def hello(self, arg):
                 "api hook 1"
 
         pm.addhooks(Api)
         pytest.raises(TypeError, lambda: pm.hook.hello(3))
 
-    def test_firstresult_definition(self):
+    def test_firstresult_definition(self, pm):
         class Api:
+            @hookspec(firstresult=True)
             def hello(self, arg):
                 "api hook 1"
-            hello.firstresult = True
-        pm = PluginManager("he")
+
         pm.addhooks(Api)
 
         class Plugin:
+            @hookimpl
             def hello(self, arg):
                 return arg + 1
 
