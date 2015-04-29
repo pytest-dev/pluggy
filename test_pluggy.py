@@ -6,7 +6,7 @@ import pytest
 from pluggy import (PluginManager, varnames, PluginValidationError,
                     Hookimpl, Hookspec)
 
-from pluggy import (_MultiCall, _TagTracer)
+from pluggy import (_MultiCall, _TagTracer, _HookFunction)
 
 hookspec = Hookspec("example")
 hookimpl = Hookimpl("example")
@@ -282,10 +282,13 @@ class TestAddMethodOrdering:
             def wrap(func):
                 hookimpl(tryfirst=tryfirst, trylast=trylast,
                          hookwrapper=hookwrapper)(func)
-                hc._add_method(func)
+                hc._add_hookmethod(_HookFunction(None, func, func.example_impl))
                 return func
             return wrap
         return addmeth
+
+    def funcs(self, hookmethods):
+        return [hookmethod.function for hookmethod in hookmethods]
 
     def test_adding_nonwrappers(self, hc, addmeth):
         @addmeth()
@@ -299,7 +302,7 @@ class TestAddMethodOrdering:
         @addmeth()
         def he_method3():
             pass
-        assert hc._nonwrappers == [he_method1, he_method2, he_method3]
+        assert self.funcs(hc._nonwrappers) == [he_method1, he_method2, he_method3]
 
     def test_adding_nonwrappers_trylast(self, hc, addmeth):
         @addmeth()
@@ -313,7 +316,8 @@ class TestAddMethodOrdering:
         @addmeth()
         def he_method1_b():
             pass
-        assert hc._nonwrappers == [he_method1, he_method1_middle, he_method1_b]
+        assert self.funcs(hc._nonwrappers) == \
+               [he_method1, he_method1_middle, he_method1_b]
 
     def test_adding_nonwrappers_trylast3(self, hc, addmeth):
         @addmeth()
@@ -331,8 +335,8 @@ class TestAddMethodOrdering:
         @addmeth(trylast=True)
         def he_method1_d():
             pass
-        assert hc._nonwrappers == [he_method1_d, he_method1_b,
-                                   he_method1_a, he_method1_c]
+        assert self.funcs(hc._nonwrappers) == \
+               [he_method1_d, he_method1_b, he_method1_a, he_method1_c]
 
     def test_adding_nonwrappers_trylast2(self, hc, addmeth):
         @addmeth()
@@ -346,7 +350,8 @@ class TestAddMethodOrdering:
         @addmeth(trylast=True)
         def he_method1():
             pass
-        assert hc._nonwrappers == [he_method1, he_method1_middle, he_method1_b]
+        assert self.funcs(hc._nonwrappers) == \
+               [he_method1, he_method1_middle, he_method1_b]
 
     def test_adding_nonwrappers_tryfirst(self, hc, addmeth):
         @addmeth(tryfirst=True)
@@ -360,7 +365,8 @@ class TestAddMethodOrdering:
         @addmeth()
         def he_method1_b():
             pass
-        assert hc._nonwrappers == [he_method1_middle, he_method1_b, he_method1]
+        assert self.funcs(hc._nonwrappers) == \
+               [he_method1_middle, he_method1_b, he_method1]
 
     def test_adding_wrappers_ordering(self, hc, addmeth):
         @addmeth(hookwrapper=True)
@@ -375,8 +381,8 @@ class TestAddMethodOrdering:
         def he_method3():
             pass
 
-        assert hc._nonwrappers == [he_method1_middle]
-        assert hc._wrappers == [he_method1, he_method3]
+        assert self.funcs(hc._nonwrappers) == [he_method1_middle]
+        assert self.funcs(hc._wrappers) == [he_method1, he_method3]
 
     def test_adding_wrappers_ordering_tryfirst(self, hc, addmeth):
         @addmeth(hookwrapper=True, tryfirst=True)
@@ -388,7 +394,7 @@ class TestAddMethodOrdering:
             pass
 
         assert hc._nonwrappers == []
-        assert hc._wrappers == [he_method2, he_method1]
+        assert self.funcs(hc._wrappers) == [he_method2, he_method1]
 
     def test_hookspec(self, pm):
         class HookSpec:
@@ -547,14 +553,23 @@ class Test_MultiCall:
         res = mc.execute()
         return res == 42
 
+    def MC(self, methods, kwargs, firstresult=False):
+        hookfuncs = []
+        for method in methods:
+            f = _HookFunction(None, method, method.example_impl)
+            hookfuncs.append(f)
+        return _MultiCall(hookfuncs, kwargs, {"firstresult": firstresult})
+
     def test_call_passing(self):
         class P1:
+            @hookimpl
             def m(self, __multicall__, x):
                 assert len(__multicall__.results) == 1
                 assert not __multicall__.methods
                 return 17
 
         class P2:
+            @hookimpl
             def m(self, __multicall__, x):
                 assert __multicall__.results == []
                 assert __multicall__.methods
@@ -562,7 +577,7 @@ class Test_MultiCall:
 
         p1 = P1()
         p2 = P2()
-        multicall = _MultiCall([p1.m, p2.m], {'x': 23}, {})
+        multicall = self.MC([p1.m, p2.m], {"x": 23})
         assert "23" in repr(multicall)
         reslist = multicall.execute()
         assert len(reslist) == 2
@@ -570,14 +585,16 @@ class Test_MultiCall:
         assert reslist == [23, 17]
 
     def test_keyword_args(self):
+        @hookimpl
         def f(x):
             return x + 1
 
         class A:
+            @hookimpl
             def f(self, x, y):
                 return x + y
 
-        multicall = _MultiCall([f, A().f], dict(x=23, y=24))
+        multicall = self.MC([f, A().f], dict(x=23, y=24))
         assert "'x': 23" in repr(multicall)
         assert "'y': 24" in repr(multicall)
         reslist = multicall.execute()
@@ -585,37 +602,45 @@ class Test_MultiCall:
         assert "2 results" in repr(multicall)
 
     def test_keyword_args_with_defaultargs(self):
+        @hookimpl
         def f(x, z=1):
             return x + z
-        reslist = _MultiCall([f], dict(x=23, y=24)).execute()
+        reslist = self.MC([f], dict(x=23, y=24)).execute()
         assert reslist == [24]
 
     def test_tags_call_error(self):
-        multicall = _MultiCall([lambda x: x], {})
+        @hookimpl
+        def f(x):
+            return x
+        multicall = self.MC([f], {})
         pytest.raises(KeyError, multicall.execute)
 
     def test_call_subexecute(self):
+        @hookimpl
         def m(__multicall__):
             subresult = __multicall__.execute()
             return subresult + 1
 
+        @hookimpl
         def n():
             return 1
 
-        call = _MultiCall([n, m], {}, {"firstresult": True})
+        call = self.MC([n, m], {}, firstresult=True)
         res = call.execute()
         assert res == 2
 
     def test_call_none_is_no_result(self):
+        @hookimpl
         def m1():
             return 1
 
+        @hookimpl
         def m2():
             return None
 
-        res = _MultiCall([m1, m2], {}, {"firstresult": True}).execute()
+        res = self.MC([m1, m2], {}, {"firstresult": True}).execute()
         assert res == 1
-        res = _MultiCall([m1, m2], {}, {}).execute()
+        res = self.MC([m1, m2], {}, {}).execute()
         assert res == [1]
 
     def test_hookwrapper(self):
@@ -627,15 +652,16 @@ class Test_MultiCall:
             yield None
             l.append("m1 finish")
 
+        @hookimpl
         def m2():
             l.append("m2")
             return 2
 
-        res = _MultiCall([m2, m1], {}).execute()
+        res = self.MC([m2, m1], {}).execute()
         assert res == [2]
         assert l == ["m1 init", "m2", "m1 finish"]
         l[:] = []
-        res = _MultiCall([m2, m1], {}, {"firstresult": True}).execute()
+        res = self.MC([m2, m1], {}, {"firstresult": True}).execute()
         assert res == 2
         assert l == ["m1 init", "m2", "m1 finish"]
 
@@ -654,7 +680,7 @@ class Test_MultiCall:
             yield 2
             l.append("m2 finish")
 
-        res = _MultiCall([m2, m1], {}).execute()
+        res = self.MC([m2, m1], {}).execute()
         assert res == []
         assert l == ["m1 init", "m2 init", "m2 finish", "m1 finish"]
 
@@ -663,7 +689,7 @@ class Test_MultiCall:
         def m1():
             pass
 
-        mc = _MultiCall([m1], {})
+        mc = self.MC([m1], {})
         with pytest.raises(TypeError):
             mc.execute()
 
@@ -673,7 +699,7 @@ class Test_MultiCall:
             yield 1
             yield 2
 
-        mc = _MultiCall([m1], {})
+        mc = self.MC([m1], {})
         with pytest.raises(RuntimeError) as ex:
             mc.execute()
         assert "m1" in str(ex.value)
@@ -689,11 +715,12 @@ class Test_MultiCall:
             yield None
             l.append("m1 finish")
 
+        @hookimpl
         def m2():
             raise exc
 
         with pytest.raises(exc):
-            _MultiCall([m2, m1], {}).execute()
+            self.MC([m2, m1], {}).execute()
         assert l == ["m1 init", "m1 finish"]
 
 
