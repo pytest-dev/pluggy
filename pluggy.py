@@ -370,6 +370,8 @@ class PluginManager(object):
             raise ValueError("Plugin already registered: %s=%s\n%s" %
                             (plugin_name, plugin, self._name2plugin))
 
+        # XXX if an error happens we should make sure no state has been
+        # changed at point of return
         self._name2plugin[plugin_name] = plugin
 
         # register matching hook implementations of the plugin
