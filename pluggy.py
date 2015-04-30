@@ -427,6 +427,10 @@ class PluginManager(object):
         self.unregister(name=name)
         self._name2plugin[name] = None
 
+    def is_blocked(self, name):
+        """ return True if the name blogs registering plugins of that name. """
+        return name in self._name2plugin and self._name2plugin[name] is None
+
     def addhooks(self, module_or_class):
         """ add new hook definitions from the given module_or_class using
         the prefix/excludefunc with which the PluginManager was initialized. """
@@ -510,7 +514,7 @@ class PluginManager(object):
         from pkg_resources import iter_entry_points, DistributionNotFound
         for ep in iter_entry_points(entrypoint_name):
             # is the plugin registered or blocked?
-            if self.get_plugin(ep.name) or ep.name in self._name2plugin:
+            if self.get_plugin(ep.name) or self.is_blocked(ep.name):
                 continue
             try:
                 plugin = ep.load()

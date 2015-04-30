@@ -88,12 +88,16 @@ class TestPluginManager:
         a1 = A()
         name = pm.register(a1)
         assert pm.is_registered(a1)
+        assert not pm.is_blocked(name)
         pm.set_blocked(name)
+        assert pm.is_blocked(name)
         assert not pm.is_registered(a1)
 
         pm.set_blocked("somename")
+        assert pm.is_blocked("somename")
         assert not pm.register(A(), "somename")
         pm.unregister(name="somename")
+        assert pm.is_blocked("somename")
 
     def test_register_mismatch_method(self, he_pm):
         class hello:
