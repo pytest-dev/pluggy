@@ -1,5 +1,68 @@
 """
 PluginManager, basic initialization and tracing.
+
+pluggy is the cristallized core of plugin management as it used
+by some 150 plugins for pytest. The current plan is to integrate
+into some other projects and take it from there. Pluggy uses semantic
+versioning. Breaking changes are only foreseen for Major releases
+(incremented X in "X.Y.Z").  If you want to use pluggy in your project
+you should thus use a dependency restriction like "pluggy>=0.1.0,<1.0"
+to avoid surprises.
+
+pluggy is concerned with hook specification, hook implementation and managing
+1:N calls where we call a specified hook for which we have N participating
+implementations.  A hook implementation can influence its position and type
+of execution: if attributed "tryfirst" or "trylast" the implementation it
+will be tried to execute it first or last.  However, if attributed "hookwrapper"
+an implementation can wrap all calls to non-hookwrapper implementations.
+A hookwrapper can execute some code ahead and after the execution of other hooks.
+
+A hook specification is specified through a regular python function where
+both the name of the function and the names of all its arguments are significant.
+Each hook implementation function is verified against the original specification
+function, including the names of all its arguments.  To allow for hook specifications
+to evolve over the livetime of a project, we allow hook implementations to
+accept less arguments.  We can thus add new arguments and semantics to
+a hook specification by adding another argument typically without breaking
+existing hook implementations.
+
+The chosen approach is meant to let a hook designer think carefuly about
+which objects are needed by an extension writer.  By contrast, subclass-based
+extension mechanisms often expose a lot more state and behaviour than needed,
+thus restricting future developments.
+
+Pluggy currently consists of functionality for:
+
+- a way to register new hook specifications.  Without a hook
+  specification no hook calling can be performed.
+
+- a registry of plugins which contain hook implementation functions.  It
+  is possible to register plugins for which a hook specification is not yet
+  known and validate all hooks when the system is in a more referentially
+  consistent state.  Setting an "optionalhook" attribution to a hook
+  implementation will avoid PluginValidationError's if a specifcation
+  is missing.  This allows to have optional integration between plugins.
+
+- a "hook" relay object from which you can launch 1:N calls to
+  registered hook implementation functions
+
+- a mechanism for ordering hook implementation functions
+
+- mechanisms for two different type of 1:N calls: "firstresult" for when
+  the call should stop when the first implementation returns a non-None result.
+  And the other (default) way of guaranteeing that all hook implementations
+  will be called and their non-None result collected.
+
+- mechanisms for "historic" extension points such that all newly
+  registered functions will receive all hook calls that happened
+  before their registration.
+
+- a mechanism for discovering plugin objects which are based on
+  setuptools based entry points.
+
+- a simple tracing mechanism, including tracing of plugin calls and
+  their arguments.
+
 """
 import sys
 import inspect
