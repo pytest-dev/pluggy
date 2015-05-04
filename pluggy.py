@@ -348,10 +348,10 @@ class PluginManager(object):
         if plugins_to_remove:
             hc = _HookCaller(orig.name, orig._hookexec, orig._specmodule_or_class,
                              orig.spec_opts)
-            for hookmethod in (orig._wrappers + orig._nonwrappers):
-                plugin = hookmethod.plugin
+            for hookimpl in (orig._wrappers + orig._nonwrappers):
+                plugin = hookimpl.plugin
                 if plugin not in plugins_to_remove:
-                    hc._add_hookmethod(hookmethod)
+                    hc._add_hookimpl(hookimpl)
                     # we also keep track of this hook caller so it
                     # gets properly removed on plugin unregistration
                     self._plugin2hookcallers.setdefault(plugin, []).append(hc)
@@ -377,28 +377,29 @@ class PluginManager(object):
         # register matching hook implementations of the plugin
         self._plugin2hookcallers[plugin] = hookcallers = []
         for name in dir(plugin):
-            hookimpl_opts = self.get_hookimpl_opts(plugin, name)
+            method = getattr(plugin, name)
+            hookimpl_opts = self.parse_hookimpl_opts(method)
             if hookimpl_opts is not None:
-                hookmethod = _HookFunction(plugin, getattr(plugin, name), hookimpl_opts)
+                hookimpl = _HookImpl(plugin, plugin_name, method, hookimpl_opts)
                 hook = getattr(self.hook, name, None)
                 if hook is None:
                     hook = _HookCaller(name, self._hookexec)
                     setattr(self.hook, name, hook)
                 elif hook.has_spec():
-                    self._verify_hook(hook, hookmethod)
-                    hook._maybe_apply_history(hookmethod)
-                hook._add_hookmethod(hookmethod)
+                    self._verify_hook(hook, hookimpl)
+                    hook._maybe_apply_history(hookimpl)
+                hook._add_hookimpl(hookimpl)
                 hookcallers.append(hook)
         return plugin_name
 
-    def get_hookimpl_opts(self, plugin, name):
-        res = getattr(getattr(plugin, name), self.system_name + "_impl", None)
+    def parse_hookimpl_opts(self, method):
+        res = getattr(method, self.system_name + "_impl", None)
         if res is not None and not isinstance(res, dict):
             # false positive
             res = None
         return res
 
-    def get_hookspec_opts(self, module_or_class, name):
+    def parse_hookspec_opts(self, module_or_class, name):
         return getattr(getattr(module_or_class, name),
                        self.system_name + "_spec", None)
 
@@ -438,7 +439,7 @@ class PluginManager(object):
         the prefix/excludefunc with which the PluginManager was initialized. """
         names = []
         for name in dir(module_or_class):
-            spec_opts = self.get_hookspec_opts(module_or_class, name)
+            spec_opts = self.parse_hookspec_opts(module_or_class, name)
             if spec_opts is not None:
                 hc = getattr(self.hook, name, None)
                 if hc is None:
@@ -480,22 +481,20 @@ class PluginManager(object):
             if plugin == val:
                 return name
 
-    def _verify_hook(self, hook, hookmethod):
-        pluginname = self.get_name(hookmethod.plugin)
-
-        if hook.is_historic() and hookmethod.hookwrapper:
+    def _verify_hook(self, hook, hookimpl):
+        if hook.is_historic() and hookimpl.hookwrapper:
             raise PluginValidationError(
                 "Plugin %r\nhook %r\nhistoric incompatible to hookwrapper" %
-                (pluginname, hook.name))
+                (hookimpl.plugin_name, hook.name))
 
-        for arg in hookmethod.argnames:
+        for arg in hookimpl.argnames:
             if arg not in hook.argnames:
                 raise PluginValidationError(
                     "Plugin %r\nhook %r\nargument %r not available\n"
                     "plugin definition: %s\n"
                     "available hookargs: %s" %
-                    (pluginname, hook.name, arg, _formatdef(hookmethod.function),
-                     ", ".join(hook.argnames)))
+                    (hookimpl.plugin_name, hook.name, arg,
+                    _formatdef(hookimpl.function), ", ".join(hook.argnames)))
 
     def check_pending(self):
         """ Verify that all hooks which have not been verified against
@@ -504,11 +503,11 @@ class PluginManager(object):
             if name[0] != "_":
                 hook = getattr(self.hook, name)
                 if not hook.has_spec():
-                    for hookmethod in (hook._wrappers + hook._nonwrappers):
-                        if not hookmethod.optionalhook:
+                    for hookimpl in (hook._wrappers + hook._nonwrappers):
+                        if not hookimpl.optionalhook:
                             raise PluginValidationError(
                                 "unknown hook %r in plugin %r" %
-                                (name, hookmethod.plugin))
+                                (name, hookimpl.plugin))
 
     def load_setuptools_entrypoints(self, entrypoint_name):
         """ Load modules from querying the specified setuptools entrypoint name.
@@ -658,22 +657,22 @@ class _HookCaller(object):
             if remove(self._nonwrappers) is None:
                 raise ValueError("plugin %r not found" % (plugin,))
 
-    def _add_hookmethod(self, hookmethod):
-        if hookmethod.hookwrapper:
+    def _add_hookimpl(self, hookimpl):
+        if hookimpl.hookwrapper:
             methods = self._wrappers
         else:
             methods = self._nonwrappers
 
-        if hookmethod.trylast:
-            methods.insert(0, hookmethod)
-        elif hookmethod.tryfirst:
-            methods.append(hookmethod)
+        if hookimpl.trylast:
+            methods.insert(0, hookimpl)
+        elif hookimpl.tryfirst:
+            methods.append(hookimpl)
         else:
             # find last non-tryfirst method
             i = len(methods) - 1
             while i >= 0 and methods[i].tryfirst:
                 i -= 1
-            methods.insert(i + 1, hookmethod)
+            methods.insert(i + 1, hookimpl)
 
     def __repr__(self):
         return "<_HookCaller %r>" % (self.name,)
@@ -693,8 +692,8 @@ class _HookCaller(object):
         old = list(self._nonwrappers), list(self._wrappers)
         for method in methods:
             opts = dict(hookwrapper=False, trylast=False, tryfirst=False)
-            hookmethod = _HookFunction(None, method, opts)
-            self._add_hookmethod(hookmethod)
+            hookimpl = _HookImpl(None, "<temp>", method, opts)
+            self._add_hookimpl(hookimpl)
         try:
             return self(**kwargs)
         finally:
@@ -708,12 +707,13 @@ class _HookCaller(object):
                     proc(res[0])
 
 
-class _HookFunction:
-    def __init__(self, plugin, function, hook_impl_opts):
+class _HookImpl:
+    def __init__(self, plugin, plugin_name, function, hook_impl_opts):
         self.function = function
         self.argnames = varnames(self.function)
         self.plugin = plugin
         self.opts = hook_impl_opts
+        self.plugin_name = plugin_name
         self.__dict__.update(hook_impl_opts)
 
 

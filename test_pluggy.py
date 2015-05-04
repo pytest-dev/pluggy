@@ -6,7 +6,7 @@ import pytest
 from pluggy import (PluginManager, varnames, PluginValidationError,
                     Hookimpl, Hookspec)
 
-from pluggy import (_MultiCall, _TagTracer, _HookFunction)
+from pluggy import (_MultiCall, _TagTracer, _HookImpl)
 
 hookspec = Hookspec("example")
 hookimpl = Hookimpl("example")
@@ -301,7 +301,7 @@ class TestAddMethodOrdering:
             def wrap(func):
                 hookimpl(tryfirst=tryfirst, trylast=trylast,
                          hookwrapper=hookwrapper)(func)
-                hc._add_hookmethod(_HookFunction(None, func, func.example_impl))
+                hc._add_hookimpl(_HookImpl(None, "<temp>", func, func.example_impl))
                 return func
             return wrap
         return addmeth
@@ -578,7 +578,7 @@ class Test_MultiCall:
     def MC(self, methods, kwargs, firstresult=False):
         hookfuncs = []
         for method in methods:
-            f = _HookFunction(None, method, method.example_impl)
+            f = _HookImpl(None, "<temp>", method, method.example_impl)
             hookfuncs.append(f)
         return _MultiCall(hookfuncs, kwargs, {"firstresult": firstresult})
 
