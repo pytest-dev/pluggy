@@ -2,27 +2,27 @@
 PluginManager, basic initialization and tracing.
 
 pluggy is the cristallized core of plugin management as used
-by some 150 plugins for pytest. The current plan is to integrate
-it into some other projects and take it from there. Pluggy uses semantic
-versioning. Breaking changes are only foreseen for Major releases
-(incremented X in "X.Y.Z").  If you want to use pluggy in your project
-you should thus use a dependency restriction like "pluggy>=0.1.0,<1.0"
-to avoid surprises.
+by some 150 plugins for pytest.
+
+Pluggy uses semantic versioning. Breaking changes are only foreseen for
+Major releases (incremented X in "X.Y.Z").  If you want to use pluggy in
+your project you should thus use a dependency restriction like
+"pluggy>=0.1.0,<1.0" to avoid surprises.
 
 pluggy is concerned with hook specification, hook implementations and hook
-calling.  For any given hook specification a hook call calls up to N implementations.
+calling.  For any given hook specification a hook call invokes up to N implementations.
 A hook implementation can influence its position and type of execution:
 if attributed "tryfirst" or "trylast" it will be tried to execute
 first or last.  However, if attributed "hookwrapper" an implementation
 can wrap all calls to non-hookwrapper implementations.  A hookwrapper
-can execute some code ahead and after the execution of other hooks.
+can thus execute some code ahead and after the execution of other hooks.
 
 Hook specification is done by way of a regular python function where
 both the function name and the names of all its arguments are significant.
 Each hook implementation function is verified against the original specification
 function, including the names of all its arguments.  To allow for hook specifications
-to evolve over the livetime of a project, we allow hook implementations to
-accept less arguments.  We can thus add new arguments and semantics to
+to evolve over the livetime of a project, hook implementations can
+accept less arguments.  One can thus add new arguments and semantics to
 a hook specification by adding another argument typically without breaking
 existing hook implementations.
 
