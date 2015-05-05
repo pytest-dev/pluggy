@@ -157,6 +157,13 @@ class HookimplDecorator:
             return setattr_hookimpl_opts(function)
 
 
+def normalize_hookimpl_opts(opts):
+    opts.setdefault("tryfirst", False)
+    opts.setdefault("trylast", False)
+    opts.setdefault("hookwrapper", False)
+    opts.setdefault("optionalhook", False)
+
+
 class _TagTracer:
     def __init__(self):
         self._tag2proc = {}
@@ -310,13 +317,16 @@ class PluginManager(object):
     which will subsequently send debug information to the trace helper.
     """
 
-    def __init__(self, project_name):
+    def __init__(self, project_name, implprefix=None):
+        """ if implprefix is given implementation functions
+        will be recognized if their name matches the implprefix. """
         self.project_name = project_name
         self._name2plugin = {}
         self._plugin2hookcallers = {}
         self._plugin_distinfo = []
         self.trace = _TagTracer().get("pluginmanage")
         self.hook = _HookRelay(self.trace.root.get("hook"))
+        self._implprefix = implprefix
         self._inner_hookexec = lambda hook, methods, kwargs: \
             _MultiCall(methods, kwargs, hook.spec_opts).execute()
 
@@ -380,6 +390,7 @@ class PluginManager(object):
         for name in dir(plugin):
             hookimpl_opts = self.parse_hookimpl_opts(plugin, name)
             if hookimpl_opts is not None:
+                normalize_hookimpl_opts(hookimpl_opts)
                 method = getattr(plugin, name)
                 hookimpl = _HookImpl(plugin, plugin_name, method, hookimpl_opts)
                 hook = getattr(self.hook, name, None)
@@ -399,6 +410,8 @@ class PluginManager(object):
         if res is not None and not isinstance(res, dict):
             # false positive
             res = None
+        elif res is None and self._implprefix and name.startswith(self._implprefix):
+           res = {}
         return res
 
     def parse_hookspec_opts(self, module_or_class, name):
@@ -524,8 +537,17 @@ class PluginManager(object):
             except DistributionNotFound:
                 continue
             self.register(plugin, name=ep.name)
-            self._plugin_distinfo.append((ep.dist, plugin))
+            self._plugin_distinfo.append((plugin, ep.dist))
         return len(self._plugin_distinfo)
+
+    def list_plugin_distinfo(self):
+        """ return list of distinfo/plugin tuples for all setuptools registered
+        plugins. """
+        return list(self._plugin_distinfo)
+
+    def list_name_plugin(self):
+        """ return list of name/plugin pairs. """
+        return list(self._name2plugin.items())
 
 
 class _MultiCall:

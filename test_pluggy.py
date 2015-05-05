@@ -52,6 +52,10 @@ class TestPluginManager:
         assert pm.unregister(a1) == a1
         assert not pm.is_registered(a1)
 
+        l = pm.list_name_plugin()
+        assert len(l) == 1
+        assert l == [("hello", a2)]
+
     def test_register_dynamic_attr(self, he_pm):
         class A:
             def __getattr__(self, name):
@@ -484,7 +488,7 @@ class TestAddMethodOrdering:
         assert num == 1
         plugin = pm.get_plugin("myname")
         assert plugin.x == 42
-        assert pm._plugin_distinfo == [(None, plugin)]
+        assert pm.list_plugin_distinfo() == [(plugin, None)]
 
     def test_load_setuptools_not_installed(self, monkeypatch, pm):
         monkeypatch.setitem(sys.modules, 'pkg_resources',
@@ -528,6 +532,61 @@ class TestAddMethodOrdering:
             assert saveindent[0] > indent
         finally:
             undo()
+
+    def test_prefix_hookimpl(self):
+        pm = PluginManager(hookspec.project_name, "hello_")
+        class HookSpec:
+            @hookspec
+            def hello_myhook(self, arg1):
+                """ add to arg1 """
+
+        pm.add_hookspecs(HookSpec)
+
+        class Plugin:
+            def hello_myhook(self, arg1):
+                return arg1 + 1
+
+        pm.register(Plugin())
+        pm.register(Plugin())
+        results = pm.hook.hello_myhook(arg1=17)
+        assert results == [18, 18]
+
+def test_parse_hookimpl_override():
+    class MyPluginManager(PluginManager):
+        def parse_hookimpl_opts(self, module_or_class, name):
+            opts = PluginManager.parse_hookimpl_opts(self, module_or_class, name)
+            if opts is None:
+                if name.startswith("x1"):
+                    opts = {}
+            return opts
+
+    class Plugin:
+        def x1meth(self):
+            pass
+
+        @hookimpl(hookwrapper=True, tryfirst=True)
+        def x1meth2(self):
+            pass
+
+    class Spec:
+        @hookspec
+        def x1meth(self):
+            pass
+        @hookspec
+        def x1meth2(self):
+            pass
+
+
+    pm = MyPluginManager(hookspec.project_name)
+    pm.register(Plugin())
+    pm.add_hookspecs(Spec)
+    assert not pm.hook.x1meth._nonwrappers[0].hookwrapper
+    assert not pm.hook.x1meth._nonwrappers[0].tryfirst
+    assert not pm.hook.x1meth._nonwrappers[0].trylast
+    assert not pm.hook.x1meth._nonwrappers[0].optionalhook
+
+    assert pm.hook.x1meth2._wrappers[0].tryfirst
+    assert pm.hook.x1meth2._wrappers[0].hookwrapper
 
 
 def test_varnames():
