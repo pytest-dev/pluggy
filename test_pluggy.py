@@ -4,12 +4,12 @@ import types
 import pytest
 
 from pluggy import (PluginManager, varnames, PluginValidationError,
-                    Hookimpl, Hookspec)
+                    HookimplDecorator, HookspecDecorator)
 
 from pluggy import (_MultiCall, _TagTracer, _HookImpl)
 
-hookspec = Hookspec("example")
-hookimpl = Hookimpl("example")
+hookspec = HookspecDecorator("example")
+hookimpl = HookimplDecorator("example")
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def he_pm(pm):
         def he_method1(self, arg):
             return arg + 1
 
-    pm.addhooks(Hooks)
+    pm.add_hookspecs(Hooks)
     return pm
 
 
@@ -147,7 +147,7 @@ class TestPluginManager:
             def he_method1(self, arg):
                 pass
 
-        pm.addhooks(Hooks)
+        pm.add_hookspecs(Hooks)
         # assert not pm._unverified_hooks
         assert pm.hook.he_method1(arg=1) == [2]
         assert len(pm.get_hookcallers(pm.get_plugin(pname))) == 1
@@ -157,7 +157,7 @@ class TestPluginManager:
             @hookspec(historic=True)
             def he_method1(self, arg):
                 pass
-        pm.addhooks(Hooks)
+        pm.add_hookspecs(Hooks)
 
         pm.hook.he_method1.call_historic(kwargs=dict(arg=1))
         l = []
@@ -185,7 +185,7 @@ class TestPluginManager:
             @hookspec(historic=True)
             def he_method1(self, arg):
                 pass
-        pm.addhooks(Hooks)
+        pm.add_hookspecs(Hooks)
 
         he_method1 = pm.hook.he_method1
         he_method1.call_historic(lambda res: l.append(res), dict(arg=1))
@@ -205,7 +205,7 @@ class TestPluginManager:
             def he_method1(self, arg):
                 pass
 
-        pm.addhooks(Hooks)
+        pm.add_hookspecs(Hooks)
 
         l = []
 
@@ -223,7 +223,7 @@ class TestPluginManager:
             def he_method1(self, arg):
                 pass
 
-        pm.addhooks(Hooks)
+        pm.add_hookspecs(Hooks)
 
         def he_method1(arg):
             return arg * 10
@@ -237,7 +237,7 @@ class TestPluginManager:
             def he_method1(self, arg):
                 pass
 
-        pm.addhooks(Hooks)
+        pm.add_hookspecs(Hooks)
 
         l = []
 
@@ -280,9 +280,9 @@ class TestPluginManager:
         pm.hook.he_method1(arg=1)
         assert l == [10]
 
-    def test_addhooks_nohooks(self, pm):
+    def test_add_hookspecs_nohooks(self, pm):
         with pytest.raises(ValueError):
-            pm.addhooks(10)
+            pm.add_hookspecs(10)
 
 
 class TestAddMethodOrdering:
@@ -292,7 +292,7 @@ class TestAddMethodOrdering:
             @hookspec
             def he_method1(self, arg):
                 pass
-        pm.addhooks(Hooks)
+        pm.add_hookspecs(Hooks)
         return pm.hook.he_method1
 
     @pytest.fixture
@@ -429,7 +429,7 @@ class TestAddMethodOrdering:
             def he_myhook3(self, arg1):
                 pass
 
-        pm.addhooks(HookSpec)
+        pm.add_hookspecs(HookSpec)
         assert not pm.hook.he_myhook1.spec_opts["firstresult"]
         assert pm.hook.he_myhook2.spec_opts["firstresult"]
         assert not pm.hook.he_myhook3.spec_opts["firstresult"]
@@ -451,7 +451,7 @@ class TestAddMethodOrdering:
             def he_myhook(self, arg1):
                 """ add to arg1 """
 
-        pm.addhooks(HookSpec)
+        pm.add_hookspecs(HookSpec)
 
         class Plugin:
             @hookimpl()
@@ -753,7 +753,7 @@ class TestHookRelay:
             def hello(self, arg):
                 "api hook 1"
 
-        pm.addhooks(Api)
+        pm.add_hookspecs(Api)
         hook = pm.hook
         assert hasattr(hook, 'hello')
         assert repr(hook.hello).find("hello") != -1
@@ -777,7 +777,7 @@ class TestHookRelay:
             def hello(self, arg):
                 "api hook 1"
 
-        pm.addhooks(Api)
+        pm.add_hookspecs(Api)
 
         class Plugin:
             @hookimpl
@@ -795,7 +795,7 @@ class TestHookRelay:
             def hello(self, arg):
                 "api hook 1"
 
-        pm.addhooks(Api)
+        pm.add_hookspecs(Api)
         pytest.raises(TypeError, lambda: pm.hook.hello(3))
 
     def test_firstresult_definition(self, pm):
@@ -804,7 +804,7 @@ class TestHookRelay:
             def hello(self, arg):
                 "api hook 1"
 
-        pm.addhooks(Api)
+        pm.add_hookspecs(Api)
 
         class Plugin:
             @hookimpl

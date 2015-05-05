@@ -1,24 +1,24 @@
 """
 PluginManager, basic initialization and tracing.
 
-pluggy is the cristallized core of plugin management as it used
+pluggy is the cristallized core of plugin management as used
 by some 150 plugins for pytest. The current plan is to integrate
-into some other projects and take it from there. Pluggy uses semantic
+it into some other projects and take it from there. Pluggy uses semantic
 versioning. Breaking changes are only foreseen for Major releases
 (incremented X in "X.Y.Z").  If you want to use pluggy in your project
 you should thus use a dependency restriction like "pluggy>=0.1.0,<1.0"
 to avoid surprises.
 
-pluggy is concerned with hook specification, hook implementation and managing
-1:N calls where we call a specified hook for which we have N participating
-implementations.  A hook implementation can influence its position and type
-of execution: if attributed "tryfirst" or "trylast" the implementation it
-will be tried to execute it first or last.  However, if attributed "hookwrapper"
-an implementation can wrap all calls to non-hookwrapper implementations.
-A hookwrapper can execute some code ahead and after the execution of other hooks.
+pluggy is concerned with hook specification, hook implementations and hook
+calling.  For any given hook specification a hook call calls up to N implementations.
+A hook implementation can influence its position and type of execution:
+if attributed "tryfirst" or "trylast" it will be tried to execute
+first or last.  However, if attributed "hookwrapper" an implementation
+can wrap all calls to non-hookwrapper implementations.  A hookwrapper
+can execute some code ahead and after the execution of other hooks.
 
-A hook specification is specified through a regular python function where
-both the name of the function and the names of all its arguments are significant.
+Hook specification is done by way of a regular python function where
+both the function name and the names of all its arguments are significant.
 Each hook implementation function is verified against the original specification
 function, including the names of all its arguments.  To allow for hook specifications
 to evolve over the livetime of a project, we allow hook implementations to
@@ -67,21 +67,22 @@ Pluggy currently consists of functionality for:
 import sys
 import inspect
 
-__version__ = '0.1.0'
-__all__ = ["PluginManager", "PluginValidationError", "Hookspec", "Hookimpl"]
+__version__ = '0.2.0'
+__all__ = ["PluginManager", "PluginValidationError",
+           "HookspecDecorator", "HookimplDecorator"]
 
 _py3 = sys.version_info > (3, 0)
 
 
-class Hookspec:
+class HookspecDecorator:
     """ Decorator helper class for marking functions as hook specifications.
 
     You can instantiate it to get a decorator.
 
     """
 
-    def __init__(self, system_name):
-        self.system_name = system_name
+    def __init__(self, project_name):
+        self.project_name = project_name
 
     def __call__(self, function=None, firstresult=False, historic=False):
         """ if passed a function, directly sets attributes on the function
@@ -100,7 +101,7 @@ class Hookspec:
         def setattr_hookspec_opts(func):
             if historic and firstresult:
                 raise ValueError("cannot have a historic firstresult hook")
-            setattr(func, self.system_name + "_spec",
+            setattr(func, self.project_name + "_spec",
                    dict(firstresult=firstresult, historic=historic))
             return func
 
@@ -110,14 +111,14 @@ class Hookspec:
             return setattr_hookspec_opts
 
 
-class Hookimpl:
+class HookimplDecorator:
     """ Decorator helper class for marking functions as hook implementations.
 
     You can instantiate it to get a decorator.
 
     """
-    def __init__(self, system_name):
-        self.system_name = system_name
+    def __init__(self, project_name):
+        self.project_name = project_name
 
     def __call__(self, function=None, hookwrapper=False, optionalhook=False,
                  tryfirst=False, trylast=False):
@@ -145,7 +146,7 @@ class Hookimpl:
 
         """
         def setattr_hookimpl_opts(func):
-            setattr(func, self.system_name + "_impl",
+            setattr(func, self.project_name + "_impl",
                    dict(hookwrapper=hookwrapper, optionalhook=optionalhook,
                         tryfirst=tryfirst, trylast=trylast))
             return func
@@ -309,8 +310,8 @@ class PluginManager(object):
     which will subsequently send debug information to the trace helper.
     """
 
-    def __init__(self, system_name):
-        self.system_name = system_name
+    def __init__(self, project_name):
+        self.project_name = project_name
         self._name2plugin = {}
         self._plugin2hookcallers = {}
         self._plugin_distinfo = []
@@ -377,9 +378,9 @@ class PluginManager(object):
         # register matching hook implementations of the plugin
         self._plugin2hookcallers[plugin] = hookcallers = []
         for name in dir(plugin):
-            method = getattr(plugin, name)
-            hookimpl_opts = self.parse_hookimpl_opts(method)
+            hookimpl_opts = self.parse_hookimpl_opts(plugin, name)
             if hookimpl_opts is not None:
+                method = getattr(plugin, name)
                 hookimpl = _HookImpl(plugin, plugin_name, method, hookimpl_opts)
                 hook = getattr(self.hook, name, None)
                 if hook is None:
@@ -392,16 +393,17 @@ class PluginManager(object):
                 hookcallers.append(hook)
         return plugin_name
 
-    def parse_hookimpl_opts(self, method):
-        res = getattr(method, self.system_name + "_impl", None)
+    def parse_hookimpl_opts(self, plugin, name):
+        method = getattr(plugin, name)
+        res = getattr(method, self.project_name + "_impl", None)
         if res is not None and not isinstance(res, dict):
             # false positive
             res = None
         return res
 
     def parse_hookspec_opts(self, module_or_class, name):
-        return getattr(getattr(module_or_class, name),
-                       self.system_name + "_spec", None)
+        method = getattr(module_or_class, name)
+        return getattr(method, self.project_name + "_spec", None)
 
     def get_hookcallers(self, plugin):
         return self._plugin2hookcallers.get(plugin)
@@ -434,9 +436,9 @@ class PluginManager(object):
         """ return True if the name blogs registering plugins of that name. """
         return name in self._name2plugin and self._name2plugin[name] is None
 
-    def addhooks(self, module_or_class):
-        """ add new hook definitions from the given module_or_class using
-        the prefix/excludefunc with which the PluginManager was initialized. """
+    def add_hookspecs(self, module_or_class):
+        """ add new hook specifications defined in the given module_or_class.
+        Functions are recognized if they have been decorated accordingly. """
         names = []
         for name in dir(module_or_class):
             spec_opts = self.parse_hookspec_opts(module_or_class, name)
@@ -454,7 +456,7 @@ class PluginManager(object):
 
         if not names:
             raise ValueError("did not find any %r hooks in %r" %
-                             (self.system_name, module_or_class))
+                             (self.project_name, module_or_class))
 
     def get_plugins(self):
         """ return the set of registered plugins. """
