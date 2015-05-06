@@ -69,16 +69,17 @@ import inspect
 
 __version__ = '0.2.0'
 __all__ = ["PluginManager", "PluginValidationError",
-           "HookspecDecorator", "HookimplDecorator"]
+           "HookspecMarker", "HookimplMarker"]
 
 _py3 = sys.version_info > (3, 0)
 
 
-class HookspecDecorator:
+class HookspecMarker:
     """ Decorator helper class for marking functions as hook specifications.
 
-    You can instantiate it to get a decorator.
-
+    You can instantiate it with a project_name to get a decorator.
+    Calling PluginManager.add_hookspecs later will discover all marked functions
+    if the PluginManager uses the same project_name.
     """
 
     def __init__(self, project_name):
@@ -111,10 +112,12 @@ class HookspecDecorator:
             return setattr_hookspec_opts
 
 
-class HookimplDecorator:
+class HookimplMarker:
     """ Decorator helper class for marking functions as hook implementations.
 
-    You can instantiate it to get a decorator.
+    You can instantiate with a project_name to get a decorator.
+    Calling PluginManager.register later will discover all marked functions
+    if the PluginManager uses the same project_name.
 
     """
     def __init__(self, project_name):

@@ -4,12 +4,12 @@ import types
 import pytest
 
 from pluggy import (PluginManager, varnames, PluginValidationError,
-                    HookimplDecorator, HookspecDecorator)
+                    HookimplMarker, HookspecMarker)
 
 from pluggy import (_MultiCall, _TagTracer, _HookImpl)
 
-hookspec = HookspecDecorator("example")
-hookimpl = HookimplDecorator("example")
+hookspec = HookspecMarker("example")
+hookimpl = HookimplMarker("example")
 
 
 @pytest.fixture
