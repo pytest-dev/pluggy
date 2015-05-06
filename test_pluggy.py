@@ -535,6 +535,7 @@ class TestAddMethodOrdering:
 
     def test_prefix_hookimpl(self):
         pm = PluginManager(hookspec.project_name, "hello_")
+
         class HookSpec:
             @hookspec
             def hello_myhook(self, arg1):
@@ -550,6 +551,7 @@ class TestAddMethodOrdering:
         pm.register(Plugin())
         results = pm.hook.hello_myhook(arg1=17)
         assert results == [18, 18]
+
 
 def test_parse_hookimpl_override():
     class MyPluginManager(PluginManager):
@@ -572,10 +574,10 @@ def test_parse_hookimpl_override():
         @hookspec
         def x1meth(self):
             pass
+
         @hookspec
         def x1meth2(self):
             pass
-
 
     pm = MyPluginManager(hookspec.project_name)
     pm.register(Plugin())

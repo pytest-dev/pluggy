@@ -118,7 +118,6 @@ class HookimplMarker:
     You can instantiate with a project_name to get a decorator.
     Calling PluginManager.register later will discover all marked functions
     if the PluginManager uses the same project_name.
-
     """
     def __init__(self, project_name):
         self.project_name = project_name
@@ -414,7 +413,7 @@ class PluginManager(object):
             # false positive
             res = None
         elif res is None and self._implprefix and name.startswith(self._implprefix):
-           res = {}
+            res = {}
         return res
 
     def parse_hookspec_opts(self, module_or_class, name):
