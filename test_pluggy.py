@@ -6,7 +6,7 @@ import pytest
 from pluggy import (PluginManager, varnames, PluginValidationError,
                     HookimplMarker, HookspecMarker)
 
-from pluggy import (_MultiCall, _TagTracer, _HookImpl)
+from pluggy import (_MultiCall, _TagTracer, HookImpl)
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
@@ -305,7 +305,7 @@ class TestAddMethodOrdering:
             def wrap(func):
                 hookimpl(tryfirst=tryfirst, trylast=trylast,
                          hookwrapper=hookwrapper)(func)
-                hc._add_hookimpl(_HookImpl(None, "<temp>", func, func.example_impl))
+                hc._add_hookimpl(HookImpl(None, "<temp>", func, func.example_impl))
                 return func
             return wrap
         return addmeth
@@ -497,6 +497,44 @@ class TestAddMethodOrdering:
         with pytest.raises(ImportError):
             pm.load_setuptools_entrypoints("qwe")
 
+    def test_add_tracefuncs(self, he_pm):
+        l = []
+
+        class api1:
+            @hookimpl
+            def he_method1(self):
+                l.append("he_method1-api1")
+
+        class api2:
+            @hookimpl
+            def he_method1(self):
+                l.append("he_method1-api2")
+
+        he_pm.register(api1())
+        he_pm.register(api2())
+
+        def before(hook_name, hook_impls, kwargs):
+            l.append((hook_name, list(hook_impls), kwargs))
+
+        def after(outcome, hook_name, hook_impls, kwargs):
+            l.append((outcome, hook_name, list(hook_impls), kwargs))
+
+        undo = he_pm.add_hookcall_monitoring(before, after)
+
+        he_pm.hook.he_method1()
+        assert len(l) == 4
+        assert l[0][0] == "he_method1"
+        assert len(l[0][1]) == 2
+        assert isinstance(l[0][2], dict)
+        assert l[1] == "he_method1-api2"
+        assert l[2] == "he_method1-api1"
+        assert len(l[3]) == 4
+        assert l[3][1] == l[0][0]
+
+        undo()
+        he_pm.hook.he_method1()
+        assert len(l) == 4 + 2
+
     def test_hook_tracing(self, he_pm):
         saveindent = []
 
@@ -639,7 +677,7 @@ class Test_MultiCall:
     def MC(self, methods, kwargs, firstresult=False):
         hookfuncs = []
         for method in methods:
-            f = _HookImpl(None, "<temp>", method, method.example_impl)
+            f = HookImpl(None, "<temp>", method, method.example_impl)
             hookfuncs.append(f)
         return _MultiCall(hookfuncs, kwargs, {"firstresult": firstresult})
 
@@ -648,14 +686,14 @@ class Test_MultiCall:
             @hookimpl
             def m(self, __multicall__, x):
                 assert len(__multicall__.results) == 1
-                assert not __multicall__.methods
+                assert not __multicall__.hook_impls
                 return 17
 
         class P2:
             @hookimpl
             def m(self, __multicall__, x):
                 assert __multicall__.results == []
-                assert __multicall__.methods
+                assert __multicall__.hook_impls
                 return 23
 
         p1 = P1()

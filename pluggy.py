@@ -67,7 +67,7 @@ Pluggy currently consists of functionality for:
 import sys
 import inspect
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 __all__ = ["PluginManager", "PluginValidationError",
            "HookspecMarker", "HookimplMarker"]
 
@@ -294,10 +294,10 @@ class _TracedHookExecution:
         assert not isinstance(self.oldcall, _TracedHookExecution)
         self.pluginmanager._inner_hookexec = self
 
-    def __call__(self, hook, methods, kwargs):
-        self.before(hook, methods, kwargs)
-        outcome = _CallOutcome(lambda: self.oldcall(hook, methods, kwargs))
-        self.after(outcome, hook, methods, kwargs)
+    def __call__(self, hook, hook_impls, kwargs):
+        self.before(hook.name, hook_impls, kwargs)
+        outcome = _CallOutcome(lambda: self.oldcall(hook, hook_impls, kwargs))
+        self.after(outcome, hook.name, hook_impls, kwargs)
         return outcome.get_result()
 
     def undo(self):
@@ -337,20 +337,35 @@ class PluginManager(object):
         # enable_tracing will set its own wrapping function at self._inner_hookexec
         return self._inner_hookexec(hook, methods, kwargs)
 
+    def add_hookcall_monitoring(self, before, after):
+        """ add before/after tracing functions for all hooks
+        and return an undo function which, when called,
+        will remove the added tracers.
+
+        ``before(hook_name, hook_impls, kwargs)`` will be called ahead
+        of all hook calls and receive a hookcaller instance, a list
+        of HookImpl instances and the keyword arguments for the hook call.
+
+        ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
+        same arguments as ``before`` but also a :py:class:`_CallOutcome`` object
+        which represents the result of the overall hook call.
+        """
+        return _TracedHookExecution(self, before, after).undo
+
     def enable_tracing(self):
         """ enable tracing of hook calls and return an undo function. """
         hooktrace = self.hook._trace
 
-        def before(hook, methods, kwargs):
+        def before(hook_name, methods, kwargs):
             hooktrace.root.indent += 1
-            hooktrace(hook.name, kwargs)
+            hooktrace(hook_name, kwargs)
 
-        def after(outcome, hook, methods, kwargs):
+        def after(outcome, hook_name, methods, kwargs):
             if outcome.excinfo is None:
-                hooktrace("finish", hook.name, "-->", outcome.result)
+                hooktrace("finish", hook_name, "-->", outcome.result)
             hooktrace.root.indent -= 1
 
-        return _TracedHookExecution(self, before, after).undo
+        return self.add_hookcall_monitoring(before, after)
 
     def subset_hook_caller(self, name, remove_plugins):
         """ Return a new _HookCaller instance for the named method
@@ -394,7 +409,7 @@ class PluginManager(object):
             if hookimpl_opts is not None:
                 normalize_hookimpl_opts(hookimpl_opts)
                 method = getattr(plugin, name)
-                hookimpl = _HookImpl(plugin, plugin_name, method, hookimpl_opts)
+                hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
                 hook = getattr(self.hook, name, None)
                 if hook is None:
                     hook = _HookCaller(name, self._hookexec)
@@ -561,8 +576,8 @@ class _MultiCall:
     # so we can remove it soon, allowing to avoid the below recursion
     # in execute() and simplify/speed up the execute loop.
 
-    def __init__(self, methods, kwargs, specopts={}):
-        self.methods = methods
+    def __init__(self, hook_impls, kwargs, specopts={}):
+        self.hook_impls = hook_impls
         self.kwargs = kwargs
         self.kwargs["__multicall__"] = self
         self.specopts = specopts
@@ -572,12 +587,12 @@ class _MultiCall:
         self.results = results = []
         firstresult = self.specopts.get("firstresult")
 
-        while self.methods:
-            method = self.methods.pop()
-            args = [all_kwargs[argname] for argname in method.argnames]
-            if method.hookwrapper:
-                return _wrapped_call(method.function(*args), self.execute)
-            res = method.function(*args)
+        while self.hook_impls:
+            hook_impl = self.hook_impls.pop()
+            args = [all_kwargs[argname] for argname in hook_impl.argnames]
+            if hook_impl.hookwrapper:
+                return _wrapped_call(hook_impl.function(*args), self.execute)
+            res = hook_impl.function(*args)
             if res is not None:
                 if firstresult:
                     return res
@@ -587,7 +602,7 @@ class _MultiCall:
             return results
 
     def __repr__(self):
-        status = "%d meths" % (len(self.methods),)
+        status = "%d meths" % (len(self.hook_impls),)
         if hasattr(self, "results"):
             status = ("%d results, " % len(self.results)) + status
         return "<_MultiCall %s, kwargs=%r>" % (status, self.kwargs)
@@ -718,7 +733,7 @@ class _HookCaller(object):
         old = list(self._nonwrappers), list(self._wrappers)
         for method in methods:
             opts = dict(hookwrapper=False, trylast=False, tryfirst=False)
-            hookimpl = _HookImpl(None, "<temp>", method, opts)
+            hookimpl = HookImpl(None, "<temp>", method, opts)
             self._add_hookimpl(hookimpl)
         try:
             return self(**kwargs)
@@ -733,7 +748,7 @@ class _HookCaller(object):
                     proc(res[0])
 
 
-class _HookImpl:
+class HookImpl:
     def __init__(self, plugin, plugin_name, function, hook_impl_opts):
         self.function = function
         self.argnames = varnames(self.function)
