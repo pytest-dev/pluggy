@@ -568,7 +568,6 @@ class PluginManager(object):
         return orig
 
 
-
 class _MultiCall:
     """ execute a call into multiple python functions/methods. """
 
