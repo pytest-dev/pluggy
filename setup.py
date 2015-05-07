@@ -4,7 +4,7 @@ import setuptools
 from setuptools import setup
 
 classifiers = [
-    'Development Status :: 1 - Alpha ',
+    'Development Status :: 3 - Alpha ',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: MIT License',
     'Operating System :: POSIX',
