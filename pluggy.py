@@ -337,55 +337,6 @@ class PluginManager(object):
         # enable_tracing will set its own wrapping function at self._inner_hookexec
         return self._inner_hookexec(hook, methods, kwargs)
 
-    def add_hookcall_monitoring(self, before, after):
-        """ add before/after tracing functions for all hooks
-        and return an undo function which, when called,
-        will remove the added tracers.
-
-        ``before(hook_name, hook_impls, kwargs)`` will be called ahead
-        of all hook calls and receive a hookcaller instance, a list
-        of HookImpl instances and the keyword arguments for the hook call.
-
-        ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
-        same arguments as ``before`` but also a :py:class:`_CallOutcome`` object
-        which represents the result of the overall hook call.
-        """
-        return _TracedHookExecution(self, before, after).undo
-
-    def enable_tracing(self):
-        """ enable tracing of hook calls and return an undo function. """
-        hooktrace = self.hook._trace
-
-        def before(hook_name, methods, kwargs):
-            hooktrace.root.indent += 1
-            hooktrace(hook_name, kwargs)
-
-        def after(outcome, hook_name, methods, kwargs):
-            if outcome.excinfo is None:
-                hooktrace("finish", hook_name, "-->", outcome.result)
-            hooktrace.root.indent -= 1
-
-        return self.add_hookcall_monitoring(before, after)
-
-    def subset_hook_caller(self, name, remove_plugins):
-        """ Return a new _HookCaller instance for the named method
-        which manages calls to all registered plugins except the
-        ones from remove_plugins. """
-        orig = getattr(self.hook, name)
-        plugins_to_remove = [plug for plug in remove_plugins if hasattr(plug, name)]
-        if plugins_to_remove:
-            hc = _HookCaller(orig.name, orig._hookexec, orig._specmodule_or_class,
-                             orig.spec_opts)
-            for hookimpl in (orig._wrappers + orig._nonwrappers):
-                plugin = hookimpl.plugin
-                if plugin not in plugins_to_remove:
-                    hc._add_hookimpl(hookimpl)
-                    # we also keep track of this hook caller so it
-                    # gets properly removed on plugin unregistration
-                    self._plugin2hookcallers.setdefault(plugin, []).append(hc)
-            return hc
-        return orig
-
     def register(self, plugin, name=None):
         """ Register a plugin and return its canonical name or None if the name
         is blocked from registering.  Raise a ValueError if the plugin is already
@@ -430,13 +381,6 @@ class PluginManager(object):
         elif res is None and self._implprefix and name.startswith(self._implprefix):
             res = {}
         return res
-
-    def parse_hookspec_opts(self, module_or_class, name):
-        method = getattr(module_or_class, name)
-        return getattr(method, self.project_name + "_spec", None)
-
-    def get_hookcallers(self, plugin):
-        return self._plugin2hookcallers.get(plugin)
 
     def unregister(self, plugin=None, name=None):
         """ unregister a plugin object and all its contained hook implementations
@@ -487,6 +431,10 @@ class PluginManager(object):
         if not names:
             raise ValueError("did not find any %r hooks in %r" %
                              (self.project_name, module_or_class))
+
+    def parse_hookspec_opts(self, module_or_class, name):
+        method = getattr(module_or_class, name)
+        return getattr(method, self.project_name + "_spec", None)
 
     def get_plugins(self):
         """ return the set of registered plugins. """
@@ -565,6 +513,60 @@ class PluginManager(object):
     def list_name_plugin(self):
         """ return list of name/plugin pairs. """
         return list(self._name2plugin.items())
+
+    def get_hookcallers(self, plugin):
+        """ get all hook callers for the specified plugin. """
+        return self._plugin2hookcallers.get(plugin)
+
+    def add_hookcall_monitoring(self, before, after):
+        """ add before/after tracing functions for all hooks
+        and return an undo function which, when called,
+        will remove the added tracers.
+
+        ``before(hook_name, hook_impls, kwargs)`` will be called ahead
+        of all hook calls and receive a hookcaller instance, a list
+        of HookImpl instances and the keyword arguments for the hook call.
+
+        ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
+        same arguments as ``before`` but also a :py:class:`_CallOutcome`` object
+        which represents the result of the overall hook call.
+        """
+        return _TracedHookExecution(self, before, after).undo
+
+    def enable_tracing(self):
+        """ enable tracing of hook calls and return an undo function. """
+        hooktrace = self.hook._trace
+
+        def before(hook_name, methods, kwargs):
+            hooktrace.root.indent += 1
+            hooktrace(hook_name, kwargs)
+
+        def after(outcome, hook_name, methods, kwargs):
+            if outcome.excinfo is None:
+                hooktrace("finish", hook_name, "-->", outcome.result)
+            hooktrace.root.indent -= 1
+
+        return self.add_hookcall_monitoring(before, after)
+
+    def subset_hook_caller(self, name, remove_plugins):
+        """ Return a new _HookCaller instance for the named method
+        which manages calls to all registered plugins except the
+        ones from remove_plugins. """
+        orig = getattr(self.hook, name)
+        plugins_to_remove = [plug for plug in remove_plugins if hasattr(plug, name)]
+        if plugins_to_remove:
+            hc = _HookCaller(orig.name, orig._hookexec, orig._specmodule_or_class,
+                             orig.spec_opts)
+            for hookimpl in (orig._wrappers + orig._nonwrappers):
+                plugin = hookimpl.plugin
+                if plugin not in plugins_to_remove:
+                    hc._add_hookimpl(hookimpl)
+                    # we also keep track of this hook caller so it
+                    # gets properly removed on plugin unregistration
+                    self._plugin2hookcallers.setdefault(plugin, []).append(hc)
+            return hc
+        return orig
+
 
 
 class _MultiCall:
