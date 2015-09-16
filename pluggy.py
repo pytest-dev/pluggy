@@ -763,8 +763,16 @@ class PluginValidationError(Exception):
     """ plugin failed validation. """
 
 
-def _formatdef(func):
-    return "%s%s" % (
-        func.__name__,
-        inspect.formatargspec(*inspect.getargspec(func))
-    )
+
+if hasattr(inspect, 'signature'):
+    def _formatdef(func):
+        return "%s%s" % (
+            func.__name__,
+            str(inspect.signature(func))
+        )
+else:
+    def _formatdef(func):
+        return "%s%s" % (
+            func.__name__,
+            inspect.formatargspec(*inspect.getargspec(func))
+        )
