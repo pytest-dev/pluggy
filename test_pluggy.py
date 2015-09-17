@@ -6,7 +6,7 @@ import pytest
 from pluggy import (PluginManager, varnames, PluginValidationError,
                     HookimplMarker, HookspecMarker)
 
-from pluggy import (_MultiCall, _TagTracer, HookImpl)
+from pluggy import (_MultiCall, _TagTracer, HookImpl, _formatdef)
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
@@ -663,6 +663,21 @@ def test_varnames_class():
 
     assert varnames(C) == ("x",)
     assert varnames(D) == ()
+
+
+def test_formatdef():
+    def function1(): pass
+    assert _formatdef(function1) == 'function1()'
+
+    def function2(arg1): pass
+    assert _formatdef(function2) == "function2(arg1)"
+
+    def function3(arg1, arg2="qwe"): pass
+    assert _formatdef(function3) == "function3(arg1, arg2='qwe')"
+
+    def function4(arg1, *args, **kwargs): pass
+    assert _formatdef(function4) == "function4(arg1, *args, **kwargs)"
+
 
 
 class Test_MultiCall:
