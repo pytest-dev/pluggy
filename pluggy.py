@@ -67,7 +67,7 @@ Pluggy currently consists of functionality for:
 import sys
 import inspect
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 __all__ = ["PluginManager", "PluginValidationError",
            "HookspecMarker", "HookimplMarker"]
 
@@ -761,7 +761,6 @@ class HookImpl:
 
 class PluginValidationError(Exception):
     """ plugin failed validation. """
-
 
 
 if hasattr(inspect, 'signature'):

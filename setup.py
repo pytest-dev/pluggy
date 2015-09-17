@@ -4,7 +4,7 @@ import setuptools
 from setuptools import setup
 
 classifiers = [
-    'Development Status :: 3 - Alpha ',
+    'Development Status :: 4 - Beta',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: MIT License',
     'Operating System :: POSIX',
@@ -14,7 +14,7 @@ classifiers = [
     'Topic :: Software Development :: Libraries',
     'Topic :: Utilities'] + [
     ('Programming Language :: Python :: %s' % x) for x in
-    '2 2.6 2.7 3 3.3 3.4'.split()]
+    '2 2.6 2.7 3 3.3 3.4 3.5'.split()]
 
 with open('README.rst') as fd:
     long_description = fd.read()

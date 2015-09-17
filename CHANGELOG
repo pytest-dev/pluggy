@@ -1,3 +1,10 @@
+0.3.1
+-----
+
+- avoid using deprecated-in-python3.5 getargspec method. Thanks 
+  Michael Droettboom.
+
+
 0.3.0
 -----
 
