@@ -763,7 +763,6 @@ class _HookCaller(object):
 
 
 def _getargs(argnames):
-    print argnames
     l = len(argnames)
     if l == 0:
         return lambda x: ()
