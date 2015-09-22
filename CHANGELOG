@@ -4,6 +4,9 @@
 - fix issue #4: specific HookCallError exception for when a hook call 
   provides not enough arguments.
 
+- better error message when loading setuptools entrypoints fails
+  due to a VersionConflict.  Thanks Daniel Hahler.
+
 0.3.1
 -----
 
