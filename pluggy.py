@@ -67,8 +67,9 @@ Pluggy currently consists of functionality for:
 import sys
 import inspect
 
-__version__ = '0.3.1'
-__all__ = ["PluginManager", "PluginValidationError",
+__version__ = '0.3.2'
+
+__all__ = ["PluginManager", "PluginValidationError", "HookCallError",
            "HookspecMarker", "HookimplMarker"]
 
 _py3 = sys.version_info > (3, 0)
@@ -590,7 +591,13 @@ class _MultiCall:
 
         while self.hook_impls:
             hook_impl = self.hook_impls.pop()
-            args = [all_kwargs[argname] for argname in hook_impl.argnames]
+            try:
+                args = [all_kwargs[argname] for argname in hook_impl.argnames]
+            except KeyError:
+                for argname in hook_impl.argnames:
+                    if argname not in all_kwargs:
+                        raise HookCallError(
+                            "hook call must provide argument %r" % (argname,))
             if hook_impl.hookwrapper:
                 return _wrapped_call(hook_impl.function(*args), self.execute)
             res = hook_impl.function(*args)
@@ -761,6 +768,10 @@ class HookImpl:
 
 class PluginValidationError(Exception):
     """ plugin failed validation. """
+
+
+class HookCallError(Exception):
+    """ Hook was called wrongly. """
 
 
 if hasattr(inspect, 'signature'):

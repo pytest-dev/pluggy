@@ -4,7 +4,7 @@ import types
 import pytest
 
 from pluggy import (PluginManager, varnames, PluginValidationError,
-                    HookimplMarker, HookspecMarker)
+                    HookCallError, HookimplMarker, HookspecMarker)
 
 from pluggy import (_MultiCall, _TagTracer, HookImpl, _formatdef)
 
@@ -234,6 +234,22 @@ class TestPluginManager:
 
         l = pm.hook.he_method1.call_extra([he_method1], dict(arg=1))
         assert l == [10]
+
+    def test_call_with_too_few_args(self, pm):
+        class Hooks:
+            @hookspec
+            def he_method1(self, arg):
+                pass
+
+        pm.add_hookspecs(Hooks)
+
+        class Plugin1:
+            @hookimpl
+            def he_method1(self, arg):
+                0 / 0
+        pm.register(Plugin1())
+        with pytest.raises(HookCallError):
+            pm.hook.he_method1()
 
     def test_subset_hook_caller(self, pm):
         class Hooks:
@@ -756,7 +772,7 @@ class Test_MultiCall:
         def f(x):
             return x
         multicall = self.MC([f], {})
-        pytest.raises(KeyError, multicall.execute)
+        pytest.raises(HookCallError, multicall.execute)
 
     def test_call_subexecute(self):
         @hookimpl
@@ -868,7 +884,7 @@ class Test_MultiCall:
 
 
 class TestHookRelay:
-    def test_hapmypath(self, pm):
+    def test_happypath(self, pm):
         class Api:
             @hookspec
             def hello(self, arg):

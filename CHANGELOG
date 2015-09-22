@@ -1,3 +1,9 @@
+0.3.2
+-----
+
+- fix issue #4: specific HookCallError exception for when a hook call 
+  provides not enough arguments.
+
 0.3.1
 -----
 
