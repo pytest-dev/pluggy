@@ -1,0 +1,32 @@
+sudo: false
+language: python
+python:
+    - '3.5'
+# command to install dependencies
+install: "pip install -U tox"
+# # command to run tests
+env:
+  matrix:
+    - TESTENV=check
+    - TESTENV=py26-pytest27
+    - TESTENV=py26-pytest
+    - TESTENV=py27-pytest27
+    - TESTENV=py27-pytest
+    - TESTENV=py34-pytest27
+    - TESTENV=py34-pytest
+    - TESTENV=py35-pytest27
+    - TESTENV=py35-pytest
+    - TESTENV=pypy-pytest27
+    - TESTENV=pypy-pytest
+
+script: tox --recreate -e $TESTENV
+
+notifications:
+  irc:
+    channels:
+      - "chat.freenode.net#pytest"
+    on_success: change
+    on_failure: change
+    skip_join: true
+#  email:
+#    - pytest-commit@python.org
