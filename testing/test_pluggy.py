@@ -645,6 +645,26 @@ def test_parse_hookimpl_override():
     assert pm.hook.x1meth2._wrappers[0].hookwrapper
 
 
+def test_plugin_getattr_raises_errors():
+    """Pluggy must be able to handle plugins which raise weird exceptions
+    when getattr() gets called (#11).
+    """
+    class DontTouchMe:
+        def __getattr__(self, x):
+            raise Exception('cant touch me')
+
+    class Module:
+        pass
+
+    module = Module()
+    module.x = DontTouchMe()
+
+    pm = PluginManager(hookspec.project_name)
+    # register() would raise an error
+    pm.register(module, 'donttouch')
+    assert pm.get_plugin('donttouch') is module
+
+
 def test_varnames():
     def f(x):
         i = 3  # noqa
