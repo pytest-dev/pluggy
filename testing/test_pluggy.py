@@ -56,6 +56,15 @@ class TestPluginManager:
         assert len(l) == 1
         assert l == [("hello", a2)]
 
+    def test_has_plugin(self, pm):
+        class A:
+            pass
+
+        a1 = A()
+        pm.register(a1, 'hello')
+        assert pm.is_registered(a1)
+        assert pm.has_plugin('hello')
+
     def test_register_dynamic_attr(self, he_pm):
         class A:
             def __getattr__(self, name):

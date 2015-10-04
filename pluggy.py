@@ -459,6 +459,10 @@ class PluginManager(object):
         """ Return a plugin or None for the given name. """
         return self._name2plugin.get(name)
 
+    def has_plugin(self, name):
+        """ Return True if a plugin with the given name is registered. """
+        return self.get_plugin(name) is not None
+
     def get_name(self, plugin):
         """ Return name for registered plugin or None if not registered. """
         for name, val in self._name2plugin.items():
