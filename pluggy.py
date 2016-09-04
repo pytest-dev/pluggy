@@ -99,6 +99,7 @@ class HookspecMarker:
         If historic is True calls to a hook will be memorized and replayed
         on later registered plugins.
 
+        If required is True calls to a hook will fail if there is not at least one implementation for it.
         """
         def setattr_hookspec_opts(func):
             if historic and firstresult:
