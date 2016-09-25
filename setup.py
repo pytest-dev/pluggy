@@ -1,6 +1,4 @@
 import os
-import sys
-import setuptools
 from setuptools import setup
 
 classifiers = [
