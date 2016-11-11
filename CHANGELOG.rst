@@ -10,11 +10,11 @@
   which at first glance is a reasonable simplification,
   thanks `@RonnyPfannschmidt`_ for report and pr.
 
-- fix `#9`_: allow registering hookspecs from instances.  The PR from
+- fix `#19`_: allow registering hookspecs from instances.  The PR from
   `@tgoodlet`_ also modernized the varnames implementation.
 
 
-.. _#9: https://github.com/pytest-dev/pytest/issues/9
+.. _#19: https://github.com/pytest-dev/pytest/issues/19
 .. _#17: https://github.com/pytest-dev/pytest/issues/17
 
 .. _@tgoodlet: https://github.com/tgoodlet
