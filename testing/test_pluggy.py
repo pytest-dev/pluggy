@@ -354,6 +354,47 @@ class TestPluginManager:
         with pytest.raises(ValueError):
             pm.add_hookspecs(10)
 
+    def test_requireimpl_with_missing_impl(self, pm):
+        class Hooks:
+            @hookspec(required=True)
+            def he_method1(self):
+                pass
+
+        pm.add_hookspecs(Hooks)
+
+        with pytest.raises(HookCallError) as hook_call_err:
+            pm.hook.he_method1()
+
+        assert "needs" in str(hook_call_err.value)
+        assert "implementation" in str(hook_call_err.value)
+
+    def test_requireimpl_with_impl(self, pm):
+        class Hooks:
+            @hookspec(required=True)
+            def he_method1(self):
+                pass
+
+        pm.add_hookspecs(Hooks)
+
+        class Plugin:
+            @hookimpl
+            def he_method1(self):
+                return 1
+
+        pm.register(Plugin())
+
+        assert pm.hook.he_method1() == [1]
+
+    def test_requireimpl_without_specopts(self, pm):
+        class Hooks:
+            @hookspec
+            def he_method1(self):
+                pass
+
+        del getattr(Hooks.he_method1, hookspec.project_name + "_spec")['required']
+        pm.add_hookspecs(Hooks)
+        assert pm.hook.he_method1() == []
+
 
 class TestAddMethodOrdering:
     @pytest.fixture

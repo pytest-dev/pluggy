@@ -86,7 +86,7 @@ class HookspecMarker:
     def __init__(self, project_name):
         self.project_name = project_name
 
-    def __call__(self, function=None, firstresult=False, historic=False):
+    def __call__(self, function=None, firstresult=False, historic=False, required=False):
         """ if passed a function, directly sets attributes on the function
         which will make it discoverable to add_hookspecs().  If passed no
         function, returns a decorator which can be applied to a function
@@ -99,12 +99,13 @@ class HookspecMarker:
         If historic is True calls to a hook will be memorized and replayed
         on later registered plugins.
 
+        If required is True calls to a hook will fail if there is not at least one implementation for it.
         """
         def setattr_hookspec_opts(func):
             if historic and firstresult:
                 raise ValueError("cannot have a historic firstresult hook")
             setattr(func, self.project_name + "_spec",
-                   dict(firstresult=firstresult, historic=historic))
+                    dict(firstresult=firstresult, historic=historic, required=required))
             return func
 
         if function is not None:
@@ -596,6 +597,9 @@ class _MultiCall:
         self.specopts = specopts
 
     def execute(self):
+        if self.specopts.get("required", False) and not self.hook_impls:
+            raise HookCallError("hook needs at least one implementation")
+
         all_kwargs = self.kwargs
         self.results = results = []
         firstresult = self.specopts.get("firstresult")
