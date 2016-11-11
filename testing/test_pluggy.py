@@ -17,14 +17,23 @@ def pm():
     return PluginManager("example")
 
 
-@pytest.fixture
-def he_pm(pm):
+@pytest.fixture(
+    params=[
+        lambda spec: spec,
+        lambda spec: spec()
+    ],
+    ids=[
+        "don't instantiate",
+        "instatiate"
+    ],
+)
+def he_pm(request, pm):
     class Hooks:
         @hookspec
         def he_method1(self, arg):
             return arg + 1
 
-    pm.add_hookspecs(Hooks)
+    pm.add_hookspecs(request.param(Hooks))
     return pm
 
 
@@ -725,8 +734,17 @@ def test_varnames_class():
     class D:
         pass
 
+    class E(object):
+        def __init__(self, x):
+            pass
+
+    class F(object):
+        pass
+
     assert varnames(C) == ("x",)
     assert varnames(D) == ()
+    assert varnames(E) == ("x",)
+    assert varnames(F) == ()
 
 
 def test_formatdef():

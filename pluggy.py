@@ -627,50 +627,51 @@ class _MultiCall:
         return "<_MultiCall %s, kwargs=%r>" % (status, self.kwargs)
 
 
-def varnames(func, startindex=None):
-    """ return argument name tuple for a function, method, class or callable.
+def varnames(func):
+    """Return argument name tuple for a function, method, class or callable.
 
     In case of a class, its "__init__" method is considered.
     For methods the "self" parameter is not included unless you are passing
-    an unbound method with Python3 (which has no supports for unbound methods)
+    an unbound method with Python3 (which has no support for unbound methods)
     """
     cache = getattr(func, "__dict__", {})
     try:
         return cache["_varnames"]
     except KeyError:
         pass
+
     if inspect.isclass(func):
         try:
             func = func.__init__
         except AttributeError:
             return ()
-        startindex = 1
-    else:
-        if not inspect.isfunction(func) and not inspect.ismethod(func):
-            try:
-                func = getattr(func, '__call__', func)
-            except Exception:
-                return ()
-        if startindex is None:
-            startindex = int(inspect.ismethod(func))
+    elif not inspect.isroutine(func):  # callable object?
+        try:
+            func = getattr(func, '__call__', func)
+        except Exception:
+            return ()
 
-    try:
-        rawcode = func.__code__
-    except AttributeError:
+    try:  # func MUST be a function or method here or we won't parse any args
+        spec = inspect.getargspec(func)
+    except TypeError:
         return ()
+
+    args, defaults = spec.args, spec.defaults
+    args = args[:-len(defaults)] if defaults else args
+
+    # strip any implicit instance arg
+    if args:
+        if inspect.ismethod(func) or (
+            '.' in getattr(func, '__qualname__', ()) and args[0] == 'self'
+        ):
+            args = args[1:]
+
+    assert "self" not in args  # best naming practises check?
     try:
-        x = rawcode.co_varnames[startindex:rawcode.co_argcount]
-    except AttributeError:
-        x = ()
-    else:
-        defaults = func.__defaults__
-        if defaults:
-            x = x[:-len(defaults)]
-    try:
-        cache["_varnames"] = x
+        cache["_varnames"] = args
     except TypeError:
         pass
-    return x
+    return tuple(args)
 
 
 class _HookRelay:
@@ -700,8 +701,7 @@ class _HookCaller(object):
         assert not self.has_spec()
         self._specmodule_or_class = specmodule_or_class
         specfunc = getattr(specmodule_or_class, self.name)
-        argnames = varnames(specfunc, startindex=inspect.isclass(specmodule_or_class))
-        assert "self" not in argnames  # sanity check
+        argnames = varnames(specfunc)
         self.argnames = ["__multicall__"] + list(argnames)
         self.spec_opts = spec_opts
         if spec_opts.get("historic"):
