@@ -67,7 +67,7 @@ Pluggy currently consists of functionality for:
 import sys
 import inspect
 
-__version__ = '0.4.1'
+__version__ = '0.5.0.dev0'
 
 __all__ = ["PluginManager", "PluginValidationError", "HookCallError",
            "HookspecMarker", "HookimplMarker"]
