@@ -1,3 +1,10 @@
+0.4.1
+-----
+
+- fix bug where callbacks for historic hooks would not be called for
+  already registered plugins.  Thanks Simon Gmizelj for the PR
+  and holger krekel for further fixes.
+
 0.4.0
 -----
 

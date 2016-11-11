@@ -212,24 +212,37 @@ class TestPluginManager:
         pm.register(Plugin())
         assert l == [10]
 
-    def test_with_immediate_result_memorized(self, pm):
+    def test_with_callbacks_immediately_executed(self, pm):
         class Hooks:
             @hookspec(historic=True)
             def he_method1(self, arg):
                 pass
         pm.add_hookspecs(Hooks)
 
-        class Plugin:
+        class Plugin1:
             @hookimpl
             def he_method1(self, arg):
                 return arg * 10
 
+        class Plugin2:
+            @hookimpl
+            def he_method1(self, arg):
+                return arg * 20
+
+        class Plugin3:
+            @hookimpl
+            def he_method1(self, arg):
+                return arg * 30
+
         l = []
-        pm.register(Plugin())
+        pm.register(Plugin1())
+        pm.register(Plugin2())
 
         he_method1 = pm.hook.he_method1
         he_method1.call_historic(lambda res: l.append(res), dict(arg=1))
-        assert l == [10]
+        assert l == [20, 10]
+        pm.register(Plugin3())
+        assert l == [20, 10, 30]
 
     def test_register_historic_incompat_hookwrapper(self, pm):
         class Hooks:
