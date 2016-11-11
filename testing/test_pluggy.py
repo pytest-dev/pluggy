@@ -660,15 +660,10 @@ class TestAddMethodOrdering:
         pm = PluginManager(hookspec.project_name, "hello_")
 
         class BadPlugin:
-            def hello_fine(self):
-                pass
-            hello_fine.optionalhook = True
-
             hello_module = __import__('email')
 
         pm.register(BadPlugin())
         pm.check_pending()
-
 
 
 def test_parse_hookimpl_override():

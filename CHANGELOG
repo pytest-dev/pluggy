@@ -4,6 +4,10 @@
 - fix bug where callbacks for historic hooks would not be called for
   already registered plugins.  Thanks Simon Gmizelj for the PR
   and holger krekel for further fixes.
+- fix #17 by considering only actual functions for hooks
+  this removes the ability to register arbitrary callable objects
+  which at first glance is a reasonable simplification,
+  thanks RonnyPfannschmidt for report and pr.
 
 0.4.0
 -----

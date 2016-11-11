@@ -375,6 +375,8 @@ class PluginManager(object):
 
     def parse_hookimpl_opts(self, plugin, name):
         method = getattr(plugin, name)
+        if not inspect.isroutine(method):
+            return
         try:
             res = getattr(method, self.project_name + "_impl", None)
         except Exception:
