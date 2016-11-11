@@ -67,7 +67,7 @@ Pluggy currently consists of functionality for:
 import sys
 import inspect
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 
 __all__ = ["PluginManager", "PluginValidationError", "HookCallError",
            "HookspecMarker", "HookimplMarker"]
@@ -745,11 +745,17 @@ class _HookCaller(object):
         return self._hookexec(self, self._nonwrappers + self._wrappers, kwargs)
 
     def call_historic(self, proc=None, kwargs=None):
+        """ call the hook with given ``kwargs`` for all registered plugins and
+        for all plugins which will be registered afterwards.
+
+        If ``proc`` is not None it will be called for for each non-None result
+        obtained from a hook implementation.
+        """
         self._call_history.append((kwargs or {}, proc))
         # historizing hooks don't return results
         res = self._hookexec(self, self._nonwrappers + self._wrappers, kwargs)
-        if res and proc is not None:
-            proc(res[0])
+        for x in res or []:
+            proc(x)
 
     def call_extra(self, methods, kwargs):
         """ Call the hook with some additional temporarily participating
