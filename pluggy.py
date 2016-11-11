@@ -747,7 +747,9 @@ class _HookCaller(object):
     def call_historic(self, proc=None, kwargs=None):
         self._call_history.append((kwargs or {}, proc))
         # historizing hooks don't return results
-        self._hookexec(self, self._nonwrappers + self._wrappers, kwargs)
+        res = self._hookexec(self, self._nonwrappers + self._wrappers, kwargs)
+        if res and proc is not None:
+            proc(res[0])
 
     def call_extra(self, methods, kwargs):
         """ Call the hook with some additional temporarily participating
