@@ -104,7 +104,7 @@ class HookspecMarker:
             if historic and firstresult:
                 raise ValueError("cannot have a historic firstresult hook")
             setattr(func, self.project_name + "_spec",
-                   dict(firstresult=firstresult, historic=historic))
+                    dict(firstresult=firstresult, historic=historic))
             return func
 
         if function is not None:
@@ -150,8 +150,8 @@ class HookimplMarker:
         """
         def setattr_hookimpl_opts(func):
             setattr(func, self.project_name + "_impl",
-                   dict(hookwrapper=hookwrapper, optionalhook=optionalhook,
-                        tryfirst=tryfirst, trylast=trylast))
+                    dict(hookwrapper=hookwrapper, optionalhook=optionalhook,
+                         tryfirst=tryfirst, trylast=trylast))
             return func
 
         if function is None:
@@ -232,7 +232,7 @@ class _TagTracerSub:
 def _raise_wrapfail(wrap_controller, msg):
     co = wrap_controller.gi_code
     raise RuntimeError("wrap_controller at %r %s:%d %s" %
-                   (co.co_name, co.co_filename, co.co_firstlineno, msg))
+                       (co.co_name, co.co_filename, co.co_firstlineno, msg))
 
 
 def _wrapped_call(wrap_controller, func):
@@ -278,6 +278,7 @@ class _CallOutcome:
             if _py3:
                 raise ex[1].with_traceback(ex[2])
             _reraise(*ex)  # noqa
+
 
 if not _py3:
     exec("""
@@ -348,7 +349,7 @@ class PluginManager(object):
             if self._name2plugin.get(plugin_name, -1) is None:
                 return  # blocked plugin, return None to indicate no registration
             raise ValueError("Plugin already registered: %s=%s\n%s" %
-                            (plugin_name, plugin, self._name2plugin))
+                             (plugin_name, plugin, self._name2plugin))
 
         # XXX if an error happens we should make sure no state has been
         # changed at point of return
@@ -484,7 +485,7 @@ class PluginManager(object):
                     "plugin definition: %s\n"
                     "available hookargs: %s" %
                     (hookimpl.plugin_name, hook.name, arg,
-                    _formatdef(hookimpl.function), ", ".join(hook.argnames)))
+                     _formatdef(hookimpl.function), ", ".join(hook.argnames)))
 
     def check_pending(self):
         """ Verify that all hooks which have not been verified against
