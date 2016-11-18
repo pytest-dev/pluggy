@@ -11,8 +11,7 @@ Plugin registration and hook calling for Python
 .. image:: https://img.shields.io/appveyor/ci/pytestbot/pluggy/master.svg
     :target: https://ci.appveyor.com/project/pytestbot/pluggy
 
-This is the plugin manager as used by pytest but stripped
-of pytest specific details.
+This is the plugin manager as used by [pytest](http://pytest.org), [tox](https://tox.readthedocs.org), [devpi](http://doc.devpi.net) and probably other projects.
 
 During the 0.x series this plugin does not have much documentation
 except extensive docstrings in the pluggy.py module.
