@@ -76,3 +76,32 @@ def test_firstresult_definition(pm):
     pm.register(Plugin())
     res = pm.hook.hello(arg=3)
     assert res == 4
+
+
+def test_defaults(pm):
+    """Verify that default keyword arguments can be declared on both specs
+    and impls. The default value look up precedence is up as follows:
+        - caller provided value
+        - hookspec default
+        - hookimpl default
+    """
+    class Api:
+        @hookspec
+        def myhook(self, arg, kwarg="default"):
+            "A spec with a default"
+
+    class Plugin:
+        @hookimpl
+        def myhook(self, arg, kwarg="my default"):
+            return kwarg
+
+    pm.register(Plugin())
+
+    # with no spec registered
+    assert pm.hook.myhook(arg='yeah!')[0] == "my default"
+    assert pm.hook.myhook(arg='yeah!', kwarg='doggy')[0] == "doggy"
+
+    # with spec registered
+    pm.add_hookspecs(Api)
+    assert pm.hook.myhook(arg='yeah!')[0] == "default"
+    assert pm.hook.myhook(arg='yeah!', kwarg='doggy')[0] == "doggy"
