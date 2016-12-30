@@ -64,6 +64,7 @@ Pluggy currently consists of functionality for:
   their arguments.
 
 """
+from operator import itemgetter
 import sys
 import inspect
 
@@ -605,8 +606,9 @@ class _MultiCall:
 
         while self.hook_impls:
             hook_impl = self.hook_impls.pop()
+
             try:
-                args = [all_kwargs[argname] for argname in hook_impl.argnames]
+                args = hook_impl.getargs(all_kwargs)
             except KeyError:
                 for argname in hook_impl.argnames:
                     if argname not in all_kwargs:
@@ -781,15 +783,28 @@ class _HookCaller(object):
                     proc(res[0])
 
 
-class HookImpl:
+def _getargs(argnames):
+    l = len(argnames)
+    if l == 0:
+        return lambda x: ()
+    elif l == 1:
+        return lambda x, k=argnames[0]: (x[k],)
+    else:
+        return itemgetter(*argnames)
+
+
+class HookImpl(object):
     def __init__(self, plugin, plugin_name, function, hook_impl_opts):
         self.function = function
         self.argnames = varnames(self.function)
+        self.getargs = _getargs(self.argnames)
         self.plugin = plugin
         self.opts = hook_impl_opts
         self.plugin_name = plugin_name
         self.__dict__.update(hook_impl_opts)
 
+    def __repr__(self):
+        return '<HookImpl %s>' % _formatdef(self.function)
 
 class PluginValidationError(Exception):
     """ plugin failed validation. """
