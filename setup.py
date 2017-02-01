@@ -20,7 +20,7 @@ with open('README.rst') as fd:
 
 def get_version():
     p = os.path.join(os.path.dirname(
-                     os.path.abspath(__file__)), "pluggy.py")
+                     os.path.abspath(__file__)), "pluggy/__init__.py")
     with open(p) as f:
         for line in f.readlines():
             if "__version__" in line:
@@ -40,7 +40,7 @@ def main():
         author_email='holger at merlinux.eu',
         url='https://github.com/pytest-dev/pluggy',
         classifiers=classifiers,
-        py_modules=['pluggy'],
+        packages=['pluggy'],
     )
 
 
