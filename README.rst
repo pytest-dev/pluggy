@@ -11,7 +11,15 @@ Plugin registration and hook calling for Python
 .. image:: https://img.shields.io/appveyor/ci/pytestbot/pluggy/master.svg
     :target: https://ci.appveyor.com/project/pytestbot/pluggy
 
-This is the plugin manager as used by [pytest](http://pytest.org), [tox](https://tox.readthedocs.org), [devpi](http://doc.devpi.net) and probably other projects.
+This is the core plugin system used by the `pytest`_, `tox`_, and `devpi`_ projects.
+Please `read the docs`_ to learn more!
 
-During the 0.x series this plugin does not have much documentation
-except extensive docstrings in the pluggy.py module.
+.. links
+.. _pytest:
+    http://pytest.org
+.. _tox:
+    https://tox.readthedocs.org
+.. _devpi:
+    http://doc.devpi.net
+.. _read the docs:
+   https://pluggy.readthedocs.io/en/latest/
