@@ -1,3 +1,4 @@
+import warnings
 from pluggy import PluginManager, HookimplMarker, HookspecMarker
 
 
@@ -62,3 +63,33 @@ def test_plugin_getattr_raises_errors():
     # register() would raise an error
     pm.register(module, 'donttouch')
     assert pm.get_plugin('donttouch') is module
+
+
+def test_warning_on_call_vs_hookspec_arg_mismatch():
+    """Verify that is a hook is called with less arguments then defined in the
+    spec that a warning is emitted.
+    """
+    class Spec:
+        @hookspec
+        def myhook(self, arg1, arg2):
+            pass
+
+    class Plugin:
+        @hookimpl
+        def myhook(self, arg1):
+            pass
+
+    pm = PluginManager(hookspec.project_name)
+    pm.register(Plugin())
+    pm.add_hookspecs(Spec())
+
+    with warnings.catch_warnings(record=True) as warns:
+        warnings.simplefilter('always')
+
+        # calling should trigger a warning
+        pm.hook.myhook(arg1=1)
+
+        assert len(warns) == 1
+        warning = warns[-1]
+        assert issubclass(warning.category, Warning)
+        assert "Argument(s) ('arg2',)" in str(warning.message)
