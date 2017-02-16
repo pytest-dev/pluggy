@@ -579,11 +579,11 @@ class _MultiCall(object):
 
 
 def varnames(func):
-    """Return argument name tuple for a function, method, class or callable.
+    """Return tuple of positional and keywrord argument names for a function,
+    method, class or callable.
 
-    In case of a class, its "__init__" method is considered.
-    For methods the "self" parameter is not included unless you are passing
-    an unbound method with Python3 (which has no support for unbound methods)
+    In case of a class, its ``__init__`` method is considered.
+    For methods the ``self`` parameter is not included.
     """
     cache = getattr(func, "__dict__", {})
     try:
@@ -702,13 +702,15 @@ class _HookCaller(object):
 
     def __call__(self, **kwargs):
         assert not self.is_historic()
-        notincall = set(self.argnames) - set(kwargs.keys())
-        if notincall:
-            warnings.warn(
-                "Positional arg(s) %s are declared in the hookspec "
-                "but can not be found in this hook call" % notincall,
-                FutureWarning
-            )
+        if self.argnames:
+            notincall = set(self.argnames) - set(['__multicall__']) - set(
+                kwargs.keys())
+            if notincall:
+                warnings.warn(
+                    "Argument(s) {0} which are declared in the hookspec "
+                    "can not be found in this hook call"
+                    .format(tuple(notincall))
+                )
         return self._hookexec(self, self._nonwrappers + self._wrappers, kwargs)
 
     def call_historic(self, proc=None, kwargs=None):
