@@ -12,7 +12,7 @@ hookimpl = HookimplMarker("example")
 
 @pytest.fixture
 def hc(pm):
-    class Hooks:
+    class Hooks(object):
         @hookspec
         def he_method1(self, arg):
             pass
@@ -149,7 +149,7 @@ def test_adding_wrappers_ordering_tryfirst(hc, addmeth):
 
 
 def test_hookspec(pm):
-    class HookSpec:
+    class HookSpec(object):
         @hookspec()
         def he_myhook1(arg1):
             pass
@@ -181,14 +181,14 @@ def test_hookimpl(name, val):
 
 
 def test_decorator_functional(pm):
-    class HookSpec:
+    class HookSpec(object):
         @hookspec(firstresult=True)
         def he_myhook(self, arg1):
             """ add to arg1 """
 
     pm.add_hookspecs(HookSpec)
 
-    class Plugin:
+    class Plugin(object):
         @hookimpl()
         def he_myhook(self, arg1):
             return arg1 + 1
@@ -204,12 +204,12 @@ def test_load_setuptools_instantiation(monkeypatch, pm):
     def my_iter(name):
         assert name == "hello"
 
-        class EntryPoint:
+        class EntryPoint(object):
             name = "myname"
             dist = None
 
             def load(self):
-                class PseudoPlugin:
+                class PseudoPlugin(object):
                     x = 42
                 return PseudoPlugin()
 
@@ -235,12 +235,12 @@ def test_load_setuptools_not_installed(monkeypatch, pm):
 def test_add_tracefuncs(he_pm):
     l = []
 
-    class api1:
+    class api1(object):
         @hookimpl
         def he_method1(self):
             l.append("he_method1-api1")
 
-    class api2:
+    class api2(object):
         @hookimpl
         def he_method1(self):
             l.append("he_method1-api2")
@@ -274,12 +274,12 @@ def test_add_tracefuncs(he_pm):
 def test_hook_tracing(he_pm):
     saveindent = []
 
-    class api1:
+    class api1(object):
         @hookimpl
         def he_method1(self):
             saveindent.append(he_pm.trace.root.indent)
 
-    class api2:
+    class api2(object):
         @hookimpl
         def he_method1(self):
             saveindent.append(he_pm.trace.root.indent)
@@ -311,14 +311,14 @@ def test_hook_tracing(he_pm):
 def test_prefix_hookimpl():
     pm = PluginManager(hookspec.project_name, "hello_")
 
-    class HookSpec:
+    class HookSpec(object):
         @hookspec
         def hello_myhook(self, arg1):
             """ add to arg1 """
 
     pm.add_hookspecs(HookSpec)
 
-    class Plugin:
+    class Plugin(object):
         def hello_myhook(self, arg1):
             return arg1 + 1
 
@@ -331,7 +331,7 @@ def test_prefix_hookimpl():
 def test_prefix_hookimpl_dontmatch_module():
     pm = PluginManager(hookspec.project_name, "hello_")
 
-    class BadPlugin:
+    class BadPlugin(object):
         hello_module = __import__('email')
 
     pm.register(BadPlugin())

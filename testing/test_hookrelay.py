@@ -7,7 +7,7 @@ hookimpl = HookimplMarker("example")
 
 
 def test_happypath(pm):
-    class Api:
+    class Api(object):
         @hookspec
         def hello(self, arg):
             "api hook 1"
@@ -17,7 +17,7 @@ def test_happypath(pm):
     assert hasattr(hook, 'hello')
     assert repr(hook.hello).find("hello") != -1
 
-    class Plugin:
+    class Plugin(object):
         @hookimpl
         def hello(self, arg):
             return arg + 1
@@ -32,14 +32,14 @@ def test_happypath(pm):
 
 
 def test_argmismatch(pm):
-    class Api:
+    class Api(object):
         @hookspec
         def hello(self, arg):
             "api hook 1"
 
     pm.add_hookspecs(Api)
 
-    class Plugin:
+    class Plugin(object):
         @hookimpl
         def hello(self, argwrong):
             pass
@@ -51,7 +51,7 @@ def test_argmismatch(pm):
 
 
 def test_only_kwargs(pm):
-    class Api:
+    class Api(object):
         @hookspec
         def hello(self, arg):
             "api hook 1"
@@ -61,14 +61,14 @@ def test_only_kwargs(pm):
 
 
 def test_firstresult_definition(pm):
-    class Api:
+    class Api(object):
         @hookspec(firstresult=True)
         def hello(self, arg):
             "api hook 1"
 
     pm.add_hookspecs(Api)
 
-    class Plugin:
+    class Plugin(object):
         @hookimpl
         def hello(self, arg):
             return arg + 1

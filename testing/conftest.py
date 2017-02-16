@@ -15,7 +15,7 @@ def he_pm(request, pm):
     from pluggy import HookspecMarker
     hookspec = HookspecMarker("example")
 
-    class Hooks:
+    class Hooks(object):
         @hookspec
         def he_method1(self, arg):
             return arg + 1
