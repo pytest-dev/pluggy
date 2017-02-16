@@ -17,7 +17,7 @@ def test_plugin_double_register(pm):
 
 
 def test_pm(pm):
-    class A:
+    class A(object):
         pass
 
     a1, a2 = A(), A()
@@ -38,7 +38,7 @@ def test_pm(pm):
 
 
 def test_has_plugin(pm):
-    class A:
+    class A(object):
         pass
 
     a1 = A()
@@ -48,7 +48,7 @@ def test_has_plugin(pm):
 
 
 def test_register_dynamic_attr(he_pm):
-    class A:
+    class A(object):
         def __getattr__(self, name):
             if name[0] != "_":
                 return 42
@@ -60,7 +60,7 @@ def test_register_dynamic_attr(he_pm):
 
 
 def test_pm_name(pm):
-    class A:
+    class A(object):
         pass
 
     a1 = A()
@@ -79,7 +79,7 @@ def test_pm_name(pm):
 
 
 def test_set_blocked(pm):
-    class A:
+    class A(object):
         pass
 
     a1 = A()
@@ -98,7 +98,7 @@ def test_set_blocked(pm):
 
 
 def test_register_mismatch_method(he_pm):
-    class hello:
+    class hello(object):
         @hookimpl
         def he_method_notexists(self):
             pass
@@ -109,7 +109,7 @@ def test_register_mismatch_method(he_pm):
 
 
 def test_register_mismatch_arg(he_pm):
-    class hello:
+    class hello(object):
         @hookimpl
         def he_method1(self, qlwkje):
             pass
@@ -119,7 +119,7 @@ def test_register_mismatch_arg(he_pm):
 
 
 def test_register(pm):
-    class MyPlugin:
+    class MyPlugin(object):
         pass
     my = MyPlugin()
     pm.register(my)
@@ -136,14 +136,14 @@ def test_register(pm):
 
 
 def test_register_unknown_hooks(pm):
-    class Plugin1:
+    class Plugin1(object):
         @hookimpl
         def he_method1(self, arg):
             return arg + 1
 
     pname = pm.register(Plugin1())
 
-    class Hooks:
+    class Hooks(object):
         @hookspec
         def he_method1(self, arg):
             pass
@@ -155,7 +155,7 @@ def test_register_unknown_hooks(pm):
 
 
 def test_register_historic(pm):
-    class Hooks:
+    class Hooks(object):
         @hookspec(historic=True)
         def he_method1(self, arg):
             pass
@@ -164,7 +164,7 @@ def test_register_historic(pm):
     pm.hook.he_method1.call_historic(kwargs=dict(arg=1))
     l = []
 
-    class Plugin:
+    class Plugin(object):
         @hookimpl
         def he_method1(self, arg):
             l.append(arg)
@@ -172,7 +172,7 @@ def test_register_historic(pm):
     pm.register(Plugin())
     assert l == [1]
 
-    class Plugin2:
+    class Plugin2(object):
         @hookimpl
         def he_method1(self, arg):
             l.append(arg * 10)
@@ -184,7 +184,7 @@ def test_register_historic(pm):
 
 
 def test_with_result_memorized(pm):
-    class Hooks:
+    class Hooks(object):
         @hookspec(historic=True)
         def he_method1(self, arg):
             pass
@@ -194,7 +194,7 @@ def test_with_result_memorized(pm):
     he_method1.call_historic(lambda res: l.append(res), dict(arg=1))
     l = []
 
-    class Plugin:
+    class Plugin(object):
         @hookimpl
         def he_method1(self, arg):
             return arg * 10
@@ -204,23 +204,23 @@ def test_with_result_memorized(pm):
 
 
 def test_with_callbacks_immediately_executed(pm):
-    class Hooks:
+    class Hooks(object):
         @hookspec(historic=True)
         def he_method1(self, arg):
             pass
     pm.add_hookspecs(Hooks)
 
-    class Plugin1:
+    class Plugin1(object):
         @hookimpl
         def he_method1(self, arg):
             return arg * 10
 
-    class Plugin2:
+    class Plugin2(object):
         @hookimpl
         def he_method1(self, arg):
             return arg * 20
 
-    class Plugin3:
+    class Plugin3(object):
         @hookimpl
         def he_method1(self, arg):
             return arg * 30
@@ -237,7 +237,7 @@ def test_with_callbacks_immediately_executed(pm):
 
 
 def test_register_historic_incompat_hookwrapper(pm):
-    class Hooks:
+    class Hooks(object):
         @hookspec(historic=True)
         def he_method1(self, arg):
             pass
@@ -246,7 +246,7 @@ def test_register_historic_incompat_hookwrapper(pm):
 
     l = []
 
-    class Plugin:
+    class Plugin(object):
         @hookimpl(hookwrapper=True)
         def he_method1(self, arg):
             l.append(arg)
@@ -256,7 +256,7 @@ def test_register_historic_incompat_hookwrapper(pm):
 
 
 def test_call_extra(pm):
-    class Hooks:
+    class Hooks(object):
         @hookspec
         def he_method1(self, arg):
             pass
@@ -271,14 +271,14 @@ def test_call_extra(pm):
 
 
 def test_call_with_too_few_args(pm):
-    class Hooks:
+    class Hooks(object):
         @hookspec
         def he_method1(self, arg):
             pass
 
     pm.add_hookspecs(Hooks)
 
-    class Plugin1:
+    class Plugin1(object):
         @hookimpl
         def he_method1(self, arg):
             0 / 0
@@ -288,7 +288,7 @@ def test_call_with_too_few_args(pm):
 
 
 def test_subset_hook_caller(pm):
-    class Hooks:
+    class Hooks(object):
         @hookspec
         def he_method1(self, arg):
             pass
@@ -297,17 +297,17 @@ def test_subset_hook_caller(pm):
 
     l = []
 
-    class Plugin1:
+    class Plugin1(object):
         @hookimpl
         def he_method1(self, arg):
             l.append(arg)
 
-    class Plugin2:
+    class Plugin2(object):
         @hookimpl
         def he_method1(self, arg):
             l.append(arg * 10)
 
-    class PluginNo:
+    class PluginNo(object):
         pass
 
     plugin1, plugin2, plugin3 = Plugin1(), Plugin2(), PluginNo()

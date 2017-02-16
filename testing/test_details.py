@@ -15,7 +15,7 @@ def test_parse_hookimpl_override():
                     opts = {}
             return opts
 
-    class Plugin:
+    class Plugin(object):
         def x1meth(self):
             pass
 
@@ -23,7 +23,7 @@ def test_parse_hookimpl_override():
         def x1meth2(self):
             pass
 
-    class Spec:
+    class Spec(object):
         @hookspec
         def x1meth(self):
             pass
@@ -48,11 +48,11 @@ def test_plugin_getattr_raises_errors():
     """Pluggy must be able to handle plugins which raise weird exceptions
     when getattr() gets called (#11).
     """
-    class DontTouchMe:
+    class DontTouchMe(object):
         def __getattr__(self, x):
             raise Exception('cant touch me')
 
-    class Module:
+    class Module(object):
         pass
 
     module = Module()
