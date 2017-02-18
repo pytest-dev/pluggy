@@ -428,7 +428,7 @@ class PluginManager(object):
         if notinspec:
             raise PluginValidationError(
                 "Plugin %r for hook %r\nhookimpl definition: %s\n"
-                "Positional args %s are declared in the hookimpl but "
+                "Argument(s) %s are declared in the hookimpl but "
                 "can not be found in the hookspec" %
                 (hookimpl.plugin_name, hook.name,
                  _formatdef(hookimpl.function), notinspec)
