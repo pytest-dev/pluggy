@@ -13,16 +13,16 @@ def test_varnames():
         def __call__(self, z):
             pass
 
-    assert varnames(f) == ("x",)
-    assert varnames(A().f) == ('y',)
-    assert varnames(B()) == ('z',)
+    assert varnames(f) == (("x",), ())
+    assert varnames(A().f) == (('y',), ())
+    assert varnames(B()) == (('z',), ())
 
 
 def test_varnames_default():
     def f(x, y=3):
         pass
 
-    assert varnames(f) == ("x",)
+    assert varnames(f) == (("x",), ("y",))
 
 
 def test_varnames_class():
@@ -40,10 +40,10 @@ def test_varnames_class():
     class F(object):
         pass
 
-    assert varnames(C) == ("x",)
-    assert varnames(D) == ()
-    assert varnames(E) == ("x",)
-    assert varnames(F) == ()
+    assert varnames(C) == (("x",), ())
+    assert varnames(D) == ((), ())
+    assert varnames(E) == (("x",), ())
+    assert varnames(F) == ((), ())
 
 
 def test_formatdef():
