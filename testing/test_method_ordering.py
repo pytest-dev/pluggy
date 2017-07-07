@@ -163,9 +163,9 @@ def test_hookspec(pm):
             pass
 
     pm.add_hookspecs(HookSpec)
-    assert not pm.hook.he_myhook1.spec_opts["firstresult"]
-    assert pm.hook.he_myhook2.spec_opts["firstresult"]
-    assert not pm.hook.he_myhook3.spec_opts["firstresult"]
+    assert not pm.hook.he_myhook1.spec.opts["firstresult"]
+    assert pm.hook.he_myhook2.spec.opts["firstresult"]
+    assert not pm.hook.he_myhook3.spec.opts["firstresult"]
 
 
 @pytest.mark.parametrize('name', ["hookwrapper", "optionalhook", "tryfirst", "trylast"])

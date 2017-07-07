@@ -1,5 +1,6 @@
 import sys
 import inspect
+import copy
 import warnings
 
 __version__ = '0.5.0'
@@ -274,10 +275,12 @@ class PluginManager(object):
         self.trace = _TagTracer().get("pluginmanage")
         self.hook = _HookRelay(self.trace.root.get("hook"))
         self._implprefix = implprefix
-        self._inner_hookexec = lambda hook, methods, kwargs: \
-            _MultiCall(
-                methods, kwargs, specopts=hook.spec_opts, hook=hook
-            ).execute()
+        self._inner_hookexec = lambda hook, methods, kwargs: _MultiCall(
+            methods,
+            kwargs,
+            firstresult=hook.spec.opts['firstresult'] if hook.spec else False,
+            hook=hook
+        ).execute()
 
     def _hookexec(self, hook, methods, kwargs):
         # called from all hookcaller instances.
@@ -424,7 +427,7 @@ class PluginManager(object):
                 (hookimpl.plugin_name, hook.name))
 
         # positional arg checking
-        notinspec = set(hookimpl.argnames) - set(hook.argnames)
+        notinspec = set(hookimpl.argnames) - set(hook.spec.argnames)
         if notinspec:
             raise PluginValidationError(
                 "Plugin %r for hook %r\nhookimpl definition: %s\n"
@@ -517,8 +520,8 @@ class PluginManager(object):
         orig = getattr(self.hook, name)
         plugins_to_remove = [plug for plug in remove_plugins if hasattr(plug, name)]
         if plugins_to_remove:
-            hc = _HookCaller(orig.name, orig._hookexec, orig._specmodule_or_class,
-                             orig.spec_opts)
+            hc = _HookCaller(orig.name, orig._hookexec, orig.spec.namespace,
+                             orig.spec.opts)
             for hookimpl in (orig._wrappers + orig._nonwrappers):
                 plugin = hookimpl.plugin
                 if plugin not in plugins_to_remove:
@@ -539,29 +542,43 @@ class _MultiCall(object):
     # so we can remove it soon, allowing to avoid the below recursion
     # in execute() and simplify/speed up the execute loop.
 
-    def __init__(self, hook_impls, kwargs, specopts={}, hook=None):
-        self.hook = hook
+    def __init__(self, hook_impls, kwargs, firstresult=False, hook=None):
         self.hook_impls = hook_impls
         self.caller_kwargs = kwargs  # come from _HookCaller.__call__()
         self.caller_kwargs["__multicall__"] = self
-        self.specopts = hook.spec_opts if hook else specopts
+        self.firstresult = firstresult
+        self.hook = hook
+        self.spec = hook.spec if hook else None
 
     def execute(self):
         caller_kwargs = self.caller_kwargs
         self.results = results = []
-        firstresult = self.specopts.get("firstresult")
+        firstresult = self.firstresult
+        spec = self.spec
 
         while self.hook_impls:
             hook_impl = self.hook_impls.pop()
+            implkwargs = hook_impl.kwargs
             try:
                 args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+                # get any caller provided kwargs declared in our
+                # hookimpl and fail over to the spec's value if provided
+                if implkwargs:
+                    kwargs = copy.copy(implkwargs)
+                    if spec:
+                        kwargs.update(spec.kwargs)
+
+                    args += [caller_kwargs.get(argname, kwargs[argname])
+                             for argname in hook_impl.kwargnames]
             except KeyError:
                 for argname in hook_impl.argnames:
                     if argname not in caller_kwargs:
                         raise HookCallError(
                             "hook call must provide argument %r" % (argname,))
+
             if hook_impl.hookwrapper:
                 return _wrapped_call(hook_impl.function(*args), self.execute)
+
             res = hook_impl.function(*args)
             if res is not None:
                 if firstresult:
@@ -645,28 +662,23 @@ class _HookCaller(object):
         self._wrappers = []
         self._nonwrappers = []
         self._hookexec = hook_execute
-        self.argnames = None
-        self.kwargnames = None
+        self.spec = None
+        self._call_history = None
         if specmodule_or_class is not None:
             assert spec_opts is not None
             self.set_specification(specmodule_or_class, spec_opts)
 
     def has_spec(self):
-        return hasattr(self, "_specmodule_or_class")
+        return self.spec is not None
 
     def set_specification(self, specmodule_or_class, spec_opts):
         assert not self.has_spec()
-        self._specmodule_or_class = specmodule_or_class
-        specfunc = getattr(specmodule_or_class, self.name)
-        # get spec arg signature
-        argnames, self.kwargnames = varnames(specfunc)
-        self.argnames = ["__multicall__"] + list(argnames)
-        self.spec_opts = spec_opts
+        self.spec = HookSpec(specmodule_or_class, self.name, spec_opts)
         if spec_opts.get("historic"):
             self._call_history = []
 
     def is_historic(self):
-        return hasattr(self, "_call_history")
+        return self._call_history is not None
 
     def _remove_plugin(self, plugin):
         def remove(wrappers):
@@ -702,8 +714,8 @@ class _HookCaller(object):
 
     def __call__(self, **kwargs):
         assert not self.is_historic()
-        if self.argnames:
-            notincall = set(self.argnames) - set(['__multicall__']) - set(
+        if self.spec:
+            notincall = set(self.spec.argnames) - set(['__multicall__']) - set(
                 kwargs.keys())
             if notincall:
                 warnings.warn(
@@ -749,10 +761,28 @@ class _HookCaller(object):
                     proc(res[0])
 
 
+class HookSpec(object):
+    def __init__(self, namespace, name, hook_spec_opts):
+        self.namespace = namespace
+        self.function = function = getattr(namespace, name)
+        self.name = name
+        self.argnames, self.kwargnames = varnames(function)
+        self.kwargvalues = inspect.getargspec(function).defaults
+        self.kwargs = dict(
+            zip(self.kwargnames, self.kwargvalues)
+        ) if self.kwargvalues else {}
+        self.opts = hook_spec_opts
+        self.argnames = ["__multicall__"] + list(self.argnames)
+
+
 class HookImpl(object):
     def __init__(self, plugin, plugin_name, function, hook_impl_opts):
         self.function = function
         self.argnames, self.kwargnames = varnames(self.function)
+        self.kwargvalues = inspect.getargspec(function).defaults
+        self.kwargs = dict(
+            zip(self.kwargnames, self.kwargvalues)
+        ) if self.kwargvalues else {}
         self.plugin = plugin
         self.opts = hook_impl_opts
         self.plugin_name = plugin_name

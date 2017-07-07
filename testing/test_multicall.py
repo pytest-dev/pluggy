@@ -22,7 +22,7 @@ def MC(methods, kwargs, firstresult=False):
     for method in methods:
         f = HookImpl(None, "<temp>", method, method.example_impl)
         hookfuncs.append(f)
-    return _MultiCall(hookfuncs, kwargs, {"firstresult": firstresult})
+    return _MultiCall(hookfuncs, kwargs, firstresult=firstresult)
 
 
 def test_call_passing():
