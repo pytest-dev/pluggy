@@ -202,28 +202,22 @@ class _HookCaller(object):
         self._wrappers = []
         self._nonwrappers = []
         self._hookexec = hook_execute
-        self._specmodule_or_class = None
         self.argnames = None
         self.kwargnames = None
         self.multicall = _multicall
-        self.spec_opts = spec_opts or {}
+        self.spec = None
         if specmodule_or_class is not None:
+            assert spec_opts is not None
             self.set_specification(specmodule_or_class, spec_opts)
 
     def has_spec(self):
-        return self._specmodule_or_class is not None
+        return self.spec is not None
 
     def set_specification(self, specmodule_or_class, spec_opts):
         assert not self.has_spec()
-        self._specmodule_or_class = specmodule_or_class
-        specfunc = getattr(specmodule_or_class, self.name)
-        # get spec arg signature
-        argnames, self.kwargnames = varnames(specfunc)
-        self.argnames = ["__multicall__"] + list(argnames)
-        self.spec_opts.update(spec_opts)
+        self.spec = HookSpec(specmodule_or_class, self.name, spec_opts)
         if spec_opts.get("historic"):
             self._call_history = []
-        self.warn_on_impl = spec_opts.get("warn_on_impl")
 
     def is_historic(self):
         return hasattr(self, "_call_history")
@@ -273,8 +267,10 @@ class _HookCaller(object):
         if args:
             raise TypeError("hook calling supports only keyword arguments")
         assert not self.is_historic()
-        if self.argnames:
-            notincall = set(self.argnames) - set(["__multicall__"]) - set(kwargs.keys())
+        if self.spec and self.spec.argnames:
+            notincall = (
+                set(self.spec.argnames) - set(["__multicall__"]) - set(kwargs.keys())
+            )
             if notincall:
                 warnings.warn(
                     "Argument(s) {} which are declared in the hookspec "
@@ -344,3 +340,14 @@ class HookImpl(object):
 
     def __repr__(self):
         return "<HookImpl plugin_name=%r, plugin=%r>" % (self.plugin_name, self.plugin)
+
+
+class HookSpec(object):
+    def __init__(self, namespace, name, opts):
+        self.namespace = namespace
+        self.function = function = getattr(namespace, name)
+        self.name = name
+        self.argnames, self.kwargnames = varnames(function)
+        self.opts = opts
+        self.argnames = ["__multicall__"] + list(self.argnames)
+        self.warn_on_impl = opts.get("warn_on_impl")

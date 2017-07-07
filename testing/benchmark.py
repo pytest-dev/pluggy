@@ -15,7 +15,7 @@ def MC(methods, kwargs, callertype, firstresult=False):
     for method in methods:
         f = HookImpl(None, "<temp>", method, method.example_impl)
         hookfuncs.append(f)
-    return callertype(hookfuncs, kwargs, {"firstresult": firstresult})
+    return callertype(hookfuncs, kwargs, firstresult=firstresult)
 
 
 @hookimpl

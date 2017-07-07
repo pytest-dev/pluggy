@@ -56,7 +56,9 @@ class PluginManager(object):
             )
         self._implprefix = implprefix
         self._inner_hookexec = lambda hook, methods, kwargs: hook.multicall(
-            methods, kwargs, firstresult=hook.spec_opts.get("firstresult")
+            methods,
+            kwargs,
+            firstresult=hook.spec.opts.get("firstresult") if hook.spec else False,
         )
 
     def _hookexec(self, hook, methods, kwargs):
@@ -215,10 +217,10 @@ class PluginManager(object):
                 "Plugin %r\nhook %r\nhistoric incompatible to hookwrapper"
                 % (hookimpl.plugin_name, hook.name),
             )
-        if hook.warn_on_impl:
-            _warn_for_function(hook.warn_on_impl, hookimpl.function)
+        if hook.spec.warn_on_impl:
+            _warn_for_function(hook.spec.warn_on_impl, hookimpl.function)
         # positional arg checking
-        notinspec = set(hookimpl.argnames) - set(hook.argnames)
+        notinspec = set(hookimpl.argnames) - set(hook.spec.argnames)
         if notinspec:
             raise PluginValidationError(
                 hookimpl.plugin,
@@ -325,7 +327,7 @@ class PluginManager(object):
         plugins_to_remove = [plug for plug in remove_plugins if hasattr(plug, name)]
         if plugins_to_remove:
             hc = _HookCaller(
-                orig.name, orig._hookexec, orig._specmodule_or_class, orig.spec_opts
+                orig.name, orig._hookexec, orig.spec.namespace, orig.spec.opts
             )
             for hookimpl in orig._wrappers + orig._nonwrappers:
                 plugin = hookimpl.plugin
