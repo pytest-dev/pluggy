@@ -1,29 +1,36 @@
 sudo: false
 language: python
 python:
-
     - '2.6'
     - '2.7'
     - '3.3'
     - '3.4'
     - '3.5'
-    - '3.6-dev'
+    - '3.6'
     - pypy
     - nightly
+
 # command to install dependencies
 install: "pip install -U tox"
-# # command to run tests
+
+# command to run tests
 env:
   matrix:
     - TOXENV=py-pytest28
     - TOXENV=py-pytest29
     - TOXENV=py-pytest30
+
 matrix:
   include:
     - python: '2.7'
       env: TOXENV=check
-    - python: '3.5'
+    - python: '3.6'
       env: TOXENV=check
+    - python: '2.7'
+      env: TOXENV=benchmark
+    - python: '3.6'
+      env: TOXENV=benchmark
+
 script:
  - tox --recreate -e $TOXENV
 
