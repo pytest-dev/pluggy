@@ -2,10 +2,7 @@
 Benchmarking and performance tests.
 """
 import pytest
-
-from pluggy import _MultiCall, HookImpl
-from pluggy import HookspecMarker, HookimplMarker
-
+from pluggy import _MultiCall, HookImpl, HookspecMarker, HookimplMarker
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
@@ -19,40 +16,35 @@ def MC(methods, kwargs, firstresult=False):
     return _MultiCall(hookfuncs, kwargs, {"firstresult": firstresult})
 
 
-@hookimpl(hookwrapper=True)
-def m1(arg1, arg2, arg3):
-    yield
-
-
 @hookimpl
-def m2(arg1, arg2, arg3):
+def hook(arg1, arg2, arg3):
     return arg1, arg2, arg3
 
 
 @hookimpl(hookwrapper=True)
-def w1(arg1, arg2, arg3):
+def wrapper(arg1, arg2, arg3):
     yield
 
 
-@hookimpl(hookwrapper=True)
-def w2(arg1, arg2, arg3):
-    yield
+@pytest.fixture(
+    params=[0, 1, 10, 100],
+    ids="hooks={}".format,
+)
+def hooks(request):
+    return [hook for i in range(request.param)]
+
+
+@pytest.fixture(
+    params=[0, 1, 10, 100],
+    ids="wrappers={}".format,
+)
+def wrappers(request):
+    return [wrapper for i in range(request.param)]
 
 
 def inner_exec(methods):
     return MC(methods, {'arg1': 1, 'arg2': 2, 'arg3': 3}).execute()
 
 
-@pytest.mark.benchmark
-def test_hookimpls_speed(benchmark):
-    benchmark(inner_exec, [m1, m2])
-
-
-@pytest.mark.benchmark
-def test_hookwrappers_speed(benchmark):
-    benchmark(inner_exec, [w1, w2])
-
-
-@pytest.mark.benchmark
-def test_impls_and_wrappers_speed(benchmark):
-    benchmark(inner_exec, [m1, m2, w1, w2])
+def test_hook_and_wrappers_speed(benchmark, hooks, wrappers):
+    benchmark(inner_exec, hooks + wrappers)
