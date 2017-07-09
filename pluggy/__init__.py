@@ -1,6 +1,7 @@
 import sys
 import inspect
 import warnings
+from .callers import _MultiCall, HookCallError, _raise_wrapfail
 
 __version__ = '0.5.0'
 
@@ -12,10 +13,6 @@ _py3 = sys.version_info > (3, 0)
 
 class PluginValidationError(Exception):
     """ plugin failed validation. """
-
-
-class HookCallError(Exception):
-    """ Hook was called wrongly. """
 
 
 class HookspecMarker(object):
@@ -172,12 +169,6 @@ class _TagTracerSub(object):
         return self.__class__(self.root, self.tags + (name,))
 
 
-def _raise_wrapfail(wrap_controller, msg):
-    co = wrap_controller.gi_code
-    raise RuntimeError("wrap_controller at %r %s:%d %s" %
-                       (co.co_name, co.co_filename, co.co_firstlineno, msg))
-
-
 def _wrapped_call(wrap_controller, func):
     """ Wrap calling to a function with a generator which needs to yield
     exactly once.  The yield point will trigger calling the wrapped function
@@ -275,7 +266,7 @@ class PluginManager(object):
         self.hook = _HookRelay(self.trace.root.get("hook"))
         self._implprefix = implprefix
         self._inner_hookexec = lambda hook, methods, kwargs: \
-            _MultiCall(
+            hook.multicall(
                 methods, kwargs, specopts=hook.spec_opts, hook=hook
             ).execute()
 
@@ -530,7 +521,7 @@ class PluginManager(object):
         return orig
 
 
-class _MultiCall(object):
+class _LegacyMultiCall(object):
     """ execute a call into multiple python functions/methods. """
 
     # XXX note that the __multicall__ argument is supported only
@@ -647,6 +638,7 @@ class _HookCaller(object):
         self._hookexec = hook_execute
         self.argnames = None
         self.kwargnames = None
+        self.multicall = _MultiCall
         if specmodule_or_class is not None:
             assert spec_opts is not None
             self.set_specification(specmodule_or_class, spec_opts)
@@ -696,6 +688,14 @@ class _HookCaller(object):
             while i >= 0 and methods[i].tryfirst:
                 i -= 1
             methods.insert(i + 1, hookimpl)
+
+        if '__multicall__' in hookimpl.argnames:
+            warnings.warn(
+                "Support for __multicall__ is now deprecated and will be"
+                "removed in an upcoming release.",
+                warnings.DeprecationWarning
+            )
+            self.multicall = _LegacyMultiCall
 
     def __repr__(self):
         return "<_HookCaller %r>" % (self.name,)
