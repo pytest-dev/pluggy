@@ -1,6 +1,6 @@
 import pytest
 
-from pluggy import _MultiCall, HookImpl, HookCallError
+from pluggy import _MultiCall, HookImpl, HookCallError, _LegacyMultiCall
 from pluggy import HookspecMarker, HookimplMarker
 
 
@@ -18,11 +18,14 @@ def test_uses_copy_of_methods():
 
 
 def MC(methods, kwargs, firstresult=False):
+    caller = _MultiCall
     hookfuncs = []
     for method in methods:
         f = HookImpl(None, "<temp>", method, method.example_impl)
         hookfuncs.append(f)
-    return _MultiCall(hookfuncs, kwargs, {"firstresult": firstresult})
+        if '__multicall__' in f.argnames:
+            caller = _LegacyMultiCall
+    return caller(hookfuncs, kwargs, {"firstresult": firstresult})
 
 
 def test_call_passing():
