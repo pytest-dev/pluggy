@@ -24,10 +24,20 @@ class HookCallError(Exception):
     """ Hook was called wrongly. """
 
 
-class Result(object):
+class _Result(object):
     def __init__(self, result, excinfo):
         self.result = result
         self.excinfo = excinfo
+
+    @classmethod
+    def from_call(cls, func):
+        result = excinfo = None
+        try:
+            result = func()
+        except BaseException:
+            excinfo = sys.exc_info()
+
+        return cls(result, excinfo)
 
     def force_result(self, result):
         self.result = result
@@ -86,7 +96,7 @@ class _MultiCall(object):
             except BaseException:
                 excinfo = sys.exc_info()
         finally:
-            outcome = Result(results, excinfo)
+            outcome = _Result(results, excinfo)
 
             # run all wrapper post-yield blocks
             for gen in reversed(teardowns):

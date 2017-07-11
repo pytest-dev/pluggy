@@ -1,14 +1,11 @@
-import sys
 import inspect
 import warnings
-from .callers import _MultiCall, HookCallError, _raise_wrapfail
+from .callers import _MultiCall, HookCallError, _raise_wrapfail, _Result
 
 __version__ = '0.5.0'
 
 __all__ = ["PluginManager", "PluginValidationError", "HookCallError",
            "HookspecMarker", "HookimplMarker"]
-
-_py3 = sys.version_info > (3, 0)
 
 
 class PluginValidationError(Exception):
@@ -83,7 +80,7 @@ class HookimplMarker(object):
         If hookwrapper is True the hook implementations needs to execute exactly
         one "yield".  The code before the yield is run early before any non-hookwrapper
         function is run.  The code after the yield is run after all non-hookwrapper
-        function have run.  The yield receives an ``_CallOutcome`` object representing
+        function have run.  The yield receives a ``_Result`` object representing
         the exception or result outcome of the inner calls (including other hookwrapper
         calls).
 
@@ -172,53 +169,20 @@ class _TagTracerSub(object):
 def _wrapped_call(wrap_controller, func):
     """ Wrap calling to a function with a generator which needs to yield
     exactly once.  The yield point will trigger calling the wrapped function
-    and return its _CallOutcome to the yield point.  The generator then needs
+    and return its ``_Result`` to the yield point.  The generator then needs
     to finish (raise StopIteration) in order for the wrapped call to complete.
     """
     try:
         next(wrap_controller)   # first yield
     except StopIteration:
         _raise_wrapfail(wrap_controller, "did not yield")
-    call_outcome = _CallOutcome(func)
+    call_outcome = _Result.from_call(func)
     try:
         wrap_controller.send(call_outcome)
         _raise_wrapfail(wrap_controller, "has second yield")
     except StopIteration:
         pass
     return call_outcome.get_result()
-
-
-class _CallOutcome(object):
-    """ Outcome of a function call, either an exception or a proper result.
-    Calling the ``get_result`` method will return the result or reraise
-    the exception raised when the function was called. """
-    excinfo = None
-
-    def __init__(self, func):
-        try:
-            self.result = func()
-        except BaseException:
-            self.excinfo = sys.exc_info()
-
-    def force_result(self, result):
-        self.result = result
-        self.excinfo = None
-
-    def get_result(self):
-        if self.excinfo is None:
-            return self.result
-        else:
-            ex = self.excinfo
-            if _py3:
-                raise ex[1].with_traceback(ex[2])
-            _reraise(*ex)  # noqa
-
-
-if not _py3:
-    exec("""
-def _reraise(cls, val, tb):
-    raise cls, val, tb
-""")
 
 
 class _TracedHookExecution(object):
@@ -232,7 +196,7 @@ class _TracedHookExecution(object):
 
     def __call__(self, hook, hook_impls, kwargs):
         self.before(hook.name, hook_impls, kwargs)
-        outcome = _CallOutcome(lambda: self.oldcall(hook, hook_impls, kwargs))
+        outcome = _Result.from_call(lambda: self.oldcall(hook, hook_impls, kwargs))
         self.after(outcome, hook.name, hook_impls, kwargs)
         return outcome.get_result()
 
@@ -481,7 +445,7 @@ class PluginManager(object):
         of HookImpl instances and the keyword arguments for the hook call.
 
         ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
-        same arguments as ``before`` but also a :py:class:`_CallOutcome`` object
+        same arguments as ``before`` but also a :py:class:`_Result`` object
         which represents the result of the overall hook call.
         """
         return _TracedHookExecution(self, before, after).undo
