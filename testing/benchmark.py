@@ -2,18 +2,19 @@
 Benchmarking and performance tests.
 """
 import pytest
-from pluggy import _MultiCall, HookImpl, HookspecMarker, HookimplMarker
+from pluggy import (_MultiCall, _LegacyMultiCall, HookImpl, HookspecMarker,
+                    HookimplMarker)
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
 
 
-def MC(methods, kwargs, firstresult=False):
+def MC(methods, kwargs, callertype, firstresult=False):
     hookfuncs = []
     for method in methods:
         f = HookImpl(None, "<temp>", method, method.example_impl)
         hookfuncs.append(f)
-    return _MultiCall(hookfuncs, kwargs, {"firstresult": firstresult})
+    return callertype(hookfuncs, kwargs, {"firstresult": firstresult})
 
 
 @hookimpl
@@ -42,9 +43,17 @@ def wrappers(request):
     return [wrapper for i in range(request.param)]
 
 
-def inner_exec(methods):
-    return MC(methods, {'arg1': 1, 'arg2': 2, 'arg3': 3}).execute()
+@pytest.fixture(
+    params=[_MultiCall, _LegacyMultiCall],
+    ids=lambda item: item.__name__
+)
+def callertype(request):
+    return request.param
 
 
-def test_hook_and_wrappers_speed(benchmark, hooks, wrappers):
-    benchmark(inner_exec, hooks + wrappers)
+def inner_exec(methods, callertype):
+    return MC(methods, {'arg1': 1, 'arg2': 2, 'arg3': 3}, callertype).execute()
+
+
+def test_hook_and_wrappers_speed(benchmark, hooks, wrappers, callertype):
+    benchmark(inner_exec, hooks + wrappers, callertype)
