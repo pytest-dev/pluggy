@@ -68,11 +68,23 @@ def test_firstresult_definition(pm):
 
     pm.add_hookspecs(Api)
 
-    class Plugin(object):
+    class Plugin1(object):
         @hookimpl
         def hello(self, arg):
             return arg + 1
 
-    pm.register(Plugin())
+    class Plugin2(object):
+        @hookimpl
+        def hello(self, arg):
+            return arg - 1
+
+    class Plugin3(object):
+        @hookimpl
+        def hello(self, arg):
+            return None
+
+    pm.register(Plugin1())  # discarded - not the last registered plugin
+    pm.register(Plugin2())  # used as result
+    pm.register(Plugin3())  # None result is ignored
     res = pm.hook.hello(arg=3)
-    assert res == 4
+    assert res == 2

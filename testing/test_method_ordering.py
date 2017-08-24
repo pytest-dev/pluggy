@@ -180,24 +180,6 @@ def test_hookimpl(name, val):
         assert not hasattr(he_myhook1, name)
 
 
-def test_decorator_functional(pm):
-    class HookSpec(object):
-        @hookspec(firstresult=True)
-        def he_myhook(self, arg1):
-            """ add to arg1 """
-
-    pm.add_hookspecs(HookSpec)
-
-    class Plugin(object):
-        @hookimpl()
-        def he_myhook(self, arg1):
-            return arg1 + 1
-
-    pm.register(Plugin())
-    results = pm.hook.he_myhook(arg1=17)
-    assert results == 18
-
-
 def test_load_setuptools_instantiation(monkeypatch, pm):
     pkg_resources = pytest.importorskip("pkg_resources")
 
