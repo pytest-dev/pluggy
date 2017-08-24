@@ -664,7 +664,9 @@ class _HookCaller(object):
     def __repr__(self):
         return "<_HookCaller %r>" % (self.name,)
 
-    def __call__(self, **kwargs):
+    def __call__(self, *args, **kwargs):
+        if args:
+            raise TypeError("hook calling supports only keyword arguments")
         assert not self.is_historic()
         if self.argnames:
             notincall = set(self.argnames) - set(['__multicall__']) - set(

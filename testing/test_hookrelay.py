@@ -57,7 +57,11 @@ def test_only_kwargs(pm):
             "api hook 1"
 
     pm.add_hookspecs(Api)
-    pytest.raises(TypeError, lambda: pm.hook.hello(3))
+    with pytest.raises(TypeError) as exc:
+        pm.hook.hello(3)
+
+    comprehensible = "hook calling supports only keyword arguments"
+    assert comprehensible in str(exc.value)
 
 
 def test_firstresult_definition(pm):
