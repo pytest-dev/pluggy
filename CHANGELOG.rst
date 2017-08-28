@@ -13,11 +13,48 @@
 - fix `#19`_: allow registering hookspecs from instances.  The PR from
   `@tgoodlet`_ also modernized the varnames implementation.
 
+- resolve `#32`_: split up the test set into multiple modules.
+  Thanks to `@RonnyPfannschmidt`_ for the PR and `@tgoodlet`_ for
+  the initial request.
 
+- resolve `#14`_: add full sphinx docs. Thanks to `@tgoodlet`_ for
+  PR `#39`_.
+
+- resolve `#44`_: move to new-style classes. Thanks to `@MichalTHEDUDE`_
+  for PR `#46`_.
+
+- add baseline benchmarking/speed tests using ``pytest-benchmark``
+  in PR `#54`_.  Thanks to `@tgoodlet`_.
+
+- update the README to showcase the API. Thanks to `@tgoodlet`_ for the
+  issue and PR `#55`_.
+
+- deprecate ``__multicall__`` and add a faster call loop implementation.
+  Thanks to `@tgoodlet`_ for PR `#58`_.
+
+- raise a comprehensible error when a ``hookimpl`` is called with positional
+  args. Thanks to `@RonnyPfannschmidt`_ for the issue and `@tgoodlet`_ for
+  PR `#60`_.
+
+- fix the ``firstresult`` test making it more complete
+  and remove a duplicate of that test. Thanks to `@tgoodlet`_
+  for PR `#62`_.
+
+.. _#62: https://github.com/pytest-dev/pytest/pull/62
+.. _#60: https://github.com/pytest-dev/pytest/pull/60
+.. _#58: https://github.com/pytest-dev/pytest/pull/58
+.. _#55: https://github.com/pytest-dev/pytest/pull/55
+.. _#54: https://github.com/pytest-dev/pytest/pull/54
+.. _#46: https://github.com/pytest-dev/pytest/pull/46
+.. _#44: https://github.com/pytest-dev/pytest/issues/44
+.. _#39: https://github.com/pytest-dev/pytest/pull/39
+.. _#32: https://github.com/pytest-dev/pytest/pull/32
 .. _#19: https://github.com/pytest-dev/pytest/issues/19
 .. _#17: https://github.com/pytest-dev/pytest/issues/17
+.. _#14: https://github.com/pytest-dev/pytest/issues/14
 
 .. _@tgoodlet: https://github.com/tgoodlet
+.. _@MichalTHEDUDE: https://github.com/MichalTHEDUDE
 .. _@vodik: https://github.com/vodik
 .. _@RonnyPfannschmidt: https://github.com/RonnyPfannschmidt
 
@@ -46,7 +83,7 @@
 0.3.1
 -----
 
-- avoid using deprecated-in-python3.5 getargspec method. Thanks 
+- avoid using deprecated-in-python3.5 getargspec method. Thanks
   `@mdboom`_.
 
 .. _@mdboom: https://github.com/mdboom
