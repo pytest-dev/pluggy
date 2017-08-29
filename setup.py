@@ -39,7 +39,7 @@ def main():
         license='MIT license',
         platforms=['unix', 'linux', 'osx', 'win32'],
         author='Holger Krekel',
-        author_email='holger at merlinux.eu',
+        author_email='holger@merlinux.eu',
         url='https://github.com/pytest-dev/pluggy',
         classifiers=classifiers,
         packages=['pluggy'],
