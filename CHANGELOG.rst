@@ -1,11 +1,11 @@
 0.5.1
 -----
 - fix a bug and add tests for case where ``firstresult`` hooks return
-  ``None`` results. Thanks to `@RonnyPfannschmidt`_ and `@tgoodlet`
+  ``None`` results. Thanks to `@RonnyPfannschmidt`_ and `@tgoodlet`_
   for the issue (`#68`_) and PR (`#69`_) respectively.
 
-.. _#69: https://github.com/pytest-dev/pytest/pull/69
-.. _#68: https://github.com/pytest-dev/pytest/issuses/68
+.. _#69: https://github.com/pytest-dev/pluggy/pull/69
+.. _#68: https://github.com/pytest-dev/pluggy/issuses/68
 
 0.5.0
 -----
@@ -29,6 +29,9 @@
 - resolve `#14`_: add full sphinx docs. Thanks to `@tgoodlet`_ for
   PR `#39`_.
 
+- add hook call mismatch warnings. Thanks to `@tgoodlet`_ for the
+  PR `#42`_.
+
 - resolve `#44`_: move to new-style classes. Thanks to `@MichalTHEDUDE`_
   for PR `#46`_.
 
@@ -49,18 +52,19 @@
   and remove a duplicate of that test. Thanks to `@tgoodlet`_
   for PR `#62`_.
 
-.. _#62: https://github.com/pytest-dev/pytest/pull/62
-.. _#60: https://github.com/pytest-dev/pytest/pull/60
-.. _#58: https://github.com/pytest-dev/pytest/pull/58
-.. _#55: https://github.com/pytest-dev/pytest/pull/55
-.. _#54: https://github.com/pytest-dev/pytest/pull/54
-.. _#46: https://github.com/pytest-dev/pytest/pull/46
-.. _#44: https://github.com/pytest-dev/pytest/issues/44
-.. _#39: https://github.com/pytest-dev/pytest/pull/39
-.. _#32: https://github.com/pytest-dev/pytest/pull/32
-.. _#19: https://github.com/pytest-dev/pytest/issues/19
-.. _#17: https://github.com/pytest-dev/pytest/issues/17
-.. _#14: https://github.com/pytest-dev/pytest/issues/14
+.. _#62: https://github.com/pytest-dev/pluggy/pull/62
+.. _#60: https://github.com/pytest-dev/pluggy/pull/60
+.. _#58: https://github.com/pytest-dev/pluggy/pull/58
+.. _#55: https://github.com/pytest-dev/pluggy/pull/55
+.. _#54: https://github.com/pytest-dev/pluggy/pull/54
+.. _#46: https://github.com/pytest-dev/pluggy/pull/46
+.. _#44: https://github.com/pytest-dev/pluggy/issues/44
+.. _#42: https://github.com/pytest-dev/pluggy/pull/42
+.. _#39: https://github.com/pytest-dev/pluggy/pull/39
+.. _#32: https://github.com/pytest-dev/pluggy/pull/32
+.. _#19: https://github.com/pytest-dev/pluggy/issues/19
+.. _#17: https://github.com/pytest-dev/pluggy/issues/17
+.. _#14: https://github.com/pytest-dev/pluggy/issues/14
 
 
 0.4.0
@@ -77,8 +81,8 @@
 - better error message when loading setuptools entrypoints fails
   due to a ``VersionConflict``.  Thanks `@blueyed`_.
 
-.. _#11: https://github.com/pytest-dev/pytest/issues/11
-.. _#4: https://github.com/pytest-dev/pytest/issues/4
+.. _#11: https://github.com/pytest-dev/pluggy/issues/11
+.. _#4: https://github.com/pytest-dev/pluggy/issues/4
 
 .. _@blueyed: https://github.com/blueyed
 .. _@nicoddemus: https://github.com/nicoddemus
