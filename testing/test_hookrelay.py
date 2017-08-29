@@ -92,3 +92,38 @@ def test_firstresult_definition(pm):
     pm.register(Plugin3())  # None result is ignored
     res = pm.hook.hello(arg=3)
     assert res == 2
+
+
+def test_firstresult_returns_none(pm):
+    """If None results are returned by underlying implementations ensure
+    the multi-call loop returns a None value.
+    """
+    class Api(object):
+        @hookspec(firstresult=True)
+        def hello(self, arg):
+            "api hook 1"
+
+    pm.add_hookspecs(Api)
+
+    class Plugin1(object):
+        @hookimpl
+        def hello(self, arg):
+            return None
+
+    pm.register(Plugin1())
+    res = pm.hook.hello(arg=3)
+    assert res is None
+
+
+def test_firstresult_no_plugin(pm):
+    """If no implementations/plugins have been registered for a firstresult
+    hook the multi-call loop should return a None value.
+    """
+    class Api(object):
+        @hookspec(firstresult=True)
+        def hello(self, arg):
+            "api hook 1"
+
+    pm.add_hookspecs(Api)
+    res = pm.hook.hello(arg=3)
+    assert res is None
