@@ -1,3 +1,12 @@
+0.5.1
+-----
+- fix a bug and add tests for case where ``firstresult`` hooks return
+  ``None`` results. Thanks to `@RonnyPfannschmidt`_ and `@tgoodlet`
+  for the issue (`#68`_) and PR (`#69`_) respectively.
+
+.. _#69: https://github.com/pytest-dev/pytest/pull/69
+.. _#68: https://github.com/pytest-dev/pytest/issuses/68
+
 0.5.0
 -----
 
@@ -53,11 +62,6 @@
 .. _#17: https://github.com/pytest-dev/pytest/issues/17
 .. _#14: https://github.com/pytest-dev/pytest/issues/14
 
-.. _@tgoodlet: https://github.com/tgoodlet
-.. _@MichalTHEDUDE: https://github.com/MichalTHEDUDE
-.. _@vodik: https://github.com/vodik
-.. _@RonnyPfannschmidt: https://github.com/RonnyPfannschmidt
-
 
 0.4.0
 -----
@@ -93,6 +97,9 @@
 
 initial release
 
+.. contributors
 .. _@hpk42: https://github.com/hpk42
-
-
+.. _@tgoodlet: https://github.com/tgoodlet
+.. _@MichalTHEDUDE: https://github.com/MichalTHEDUDE
+.. _@vodik: https://github.com/vodik
+.. _@RonnyPfannschmidt: https://github.com/RonnyPfannschmidt
