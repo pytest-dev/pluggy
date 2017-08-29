@@ -112,7 +112,7 @@ def test_firstresult_returns_none(pm):
 
     pm.register(Plugin1())
     res = pm.hook.hello(arg=3)
-    assert res == None
+    assert res is None
 
 
 def test_firstresult_no_plugin(pm):
@@ -126,4 +126,4 @@ def test_firstresult_no_plugin(pm):
 
     pm.add_hookspecs(Api)
     res = pm.hook.hello(arg=3)
-    assert res == None
+    assert res is None

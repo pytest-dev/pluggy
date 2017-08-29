@@ -107,7 +107,8 @@ class _MultiCall(object):
                     pass
 
             if firstresult:
-                return outcome.get_result()[0]
+                result = outcome.get_result()
+                return result[0] if result else None
 
             return outcome.get_result()
 
