@@ -87,9 +87,17 @@ def test_firstresult_definition(pm):
         def hello(self, arg):
             return None
 
+    class Plugin4(object):
+        @hookimpl(hookwrapper=True)
+        def hello(self, arg):
+            assert arg == 3
+            outcome = yield
+            assert outcome.get_result() == 2
+
     pm.register(Plugin1())  # discarded - not the last registered plugin
     pm.register(Plugin2())  # used as result
     pm.register(Plugin3())  # None result is ignored
+    pm.register(Plugin4())  # hookwrapper should get same non-list result
     res = pm.hook.hello(arg=3)
     assert res == 2
 
