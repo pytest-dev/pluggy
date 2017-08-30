@@ -96,11 +96,10 @@ class _MultiCall(object):
             except BaseException:
                 excinfo = sys.exc_info()
         finally:
-            outcome = _Result(results, excinfo)
             if firstresult:  # first result hooks return a single value
-                results = outcome.get_result()
-                result = results[0] if results else None
-                outcome.force_result(result)
+                outcome = _Result(results[0] if results else None, excinfo)
+            else:
+                outcome = _Result(results, excinfo)
 
             # run all wrapper post-yield blocks
             for gen in reversed(teardowns):
