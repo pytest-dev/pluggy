@@ -345,8 +345,7 @@ def test_multicall_deprecated(pm):
             assert not __multicall__.hook_impls
             return 17
 
-    with pytest.deprecated_call():
-        pm.register(P1())
+    pytest.deprecated_call(pm.register, P1())
 
 
 def test_add_hookspecs_nohooks(pm):
