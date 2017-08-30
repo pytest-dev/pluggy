@@ -87,11 +87,54 @@ def test_firstresult_definition(pm):
         def hello(self, arg):
             return None
 
+    class Plugin4(object):
+        @hookimpl(hookwrapper=True)
+        def hello(self, arg):
+            assert arg == 3
+            outcome = yield
+            assert outcome.get_result() == 2
+
     pm.register(Plugin1())  # discarded - not the last registered plugin
     pm.register(Plugin2())  # used as result
     pm.register(Plugin3())  # None result is ignored
+    pm.register(Plugin4())  # hookwrapper should get same non-list result
     res = pm.hook.hello(arg=3)
     assert res == 2
+
+
+def test_firstresult_force_result(pm):
+    """Verify forcing a result in a wrapper.
+    """
+    class Api(object):
+        @hookspec(firstresult=True)
+        def hello(self, arg):
+            "api hook 1"
+
+    pm.add_hookspecs(Api)
+
+    class Plugin1(object):
+        @hookimpl
+        def hello(self, arg):
+            return arg + 1
+
+    class Plugin2(object):
+        @hookimpl(hookwrapper=True)
+        def hello(self, arg):
+            assert arg == 3
+            outcome = yield
+            assert outcome.get_result() == 4
+            outcome.force_result(0)
+
+    class Plugin3(object):
+        @hookimpl
+        def hello(self, arg):
+            return None
+
+    pm.register(Plugin1())
+    pm.register(Plugin2())  # wrapper
+    pm.register(Plugin3())  # ignored since returns None
+    res = pm.hook.hello(arg=3)
+    assert res == 0  # this result is forced and not a list
 
 
 def test_firstresult_returns_none(pm):

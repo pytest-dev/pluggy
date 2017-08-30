@@ -96,7 +96,10 @@ class _MultiCall(object):
             except BaseException:
                 excinfo = sys.exc_info()
         finally:
-            outcome = _Result(results, excinfo)
+            if firstresult:  # first result hooks return a single value
+                outcome = _Result(results[0] if results else None, excinfo)
+            else:
+                outcome = _Result(results, excinfo)
 
             # run all wrapper post-yield blocks
             for gen in reversed(teardowns):
@@ -105,10 +108,6 @@ class _MultiCall(object):
                     _raise_wrapfail(gen, "has second yield")
                 except StopIteration:
                     pass
-
-            if firstresult:
-                result = outcome.get_result()
-                return result[0] if result else None
 
             return outcome.get_result()
 
