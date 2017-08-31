@@ -1,3 +1,18 @@
+environment:
+  matrix:
+  # note: please use "tox --listenvs" to populate the build matrix below
+  - TOXENV: "check"
+  - TOXENV: "docs"
+  - TOXENV: "py26-pytestrelease"
+  - TOXENV: "py27-pytestrelease"
+  - TOXENV: "py34-pytestrelease"
+  - TOXENV: "py35-pytestrelease"
+  - TOXENV: "py36-pytestrelease"
+  - TOXENV: "pypy-pytestrelease"
+  - TOXENV: "py27-pytestmaster"
+  - TOXENV: "py27-pytestfeatures"
+  - TOXENV: "py36-pytestmaster"
+  - TOXENV: "py36-pytestfeatures"
 
 install:
   - echo Installed Pythons
@@ -18,4 +33,3 @@ build: false  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   - C:\Python35\python -m tox
-  
