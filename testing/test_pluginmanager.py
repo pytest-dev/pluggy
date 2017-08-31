@@ -341,9 +341,7 @@ def test_multicall_deprecated(pm):
     class P1(object):
         @hookimpl
         def m(self, __multicall__, x):
-            assert len(__multicall__.results) == 1
-            assert not __multicall__.hook_impls
-            return 17
+            pass
 
     pytest.deprecated_call(pm.register, P1())
 
