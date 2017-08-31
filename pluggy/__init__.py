@@ -657,7 +657,7 @@ class _HookCaller(object):
             warnings.warn(
                 "Support for __multicall__ is now deprecated and will be"
                 "removed in an upcoming release.",
-                warnings.DeprecationWarning
+                DeprecationWarning
             )
             self.multicall = _LegacyMultiCall
 

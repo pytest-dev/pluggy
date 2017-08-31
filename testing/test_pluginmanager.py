@@ -337,6 +337,15 @@ def test_subset_hook_caller(pm):
     assert l == [10]
 
 
+def test_multicall_deprecated(pm):
+    class P1(object):
+        @hookimpl
+        def m(self, __multicall__, x):
+            pass
+
+    pytest.deprecated_call(pm.register, P1())
+
+
 def test_add_hookspecs_nohooks(pm):
     with pytest.raises(ValueError):
         pm.add_hookspecs(10)
