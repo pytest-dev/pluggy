@@ -31,6 +31,7 @@ class _Result(object):
 
     @classmethod
     def from_call(cls, func):
+        __tracebackhide__ = True
         result = excinfo = None
         try:
             result = func()
@@ -44,6 +45,7 @@ class _Result(object):
         self.excinfo = None
 
     def get_result(self):
+        __tracebackhide__ = True
         if self.excinfo is None:
             return self.result
         else:
@@ -63,6 +65,7 @@ class _MultiCall(object):
         self.specopts = hook.spec_opts if hook else specopts
 
     def execute(self):
+        __tracebackhide__ = True
         caller_kwargs = self.caller_kwargs
         self.results = results = []
         firstresult = self.specopts.get("firstresult")
