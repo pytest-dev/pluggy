@@ -2,7 +2,7 @@ import inspect
 import warnings
 from .callers import _MultiCall, HookCallError, _raise_wrapfail, _Result
 
-__version__ = '0.5.2.dev'
+__version__ = '0.5.2'
 
 __all__ = ["PluginManager", "PluginValidationError", "HookCallError",
            "HookspecMarker", "HookimplMarker"]

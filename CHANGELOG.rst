@@ -1,3 +1,20 @@
+0.5.2
+-----
+- fix bug where ``firstresult`` wrappers were being sent an incorrectly configured
+  ``_Result`` (a list was set instead of a single value). Add tests to check for
+  this as well as ``_Result.force_result()`` behaviour. Thanks to `@tgoodlet`_
+  for the PR `#72`_.
+
+- fix incorrect ``getattr``  of ``DeprecationWarning`` from the ``warnings``
+  module. Thanks to `@nicoddemus`_ for the PR `#77`_.
+
+- hide ``pytest`` tracebacks in certain core routines. Thanks to
+  `@nicoddemus`_ for the PR `#80`_.
+
+.. _#72: https://github.com/pytest-dev/pluggy/pull/72
+.. _#77: https://github.com/pytest-dev/pluggy/pull/77
+.. _#80: https://github.com/pytest-dev/pluggy/pull/80
+
 0.5.1
 -----
 - fix a bug and add tests for case where ``firstresult`` hooks return
@@ -84,17 +101,11 @@
 .. _#11: https://github.com/pytest-dev/pluggy/issues/11
 .. _#4: https://github.com/pytest-dev/pluggy/issues/4
 
-.. _@blueyed: https://github.com/blueyed
-.. _@nicoddemus: https://github.com/nicoddemus
-
-
 0.3.1
 -----
 
 - avoid using deprecated-in-python3.5 getargspec method. Thanks
   `@mdboom`_.
-
-.. _@mdboom: https://github.com/mdboom
 
 0.3.0
 -----
@@ -107,3 +118,6 @@ initial release
 .. _@MichalTHEDUDE: https://github.com/MichalTHEDUDE
 .. _@vodik: https://github.com/vodik
 .. _@RonnyPfannschmidt: https://github.com/RonnyPfannschmidt
+.. _@blueyed: https://github.com/blueyed
+.. _@nicoddemus: https://github.com/nicoddemus
+.. _@mdboom: https://github.com/mdboom
