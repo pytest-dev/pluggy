@@ -26,8 +26,8 @@ class HookCallError(Exception):
 
 class _Result(object):
     def __init__(self, result, excinfo):
-        self.result = result
-        self.excinfo = excinfo
+        self._result = result
+        self._excinfo = excinfo
 
     @classmethod
     def from_call(cls, func):
@@ -47,8 +47,8 @@ class _Result(object):
         be set otherwise set a (modified) list of results. Any exceptions
         found during invocation will be deleted.
         """
-        self.result = result
-        self.excinfo = None
+        self._result = result
+        self._excinfo = None
 
     def get_result(self):
         """Get the result(s) for this hook call.
@@ -57,10 +57,10 @@ class _Result(object):
         will be returned otherwise a list of results.
         """
         __tracebackhide__ = True
-        if self.excinfo is None:
-            return self.result
+        if self._excinfo is None:
+            return self._result
         else:
-            ex = self.excinfo
+            ex = self._excinfo
             if _py3:
                 raise ex[1].with_traceback(ex[2])
             _reraise(*ex)  # noqa
@@ -78,7 +78,7 @@ class _MultiCall(object):
     def execute(self):
         __tracebackhide__ = True
         caller_kwargs = self.caller_kwargs
-        self.results = results = []
+        self._results = results = []
         firstresult = self.specopts.get("firstresult")
         excinfo = None
         try:  # run impl and wrapper setup functions in a loop
