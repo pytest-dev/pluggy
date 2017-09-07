@@ -197,6 +197,10 @@ will be executed *first* or *last* respectively in the hook call loop:
 For another example see the `hook function ordering`_ section of the
 ``pytest`` docs.
 
+.. note::
+    ``tryfirst`` and ``trylast`` hooks are still invoked in LIFO order within
+    each category.
+
 Wrappers
 ^^^^^^^^
 A *hookimpl* can be marked with a ``"hookwrapper"`` option which indicates that
