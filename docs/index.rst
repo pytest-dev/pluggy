@@ -152,9 +152,10 @@ then the *hookimpl* should be marked with the ``"optionalhook"`` option:
 
 Call time order
 ^^^^^^^^^^^^^^^
-A *hookimpl* can influence its call-time invocation position.
-If marked with a ``"tryfirst"`` or ``"trylast"`` option it will be
-executed *first* or *last* respectively in the hook call loop:
+By default hooks are :ref:`called <calling>` in LIFO registered order, however,
+a *hookimpl* can influence its call-time invocation position using special
+attributes. If marked with a ``"tryfirst"`` or ``"trylast"`` option it
+will be executed *first* or *last* respectively in the hook call loop:
 
 .. code-block:: python
 
@@ -477,6 +478,8 @@ You can retrieve the *options* applied to a particular
     http://doc.pytest.org/en/latest/writing_plugins.html#setuptools-entry-points
 
 
+.. _calling:
+
 Calling Hooks
 *************
 The core functionality of ``pluggy`` enables an extension provider
@@ -487,7 +490,7 @@ a :py:class:`pluggy._HookCaller` which in turn *loops* through the
 ``1:N`` registered *hookimpls* and calls them in sequence.
 
 Every :py:class:`pluggy.PluginManager` has a ``hook`` attribute
-which is an instance of a :py:class:`pluggy._HookRelay`.
+which is an instance of this :py:class:`pluggy._HookRelay`.
 The ``_HookRelay`` itself contains references (by hook name) to each
 registered *hookimpl*'s ``_HookCaller`` instance.
 
@@ -510,6 +513,40 @@ More practically you call a *hook* like so:
 
 Note that you **must** call hooks using keyword `arguments`_ syntax!
 
+Hook implementations are called in LIFO registered order: *the last
+registered plugin's hooks are called first*. As an example, the below
+assertion should not error:
+
+.. code-block:: python
+
+    from pluggy import PluginManager, HookimplMarker
+
+    hookimpl = HookimplMarker('myproject')
+
+    class Plugin1(object):
+        def myhook(self, args):
+            """Default implementation.
+            """
+            return 1
+
+    class Plugin2(object):
+        def myhook(self, args):
+            """Default implementation.
+            """
+            return 2
+
+    class Plugin3(object):
+        def myhook(self, args):
+            """Default implementation.
+            """
+            return 3
+
+    pm = PluginManager('myproject')
+    pm.register(Plugin1())
+    pm.register(Plugin2())
+    pm.register(Plugin3())
+
+    assert pm.hook.myhook(args=()) == [3, 2, 1]
 
 Collecting results
 ------------------
