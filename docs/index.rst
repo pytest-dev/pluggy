@@ -202,7 +202,7 @@ Wrappers
 A *hookimpl* can be marked with a ``"hookwrapper"`` option which indicates that
 the function will be called to *wrap* (or surround) all other normal *hookimpl*
 calls. A *hookwrapper* can thus execute some code ahead and after the execution
-of all corresponding non-hookwrappper *hookimpls*.
+of all corresponding non-wrappper *hookimpls*.
 
 Much in the same way as a `@contextlib.contextmanager`_, *hookwrappers* must
 be implemented as generator function with a single ``yield`` in its body:
@@ -235,13 +235,15 @@ be implemented as generator function with a single ``yield`` in its body:
         if config.use_defaults:
             outcome.force_result(defaults)
 
-The generator is `sent`_ a :py:class:`pluggy._CallOutcome` object which can
+The generator is `sent`_ a :py:class:`pluggy._Result` object which can
 be assigned in the ``yield`` expression and used to override or inspect
-the final result(s) returned back to the hook caller. 
+the final result(s) returned back to the caller using the
+:py:meth:`~pluggy._Result.force_result` or
+:py:meth:`~pluggy._Result.get_result` methods.
 
 .. note::
     Hook wrappers can **not** return results (as per generator function
-    semantics); they can only modify them using the ``_CallOutcome`` API.
+    semantics); they can only modify them using the ``_Result`` API.
 
 Also see the `hookwrapper`_ section in the ``pytest`` docs.
 
@@ -599,7 +601,7 @@ Calling with a subset of registered plugins
 -------------------------------------------
 You can make a call using a subset of plugins by asking the
 ``PluginManager`` first for a ``_HookCaller`` with those plugins removed
-using the :py:meth:`pluggy.PluginManger.subset_hook_caller()` method.
+using the :py:meth:`pluggy.PluginManager.subset_hook_caller()` method.
 
 You then can use that ``_HookCaller`` to make normal, ``call_historic()``,
 or ``call_extra()`` calls as necessary.

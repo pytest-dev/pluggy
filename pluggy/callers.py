@@ -41,10 +41,21 @@ class _Result(object):
         return cls(result, excinfo)
 
     def force_result(self, result):
+        """Force the result(s) to ``result``.
+
+        If the hook was marked as a ``firstresult`` a single value should
+        be set otherwise set a (modified) list of results. Any exceptions
+        found during invocation will be deleted.
+        """
         self.result = result
         self.excinfo = None
 
     def get_result(self):
+        """Get the result(s) for this hook call.
+
+        If the hook was marked as a ``firstresult`` only a single value
+        will be returned otherwise a list of results.
+        """
         __tracebackhide__ = True
         if self.excinfo is None:
             return self.result
