@@ -2,7 +2,7 @@ import inspect
 import warnings
 from .callers import _MultiCall, HookCallError, _raise_wrapfail, _Result
 
-__version__ = '0.5.2'
+__version__ = '0.5.3.dev'
 
 __all__ = ["PluginManager", "PluginValidationError", "HookCallError",
            "HookspecMarker", "HookimplMarker"]
@@ -460,7 +460,7 @@ class PluginManager(object):
 
         def after(outcome, hook_name, methods, kwargs):
             if outcome.excinfo is None:
-                hooktrace("finish", hook_name, "-->", outcome.result)
+                hooktrace("finish", hook_name, "-->", outcome.get_result())
             hooktrace.root.indent -= 1
 
         return self.add_hookcall_monitoring(before, after)

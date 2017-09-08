@@ -64,6 +64,44 @@ def test_only_kwargs(pm):
     assert comprehensible in str(exc.value)
 
 
+def test_call_order(pm):
+    class Api(object):
+        @hookspec
+        def hello(self, arg):
+            "api hook 1"
+
+    pm.add_hookspecs(Api)
+
+    class Plugin1(object):
+        @hookimpl
+        def hello(self, arg):
+            return 1
+
+    class Plugin2(object):
+        @hookimpl
+        def hello(self, arg):
+            return 2
+
+    class Plugin3(object):
+        @hookimpl
+        def hello(self, arg):
+            return 3
+
+    class Plugin4(object):
+        @hookimpl(hookwrapper=True)
+        def hello(self, arg):
+            assert arg == 0
+            outcome = yield
+            assert outcome.get_result() == [3, 2, 1]
+
+    pm.register(Plugin1())
+    pm.register(Plugin2())
+    pm.register(Plugin3())
+    pm.register(Plugin4())  # hookwrapper should get same list result
+    res = pm.hook.hello(arg=0)
+    assert res == [3, 2, 1]
+
+
 def test_firstresult_definition(pm):
     class Api(object):
         @hookspec(firstresult=True)
