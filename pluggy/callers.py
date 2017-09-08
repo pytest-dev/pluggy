@@ -29,6 +29,10 @@ class _Result(object):
         self._result = result
         self._excinfo = excinfo
 
+    @property
+    def excinfo(self):
+        return self._excinfo
+
     @classmethod
     def from_call(cls, func):
         __tracebackhide__ = True
@@ -78,7 +82,7 @@ class _MultiCall(object):
     def execute(self):
         __tracebackhide__ = True
         caller_kwargs = self.caller_kwargs
-        self._results = results = []
+        self.results = results = []
         firstresult = self.specopts.get("firstresult")
         excinfo = None
         try:  # run impl and wrapper setup functions in a loop
