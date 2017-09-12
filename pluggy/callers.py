@@ -2,7 +2,7 @@
 Call loop machinery
 '''
 import sys
-
+import warnings
 
 _py3 = sys.version_info > (3, 0)
 
@@ -32,6 +32,13 @@ class _Result(object):
     @property
     def excinfo(self):
         return self._excinfo
+
+    @property
+    def result(self):
+        """Get the result(s) for this hook call (DEPRECATED in favor of ``get_result()``)."""
+        msg = 'Use get_result() which forces correct exception handling'
+        warnings.warn(DeprecationWarning(msg))
+        return self._result
 
     @classmethod
     def from_call(cls, func):
