@@ -284,7 +284,8 @@ def test_call_with_too_few_args(pm):
             0 / 0
     pm.register(Plugin1())
     with pytest.raises(HookCallError):
-        pm.hook.he_method1()
+        with pytest.warns(UserWarning):
+            pm.hook.he_method1()
 
 
 def test_subset_hook_caller(pm):

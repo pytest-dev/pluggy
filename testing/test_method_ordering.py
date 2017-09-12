@@ -238,7 +238,7 @@ def test_add_tracefuncs(he_pm):
 
     undo = he_pm.add_hookcall_monitoring(before, after)
 
-    he_pm.hook.he_method1()
+    he_pm.hook.he_method1(arg=1)
     assert len(l) == 4
     assert l[0][0] == "he_method1"
     assert len(l[0][1]) == 2
@@ -249,7 +249,7 @@ def test_add_tracefuncs(he_pm):
     assert l[3][1] == l[0][0]
 
     undo()
-    he_pm.hook.he_method1()
+    he_pm.hook.he_method1(arg=1)
     assert len(l) == 4 + 2
 
 
