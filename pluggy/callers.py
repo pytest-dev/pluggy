@@ -37,7 +37,7 @@ class _Result(object):
     def result(self):
         """Get the result(s) for this hook call (DEPRECATED in favor of ``get_result()``)."""
         msg = 'Use get_result() which forces correct exception handling'
-        warnings.warn(DeprecationWarning(msg))
+        warnings.warn(DeprecationWarning(msg), stacklevel=2)
         return self._result
 
     @classmethod
