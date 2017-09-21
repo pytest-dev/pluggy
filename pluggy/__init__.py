@@ -1,6 +1,6 @@
 import inspect
 import warnings
-from .callers import _MultiCall, HookCallError, _Result, _LegacyMultiCall
+from .callers import _multicall, HookCallError, _Result, _legacymulticall
 
 __version__ = '0.5.3.dev'
 
@@ -213,7 +213,7 @@ class PluginManager(object):
         self._inner_hookexec = lambda hook, methods, kwargs: \
             hook.multicall(
                 methods, kwargs, specopts=hook.spec_opts, hook=hook
-            ).execute()
+            )
 
     def _hookexec(self, hook, methods, kwargs):
         # called from all hookcaller instances.
@@ -535,7 +535,7 @@ class _HookCaller(object):
         self._hookexec = hook_execute
         self.argnames = None
         self.kwargnames = None
-        self.multicall = _MultiCall
+        self.multicall = _multicall
         if specmodule_or_class is not None:
             assert spec_opts is not None
             self.set_specification(specmodule_or_class, spec_opts)
@@ -592,7 +592,7 @@ class _HookCaller(object):
                 "removed in an upcoming release.",
                 DeprecationWarning
             )
-            self.multicall = _LegacyMultiCall
+            self.multicall = _legacymulticall
 
     def __repr__(self):
         return "<_HookCaller %r>" % (self.name,)

@@ -144,67 +144,61 @@ class _LegacyMultiCall(object):
         return "<_MultiCall %s, kwargs=%r>" % (status, self.caller_kwargs)
 
 
-class _MultiCall(object):
-    """Execute a call into multiple python functions/methods.
+def _legacymulticall(hook_impls, caller_kwargs, specopts={}, hook=None):
+    return _LegacyMultiCall(
+        hook_impls, caller_kwargs, specopts=specopts, hook=hook).execute()
+
+
+def _multicall(hook_impls, caller_kwargs, specopts={}, hook=None):
+    """Execute a call into multiple python functions/methods and return the
+    result(s).
+
+    ``caller_kwargs`` comes from _HookCaller.__call__().
     """
-    def __init__(self, hook_impls, kwargs, specopts={}, hook=None):
-        self.hook = hook
-        self.hook_impls = hook_impls
-        self.caller_kwargs = kwargs  # come from _HookCaller.__call__()
-        self.specopts = hook.spec_opts if hook else specopts
-
-    def execute(self):
-        __tracebackhide__ = True
-        caller_kwargs = self.caller_kwargs
-        self.results = results = []
-        firstresult = self.specopts.get("firstresult")
-        excinfo = None
-        try:  # run impl and wrapper setup functions in a loop
-            teardowns = []
-            try:
-                for hook_impl in reversed(self.hook_impls):
-                    try:
-                        args = [caller_kwargs[argname] for argname in hook_impl.argnames]
-                        # args = operator.itemgetter(hookimpl.argnames)(caller_kwargs)
-                    except KeyError:
-                        for argname in hook_impl.argnames:
-                            if argname not in caller_kwargs:
-                                raise HookCallError(
-                                    "hook call must provide argument %r" % (argname,))
-
-                    if hook_impl.hookwrapper:
-                        try:
-                            gen = hook_impl.function(*args)
-                            next(gen)   # first yield
-                            teardowns.append(gen)
-                        except StopIteration:
-                            _raise_wrapfail(gen, "did not yield")
-                    else:
-                        res = hook_impl.function(*args)
-                        if res is not None:
-                            results.append(res)
-                            if firstresult:  # halt further impl calls
-                                break
-            except BaseException:
-                excinfo = sys.exc_info()
-        finally:
-            if firstresult:  # first result hooks return a single value
-                outcome = _Result(results[0] if results else None, excinfo)
-            else:
-                outcome = _Result(results, excinfo)
-
-            # run all wrapper post-yield blocks
-            for gen in reversed(teardowns):
+    __tracebackhide__ = True
+    specopts = hook.spec_opts if hook else specopts
+    results = []
+    firstresult = specopts.get("firstresult")
+    excinfo = None
+    try:  # run impl and wrapper setup functions in a loop
+        teardowns = []
+        try:
+            for hook_impl in reversed(hook_impls):
                 try:
-                    gen.send(outcome)
-                    _raise_wrapfail(gen, "has second yield")
-                except StopIteration:
-                    pass
+                    args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+                except KeyError:
+                    for argname in hook_impl.argnames:
+                        if argname not in caller_kwargs:
+                            raise HookCallError(
+                                "hook call must provide argument %r" % (argname,))
 
-            return outcome.get_result()
+                if hook_impl.hookwrapper:
+                    try:
+                        gen = hook_impl.function(*args)
+                        next(gen)   # first yield
+                        teardowns.append(gen)
+                    except StopIteration:
+                        _raise_wrapfail(gen, "did not yield")
+                else:
+                    res = hook_impl.function(*args)
+                    if res is not None:
+                        results.append(res)
+                        if firstresult:  # halt further impl calls
+                            break
+        except BaseException:
+            excinfo = sys.exc_info()
+    finally:
+        if firstresult:  # first result hooks return a single value
+            outcome = _Result(results[0] if results else None, excinfo)
+        else:
+            outcome = _Result(results, excinfo)
 
-    def __repr__(self):
-        status = "%d meths" % (len(self.hook_impls),)
-        if hasattr(self, "results"):
-            status = ("%d results, " % len(self.results)) + status
-        return "<_MultiCall %s, kwargs=%r>" % (status, self.caller_kwargs)
+        # run all wrapper post-yield blocks
+        for gen in reversed(teardowns):
+            try:
+                gen.send(outcome)
+                _raise_wrapfail(gen, "has second yield")
+            except StopIteration:
+                pass
+
+        return outcome.get_result()
