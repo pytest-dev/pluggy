@@ -1,6 +1,7 @@
 import pytest
 
-from pluggy import _MultiCall, HookImpl, HookCallError, _LegacyMultiCall
+from pluggy import _multicall, _legacymulticall, HookImpl, HookCallError
+from pluggy.callers import _LegacyMultiCall
 from pluggy import HookspecMarker, HookimplMarker
 
 
@@ -10,7 +11,7 @@ hookimpl = HookimplMarker("example")
 
 def test_uses_copy_of_methods():
     l = [lambda: 42]
-    mc = _MultiCall(l, {})
+    mc = _LegacyMultiCall(l, {})
     repr(mc)
     l[:] = []
     res = mc.execute()
@@ -18,14 +19,14 @@ def test_uses_copy_of_methods():
 
 
 def MC(methods, kwargs, firstresult=False):
-    caller = _MultiCall
+    caller = _multicall
     hookfuncs = []
     for method in methods:
         f = HookImpl(None, "<temp>", method, method.example_impl)
         hookfuncs.append(f)
         if '__multicall__' in f.argnames:
-            caller = _LegacyMultiCall
-    return caller(hookfuncs, kwargs, {"firstresult": firstresult})
+            caller = _legacymulticall
+    return caller(hookfuncs, kwargs, specopts={"firstresult": firstresult})
 
 
 def test_call_passing():
@@ -45,9 +46,7 @@ def test_call_passing():
 
     p1 = P1()
     p2 = P2()
-    multicall = MC([p1.m, p2.m], {"x": 23})
-    assert "23" in repr(multicall)
-    reslist = multicall.execute()
+    reslist = MC([p1.m, p2.m], {"x": 23})
     assert len(reslist) == 2
     # ensure reversed order
     assert reslist == [23, 17]
@@ -63,19 +62,15 @@ def test_keyword_args():
         def f(self, x, y):
             return x + y
 
-    multicall = MC([f, A().f], dict(x=23, y=24))
-    assert "'x': 23" in repr(multicall)
-    assert "'y': 24" in repr(multicall)
-    reslist = multicall.execute()
+    reslist = MC([f, A().f], dict(x=23, y=24))
     assert reslist == [24 + 23, 24]
-    assert "2 results" in repr(multicall)
 
 
 def test_keyword_args_with_defaultargs():
     @hookimpl
     def f(x, z=1):
         return x + z
-    reslist = MC([f], dict(x=23, y=24)).execute()
+    reslist = MC([f], dict(x=23, y=24))
     assert reslist == [24]
 
 
@@ -83,8 +78,8 @@ def test_tags_call_error():
     @hookimpl
     def f(x):
         return x
-    multicall = MC([f], {})
-    pytest.raises(HookCallError, multicall.execute)
+    with pytest.raises(HookCallError):
+        MC([f], {})
 
 
 def test_call_subexecute():
@@ -97,8 +92,7 @@ def test_call_subexecute():
     def n():
         return 1
 
-    call = MC([n, m], {}, firstresult=True)
-    res = call.execute()
+    res = MC([n, m], {}, firstresult=True)
     assert res == 2
 
 
@@ -111,9 +105,9 @@ def test_call_none_is_no_result():
     def m2():
         return None
 
-    res = MC([m1, m2], {}, {"firstresult": True}).execute()
+    res = MC([m1, m2], {}, {"firstresult": True})
     assert res == 1
-    res = MC([m1, m2], {}, {}).execute()
+    res = MC([m1, m2], {}, {})
     assert res == [1]
 
 
@@ -131,11 +125,11 @@ def test_hookwrapper():
         l.append("m2")
         return 2
 
-    res = MC([m2, m1], {}).execute()
+    res = MC([m2, m1], {})
     assert res == [2]
     assert l == ["m1 init", "m2", "m1 finish"]
     l[:] = []
-    res = MC([m2, m1], {}, {"firstresult": True}).execute()
+    res = MC([m2, m1], {}, {"firstresult": True})
     assert res == 2
     assert l == ["m1 init", "m2", "m1 finish"]
 
@@ -155,7 +149,7 @@ def test_hookwrapper_order():
         yield 2
         l.append("m2 finish")
 
-    res = MC([m2, m1], {}).execute()
+    res = MC([m2, m1], {})
     assert res == []
     assert l == ["m1 init", "m2 init", "m2 finish", "m1 finish"]
 
@@ -165,9 +159,8 @@ def test_hookwrapper_not_yield():
     def m1():
         pass
 
-    mc = MC([m1], {})
     with pytest.raises(TypeError):
-        mc.execute()
+        MC([m1], {})
 
 
 def test_hookwrapper_too_many_yield():
@@ -176,9 +169,8 @@ def test_hookwrapper_too_many_yield():
         yield 1
         yield 2
 
-    mc = MC([m1], {})
     with pytest.raises(RuntimeError) as ex:
-        mc.execute()
+        MC([m1], {})
     assert "m1" in str(ex.value)
     assert (__file__ + ':') in str(ex.value)
 
@@ -198,5 +190,5 @@ def test_hookwrapper_exception(exc):
         raise exc
 
     with pytest.raises(exc):
-        MC([m2, m1], {}).execute()
+        MC([m2, m1], {})
     assert l == ["m1 init", "m1 finish"]
