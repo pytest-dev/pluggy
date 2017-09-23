@@ -28,7 +28,7 @@ def wrapper(arg1, arg2, arg3):
 
 
 @pytest.fixture(
-    params=[0, 1, 10, 100],
+    params=[10, 100],
     ids="hooks={}".format,
 )
 def hooks(request):
@@ -36,7 +36,7 @@ def hooks(request):
 
 
 @pytest.fixture(
-    params=[0, 1, 10, 100],
+    params=[10, 100],
     ids="wrappers={}".format,
 )
 def wrappers(request):
