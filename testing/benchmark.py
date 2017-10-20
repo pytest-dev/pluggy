@@ -2,7 +2,7 @@
 Benchmarking and performance tests.
 """
 import pytest
-from pluggy import (_MultiCall, _LegacyMultiCall, HookImpl, HookspecMarker,
+from pluggy import (_multicall, _legacymulticall, HookImpl, HookspecMarker,
                     HookimplMarker)
 
 hookspec = HookspecMarker("example")
@@ -28,7 +28,7 @@ def wrapper(arg1, arg2, arg3):
 
 
 @pytest.fixture(
-    params=[0, 1, 10, 100],
+    params=[10, 100],
     ids="hooks={}".format,
 )
 def hooks(request):
@@ -36,7 +36,7 @@ def hooks(request):
 
 
 @pytest.fixture(
-    params=[0, 1, 10, 100],
+    params=[10, 100],
     ids="wrappers={}".format,
 )
 def wrappers(request):
@@ -44,7 +44,7 @@ def wrappers(request):
 
 
 @pytest.fixture(
-    params=[_MultiCall, _LegacyMultiCall],
+    params=[_multicall, _legacymulticall],
     ids=lambda item: item.__name__
 )
 def callertype(request):
@@ -52,7 +52,7 @@ def callertype(request):
 
 
 def inner_exec(methods, callertype):
-    return MC(methods, {'arg1': 1, 'arg2': 2, 'arg3': 3}, callertype).execute()
+    return MC(methods, {'arg1': 1, 'arg2': 2, 'arg3': 3}, callertype)
 
 
 def test_hook_and_wrappers_speed(benchmark, hooks, wrappers, callertype):
