@@ -1,4 +1,5 @@
 import pytest
+import types
 
 from pluggy import (PluginValidationError,
                     HookCallError, HookimplMarker, HookspecMarker)
@@ -350,3 +351,24 @@ def test_multicall_deprecated(pm):
 def test_add_hookspecs_nohooks(pm):
     with pytest.raises(ValueError):
         pm.add_hookspecs(10)
+
+
+def test_reject_prefixed_module(pm):
+    """Verify that a module type attribute that contains the project
+    prefix in its name (in this case `'example_*'` isn't collected
+    when registering a module which imports it.
+    """
+    pm._implprefix = 'example'
+    conftest = types.ModuleType("conftest")
+    src = ("""
+def example_hook():
+    pass
+""")
+    exec(src, conftest.__dict__)
+    conftest.example_blah = types.ModuleType("example_blah")
+    name = pm.register(conftest)
+    assert name == 'conftest'
+    assert getattr(pm.hook, 'example_blah', None) is None
+    assert getattr(pm.hook, 'example_hook', None)  # conftest.example_hook should be collected
+    assert pm.parse_hookimpl_opts(conftest, 'example_blah') is None
+    assert pm.parse_hookimpl_opts(conftest, 'example_hook') == {}
