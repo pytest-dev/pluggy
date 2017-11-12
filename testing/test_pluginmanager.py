@@ -393,3 +393,60 @@ def example_hook():
     assert getattr(pm.hook, 'example_hook', None)  # conftest.example_hook should be collected
     assert pm.parse_hookimpl_opts(conftest, 'example_blah') is None
     assert pm.parse_hookimpl_opts(conftest, 'example_hook') == {}
+
+
+def test_iterable_hooks(pm):
+    class Hooks(object):
+        @hookspec
+        def he_method1(self, arg):
+            pass
+
+    pm.add_hookspecs(Hooks)
+
+    l = []
+
+    class Plugin1(object):
+        @hookimpl
+        def he_method1(self, arg):
+            l.append(1)
+            return 1
+
+    class Plugin2(object):
+        @hookimpl
+        def he_method1(self, arg):
+            l.append(2)
+            return 2
+
+    class Plugin3(object):
+        @hookimpl
+        def he_method1(self, arg):
+            l.append(3)
+            return 3
+
+    class Plugin4(object):
+        @hookimpl
+        def he_method1(self, arg):
+            l.append(4)
+            return 4
+
+    class PluginWrapper(object):
+        @hookimpl(hookwrapper=True)
+        def he_method1(self, arg):
+            assert not l
+            outcome = yield
+            res = outcome.get_result()
+            assert res
+            assert res == [1, 2, 3] == l
+
+    pm.register(Plugin1())
+    pm.register(Plugin2())
+    pm.register(Plugin3())
+    pm.register(Plugin4())
+    pm.register(PluginWrapper())
+
+    for result, i in zip(pm.ihook.he_method1(arg=None), reversed(range(1, 5))):
+        assert result == i
+        if result == 2:  # stop before the final iteration
+            break
+
+    assert l == [4, 3, 2]
