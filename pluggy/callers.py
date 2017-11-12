@@ -238,6 +238,8 @@ def _itercall(hook_impls, caller_kwargs, specopts={}, hook=None):
                         yield res
                         if firstresult:  # halt further impl calls
                             break
+        except GeneratorExit:
+            pass  # loop was terminated prematurely by caller
         except BaseException:
             excinfo = sys.exc_info()
     finally:
