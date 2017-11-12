@@ -436,7 +436,7 @@ def test_iterable_hooks(pm):
             outcome = yield
             res = outcome.get_result()
             assert res
-            assert res == [1, 2, 3] == l
+            assert res == [4, 3, 2] == l
 
     pm.register(Plugin1())
     pm.register(Plugin2())
