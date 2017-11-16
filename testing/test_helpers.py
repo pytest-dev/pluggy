@@ -1,4 +1,4 @@
-from pluggy import _formatdef, varnames
+from pluggy.parse_funcs import _formatdef, varnames
 
 
 def test_varnames():
