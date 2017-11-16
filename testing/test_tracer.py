@@ -1,9 +1,15 @@
 
-from pluggy import _TagTracer
+from pluggy._tracing import TagTracer
+
+import pytest
 
 
-def test_simple():
-    rootlogger = _TagTracer()
+@pytest.fixture
+def rootlogger():
+    return TagTracer()
+
+
+def test_simple(rootlogger):
     log = rootlogger.get("pytest")
     log("hello")
     out = []
@@ -16,8 +22,7 @@ def test_simple():
     assert out[1] == "hello [pytest:collection]\n"
 
 
-def test_indent():
-    rootlogger = _TagTracer()
+def test_indent(rootlogger):
     log = rootlogger.get("1")
     out = []
     log.root.setwriter(lambda arg: out.append(arg))
@@ -39,8 +44,7 @@ def test_indent():
         '    line3', '    line4', '  line5', 'last']
 
 
-def test_readable_output_dictargs():
-    rootlogger = _TagTracer()
+def test_readable_output_dictargs(rootlogger):
 
     out = rootlogger.format_message(['test'], [1])
     assert out == ['1 [test]\n']
@@ -52,8 +56,7 @@ def test_readable_output_dictargs():
     ]
 
 
-def test_setprocessor():
-    rootlogger = _TagTracer()
+def test_setprocessor(rootlogger):
     log = rootlogger.get("1")
     log2 = log.get("2")
     assert log2.tags == tuple("12")
@@ -73,8 +76,7 @@ def test_setprocessor():
     assert args == ("seen",)
 
 
-def test_setmyprocessor():
-    rootlogger = _TagTracer()
+def test_setmyprocessor(rootlogger):
     log = rootlogger.get("1")
     log2 = log.get("2")
     out = []

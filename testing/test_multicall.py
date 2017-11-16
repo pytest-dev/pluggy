@@ -1,6 +1,7 @@
 import pytest
 
-from pluggy import _multicall, _legacymulticall, HookImpl, HookCallError
+from pluggy.callers import _multicall, _legacymulticall
+from pluggy import HookImpl, HookCallError
 from pluggy.callers import _LegacyMultiCall
 from pluggy import HookspecMarker, HookimplMarker
 
