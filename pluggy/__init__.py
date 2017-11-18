@@ -212,7 +212,8 @@ class PluginManager(object):
         self._implprefix = implprefix
         self._inner_hookexec = lambda hook, methods, kwargs: \
             hook.multicall(
-                methods, kwargs, specopts=hook.spec_opts, hook=hook
+                methods, kwargs,
+                firstresult=hook.spec_opts.get('firstresult'),
             )
 
     def _hookexec(self, hook, methods, kwargs):
@@ -528,20 +529,22 @@ class _HookRelay(object):
 
 
 class _HookCaller(object):
-    def __init__(self, name, hook_execute, specmodule_or_class=None, spec_opts=None):
+    def __init__(self, name, hook_execute, specmodule_or_class=None,
+                 spec_opts=None):
         self.name = name
         self._wrappers = []
         self._nonwrappers = []
         self._hookexec = hook_execute
+        self._specmodule_or_class = None
         self.argnames = None
         self.kwargnames = None
         self.multicall = _multicall
+        self.spec_opts = spec_opts or {}
         if specmodule_or_class is not None:
-            assert spec_opts is not None
             self.set_specification(specmodule_or_class, spec_opts)
 
     def has_spec(self):
-        return hasattr(self, "_specmodule_or_class")
+        return self._specmodule_or_class is not None
 
     def set_specification(self, specmodule_or_class, spec_opts):
         assert not self.has_spec()
@@ -550,7 +553,7 @@ class _HookCaller(object):
         # get spec arg signature
         argnames, self.kwargnames = varnames(specfunc)
         self.argnames = ["__multicall__"] + list(argnames)
-        self.spec_opts = spec_opts
+        self.spec_opts.update(spec_opts)
         if spec_opts.get("historic"):
             self._call_history = []
 
