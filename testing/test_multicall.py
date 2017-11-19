@@ -26,7 +26,7 @@ def MC(methods, kwargs, firstresult=False):
         hookfuncs.append(f)
         if '__multicall__' in f.argnames:
             caller = _legacymulticall
-    return caller(hookfuncs, kwargs, specopts={"firstresult": firstresult})
+    return caller(hookfuncs, kwargs, firstresult=firstresult)
 
 
 def test_call_passing():
@@ -105,7 +105,7 @@ def test_call_none_is_no_result():
     def m2():
         return None
 
-    res = MC([m1, m2], {}, {"firstresult": True})
+    res = MC([m1, m2], {}, firstresult=True)
     assert res == 1
     res = MC([m1, m2], {}, {})
     assert res == [1]
@@ -129,7 +129,7 @@ def test_hookwrapper():
     assert res == [2]
     assert out == ["m1 init", "m2", "m1 finish"]
     out[:] = []
-    res = MC([m2, m1], {}, {"firstresult": True})
+    res = MC([m2, m1], {}, firstresult=True)
     assert res == 2
     assert out == ["m1 init", "m2", "m1 finish"]
 

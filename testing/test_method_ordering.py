@@ -290,15 +290,17 @@ def test_hook_tracing(he_pm):
         undo()
 
 
-def test_prefix_hookimpl():
+@pytest.mark.parametrize('include_hookspec', [True, False])
+def test_prefix_hookimpl(include_hookspec):
     pm = PluginManager(hookspec.project_name, "hello_")
 
-    class HookSpec(object):
-        @hookspec
-        def hello_myhook(self, arg1):
-            """ add to arg1 """
+    if include_hookspec:
+        class HookSpec(object):
+            @hookspec
+            def hello_myhook(self, arg1):
+                """ add to arg1 """
 
-    pm.add_hookspecs(HookSpec)
+        pm.add_hookspecs(HookSpec)
 
     class Plugin(object):
         def hello_myhook(self, arg1):

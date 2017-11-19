@@ -105,17 +105,16 @@ class _LegacyMultiCall(object):
     # so we can remove it soon, allowing to avoid the below recursion
     # in execute() and simplify/speed up the execute loop.
 
-    def __init__(self, hook_impls, kwargs, specopts={}, hook=None):
-        self.hook = hook
+    def __init__(self, hook_impls, kwargs, firstresult=False):
         self.hook_impls = hook_impls
         self.caller_kwargs = kwargs  # come from _HookCaller.__call__()
         self.caller_kwargs["__multicall__"] = self
-        self.specopts = hook.spec_opts if hook else specopts
+        self.firstresult = firstresult
 
     def execute(self):
         caller_kwargs = self.caller_kwargs
         self.results = results = []
-        firstresult = self.specopts.get("firstresult")
+        firstresult = self.firstresult
 
         while self.hook_impls:
             hook_impl = self.hook_impls.pop()
@@ -144,21 +143,19 @@ class _LegacyMultiCall(object):
         return "<_MultiCall %s, kwargs=%r>" % (status, self.caller_kwargs)
 
 
-def _legacymulticall(hook_impls, caller_kwargs, specopts={}, hook=None):
+def _legacymulticall(hook_impls, caller_kwargs, firstresult=False):
     return _LegacyMultiCall(
-        hook_impls, caller_kwargs, specopts=specopts, hook=hook).execute()
+        hook_impls, caller_kwargs, firstresult=firstresult).execute()
 
 
-def _multicall(hook_impls, caller_kwargs, specopts={}, hook=None):
+def _multicall(hook_impls, caller_kwargs, firstresult=False):
     """Execute a call into multiple python functions/methods and return the
     result(s).
 
     ``caller_kwargs`` comes from _HookCaller.__call__().
     """
     __tracebackhide__ = True
-    specopts = hook.spec_opts if hook else specopts
     results = []
-    firstresult = specopts.get("firstresult")
     excinfo = None
     try:  # run impl and wrapper setup functions in a loop
         teardowns = []
