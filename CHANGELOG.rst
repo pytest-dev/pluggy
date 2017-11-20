@@ -1,3 +1,10 @@
+0.6.0
+-----
+
+- Drop support for EOL Python 2.6 in PR `#103`_.
+
+.. _#103: https://github.com/pytest-dev/pluggy/pull/103
+
 0.5.2
 -----
 - fix bug where ``firstresult`` wrappers were being sent an incorrectly configured
