@@ -5,3 +5,5 @@ include tox.ini
 include LICENSE
 graft testing
 recursive-exclude * *.pyc *.pyo
+include pluggy/callers/cythonized.pyx
+include pluggy/callers/cythonized.c
