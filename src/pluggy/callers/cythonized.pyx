@@ -1,13 +1,13 @@
 """
-Call loop machinery
+Cynthonized hook call loop.
+
+NOTE: In order to build this source you must have cython installed.
 """
 import sys
-
-from ._result import HookCallError, _Result, _raise_wrapfail
-from .cythonized import _c_multicall
+from . import _Result, _raise_wrapfail, HookCallError
 
 
-def _multicall(hook_impls, caller_kwargs, firstresult=False):
+cpdef _multicall(list hook_impls, dict caller_kwargs, bint firstresult=False):
     """Execute a call into multiple python functions/methods and return the
     result(s).
 
@@ -26,13 +26,12 @@ def _multicall(hook_impls, caller_kwargs, firstresult=False):
                     for argname in hook_impl.argnames:
                         if argname not in caller_kwargs:
                             raise HookCallError(
-                                "hook call must provide argument %r" % (argname,)
-                            )
+                                "hook call must provide argument %r" % (argname,))
 
                 if hook_impl.hookwrapper:
                     try:
                         gen = hook_impl.function(*args)
-                        next(gen)  # first yield
+                        next(gen)   # first yield
                         teardowns.append(gen)
                     except StopIteration:
                         _raise_wrapfail(gen, "did not yield")
