@@ -1,4 +1,7 @@
 from setuptools import setup
+from setuptools.command.sdist import sdist as _sdist
+from setuptools.extension import Extension
+
 
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -29,6 +32,32 @@ EXTRAS_REQUIRE = {
 }
 
 
+cmdclass = {}
+
+
+class sdist(_sdist):
+    """Custom sdist building using cython
+    """
+    def run(self):
+        # Make sure the compiled Cython files in the distribution
+        # are up-to-date
+        from Cython.Build import cythonize
+        cythonize(["pluggy/callers/cythonized.pyx"])
+        _sdist.run(self)
+
+
+try:
+    from Cython.Build import cythonize
+    print("Building Cython extension(s)")
+    exts = cythonize(["pluggy/callers/cythonized.pyx"])
+    cmdclass['sdist'] = sdist
+except ImportError:
+    # When Cython is not installed build from C sources
+    print("Building C extension(s)")
+    exts = [Extension("pluggy.callers.cythonized",
+                      ["pluggy/callers/cythonized.c"])]
+
+
 def main():
     setup(
         name="pluggy",
@@ -45,8 +74,10 @@ def main():
         install_requires=['importlib-metadata>=0.12;python_version<"3.8"'],
         extras_require=EXTRAS_REQUIRE,
         classifiers=classifiers,
-        packages=["pluggy"],
+        packages=['pluggy', 'pluggy.callers'],
         package_dir={"": "src"},
+        ext_modules=exts,
+        cmdclass=cmdclass,
     )
 
 
