@@ -609,7 +609,7 @@ class _HookCaller(object):
                 kwargs.keys())
             if notincall:
                 warnings.warn(
-                    "Argument(s) {0} which are declared in the hookspec "
+                    "Argument(s) {} which are declared in the hookspec "
                     "can not be found in this hook call"
                     .format(tuple(notincall)),
                     stacklevel=2,

@@ -3,7 +3,6 @@ environment:
   # note: please use "tox --listenvs" to populate the build matrix below
   - TOXENV: "check"
   - TOXENV: "docs"
-  - TOXENV: "py26-pytestrelease"
   - TOXENV: "py27-pytestrelease"
   - TOXENV: "py34-pytestrelease"
   - TOXENV: "py35-pytestrelease"
