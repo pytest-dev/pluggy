@@ -14,7 +14,7 @@ classifiers = [
     'Programming Language :: Python :: Implementation :: CPython',
     'Programming Language :: Python :: Implementation :: PyPy'] + [
     ('Programming Language :: Python :: %s' % x) for x in
-    '2 2.7 3 3.3 3.4 3.5 3.6'.split()]
+    '2 2.7 3 3.4 3.5 3.6'.split()]
 
 with open('README.rst') as fd:
     long_description = fd.read()
