@@ -215,42 +215,42 @@ def test_load_setuptools_not_installed(monkeypatch, pm):
 
 
 def test_add_tracefuncs(he_pm):
-    l = []
+    out = []
 
     class api1(object):
         @hookimpl
         def he_method1(self):
-            l.append("he_method1-api1")
+            out.append("he_method1-api1")
 
     class api2(object):
         @hookimpl
         def he_method1(self):
-            l.append("he_method1-api2")
+            out.append("he_method1-api2")
 
     he_pm.register(api1())
     he_pm.register(api2())
 
     def before(hook_name, hook_impls, kwargs):
-        l.append((hook_name, list(hook_impls), kwargs))
+        out.append((hook_name, list(hook_impls), kwargs))
 
     def after(outcome, hook_name, hook_impls, kwargs):
-        l.append((outcome, hook_name, list(hook_impls), kwargs))
+        out.append((outcome, hook_name, list(hook_impls), kwargs))
 
     undo = he_pm.add_hookcall_monitoring(before, after)
 
     he_pm.hook.he_method1(arg=1)
-    assert len(l) == 4
-    assert l[0][0] == "he_method1"
-    assert len(l[0][1]) == 2
-    assert isinstance(l[0][2], dict)
-    assert l[1] == "he_method1-api2"
-    assert l[2] == "he_method1-api1"
-    assert len(l[3]) == 4
-    assert l[3][1] == l[0][0]
+    assert len(out) == 4
+    assert out[0][0] == "he_method1"
+    assert len(out[0][1]) == 2
+    assert isinstance(out[0][2], dict)
+    assert out[1] == "he_method1-api2"
+    assert out[2] == "he_method1-api1"
+    assert len(out[3]) == 4
+    assert out[3][1] == out[0][0]
 
     undo()
     he_pm.hook.he_method1(arg=1)
-    assert len(l) == 4 + 2
+    assert len(out) == 4 + 2
 
 
 def test_hook_tracing(he_pm):
@@ -268,18 +268,18 @@ def test_hook_tracing(he_pm):
             raise ValueError()
 
     he_pm.register(api1())
-    l = []
-    he_pm.trace.root.setwriter(l.append)
+    out = []
+    he_pm.trace.root.setwriter(out.append)
     undo = he_pm.enable_tracing()
     try:
         indent = he_pm.trace.root.indent
         he_pm.hook.he_method1(arg=1)
         assert indent == he_pm.trace.root.indent
-        assert len(l) == 2
-        assert 'he_method1' in l[0]
-        assert 'finish' in l[1]
+        assert len(out) == 2
+        assert 'he_method1' in out[0]
+        assert 'finish' in out[1]
 
-        l[:] = []
+        out[:] = []
         he_pm.register(api2())
 
         with pytest.raises(ValueError):
@@ -290,15 +290,17 @@ def test_hook_tracing(he_pm):
         undo()
 
 
-def test_prefix_hookimpl():
+@pytest.mark.parametrize('include_hookspec', [True, False])
+def test_prefix_hookimpl(include_hookspec):
     pm = PluginManager(hookspec.project_name, "hello_")
 
-    class HookSpec(object):
-        @hookspec
-        def hello_myhook(self, arg1):
-            """ add to arg1 """
+    if include_hookspec:
+        class HookSpec(object):
+            @hookspec
+            def hello_myhook(self, arg1):
+                """ add to arg1 """
 
-    pm.add_hookspecs(HookSpec)
+        pm.add_hookspecs(HookSpec)
 
     class Plugin(object):
         def hello_myhook(self, arg1):

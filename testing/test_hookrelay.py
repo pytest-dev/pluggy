@@ -24,8 +24,8 @@ def test_happypath(pm):
 
     plugin = Plugin()
     pm.register(plugin)
-    l = hook.hello(arg=3)
-    assert l == [4]
+    out = hook.hello(arg=3)
+    assert out == [4]
     assert not hasattr(hook, 'world')
     pm.unregister(plugin)
     assert hook.hello(arg=3) == []

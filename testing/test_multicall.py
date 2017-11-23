@@ -10,10 +10,10 @@ hookimpl = HookimplMarker("example")
 
 
 def test_uses_copy_of_methods():
-    l = [lambda: 42]
-    mc = _LegacyMultiCall(l, {})
+    out = [lambda: 42]
+    mc = _LegacyMultiCall(out, {})
     repr(mc)
-    l[:] = []
+    out[:] = []
     res = mc.execute()
     return res == 42
 
@@ -26,7 +26,7 @@ def MC(methods, kwargs, firstresult=False):
         hookfuncs.append(f)
         if '__multicall__' in f.argnames:
             caller = _legacymulticall
-    return caller(hookfuncs, kwargs, specopts={"firstresult": firstresult})
+    return caller(hookfuncs, kwargs, firstresult=firstresult)
 
 
 def test_call_passing():
@@ -105,53 +105,53 @@ def test_call_none_is_no_result():
     def m2():
         return None
 
-    res = MC([m1, m2], {}, {"firstresult": True})
+    res = MC([m1, m2], {}, firstresult=True)
     assert res == 1
     res = MC([m1, m2], {}, {})
     assert res == [1]
 
 
 def test_hookwrapper():
-    l = []
+    out = []
 
     @hookimpl(hookwrapper=True)
     def m1():
-        l.append("m1 init")
+        out.append("m1 init")
         yield None
-        l.append("m1 finish")
+        out.append("m1 finish")
 
     @hookimpl
     def m2():
-        l.append("m2")
+        out.append("m2")
         return 2
 
     res = MC([m2, m1], {})
     assert res == [2]
-    assert l == ["m1 init", "m2", "m1 finish"]
-    l[:] = []
-    res = MC([m2, m1], {}, {"firstresult": True})
+    assert out == ["m1 init", "m2", "m1 finish"]
+    out[:] = []
+    res = MC([m2, m1], {}, firstresult=True)
     assert res == 2
-    assert l == ["m1 init", "m2", "m1 finish"]
+    assert out == ["m1 init", "m2", "m1 finish"]
 
 
 def test_hookwrapper_order():
-    l = []
+    out = []
 
     @hookimpl(hookwrapper=True)
     def m1():
-        l.append("m1 init")
+        out.append("m1 init")
         yield 1
-        l.append("m1 finish")
+        out.append("m1 finish")
 
     @hookimpl(hookwrapper=True)
     def m2():
-        l.append("m2 init")
+        out.append("m2 init")
         yield 2
-        l.append("m2 finish")
+        out.append("m2 finish")
 
     res = MC([m2, m1], {})
     assert res == []
-    assert l == ["m1 init", "m2 init", "m2 finish", "m1 finish"]
+    assert out == ["m1 init", "m2 init", "m2 finish", "m1 finish"]
 
 
 def test_hookwrapper_not_yield():
@@ -177,13 +177,13 @@ def test_hookwrapper_too_many_yield():
 
 @pytest.mark.parametrize("exc", [ValueError, SystemExit])
 def test_hookwrapper_exception(exc):
-    l = []
+    out = []
 
     @hookimpl(hookwrapper=True)
     def m1():
-        l.append("m1 init")
+        out.append("m1 init")
         yield None
-        l.append("m1 finish")
+        out.append("m1 finish")
 
     @hookimpl
     def m2():
@@ -191,4 +191,4 @@ def test_hookwrapper_exception(exc):
 
     with pytest.raises(exc):
         MC([m2, m1], {})
-    assert l == ["m1 init", "m1 finish"]
+    assert out == ["m1 init", "m1 finish"]
