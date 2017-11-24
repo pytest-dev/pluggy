@@ -492,7 +492,7 @@ def varnames(func):
             return ()
 
     try:  # func MUST be a function or method here or we won't parse any args
-        spec = inspect.getargspec(func)
+        spec = _getargspec(func)
     except TypeError:
         return (), ()
 
@@ -660,6 +660,14 @@ class HookImpl(object):
         self.opts = hook_impl_opts
         self.plugin_name = plugin_name
         self.__dict__.update(hook_impl_opts)
+
+
+if hasattr(inspect, 'getfullargspec'):
+    def _getargspec(func):
+        return inspect.getfullargspec(func)
+else:
+    def _getargspec(func):
+        return inspect.getargspec(func)
 
 
 if hasattr(inspect, 'signature'):
