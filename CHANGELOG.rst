@@ -2,8 +2,10 @@
 -----
 
 - Drop support for EOL Python 2.6 and 3.3 in PR `#103`_.
+- Use ``inspect.getfullargspec()`` in Python 3 to avoid issuing a deprecation warning for ``inspect.getargspec()`` (`#81`_).
 
 .. _#103: https://github.com/pytest-dev/pluggy/pull/103
+.. _#81: https://github.com/pytest-dev/pluggy/issues/81
 
 0.5.2
 -----
