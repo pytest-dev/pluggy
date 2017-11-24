@@ -41,6 +41,7 @@ def main():
         author='Holger Krekel',
         author_email='holger@merlinux.eu',
         url='https://github.com/pytest-dev/pluggy',
+        python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
         classifiers=classifiers,
         packages=['pluggy'],
     )
