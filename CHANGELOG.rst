@@ -1,9 +1,31 @@
 0.6.0
 -----
+- Add CI testing for the features, release, and master
+  branches of ``pytest`` (PR `#79`_).
+- Document public API for ``_Result`` objects passed to wrappers
+  (PR `#85`_).
+- Document and test hook LIFO ordering (PR `#85`_).
+- Turn warnings into errors in test suite (PR `#89`_).
+- Deprecate ``_Result.result`` (PR `#88`_).
+- Convert ``_Multicall`` to a simple function distinguishing it from
+  the legacy version (PR `#90`_).
+- Resolve E741 errors (PR `#96`_).
+- Test and bug fix for unmarked hook collection (PRs `#97`_ and
+  `#102`_).
+- Drop support for EOL Python 2.6 and 3.3 (PR `#103`_).
+- Fix ``inspect`` based arg introspection on py3.6 (PR `#94`_).
 
-- Drop support for EOL Python 2.6 and 3.3 in PR `#103`_.
-
+.. _#79: https://github.com/pytest-dev/pluggy/pull/79
+.. _#85: https://github.com/pytest-dev/pluggy/pull/85
+.. _#88: https://github.com/pytest-dev/pluggy/pull/88
+.. _#89: https://github.com/pytest-dev/pluggy/pull/89
+.. _#90: https://github.com/pytest-dev/pluggy/pull/90
+.. _#94: https://github.com/pytest-dev/pluggy/pull/94
+.. _#96: https://github.com/pytest-dev/pluggy/pull/96
+.. _#97: https://github.com/pytest-dev/pluggy/pull/97
+.. _#102: https://github.com/pytest-dev/pluggy/pull/102
 .. _#103: https://github.com/pytest-dev/pluggy/pull/103
+
 
 0.5.2
 -----
@@ -22,6 +44,7 @@
 .. _#77: https://github.com/pytest-dev/pluggy/pull/77
 .. _#80: https://github.com/pytest-dev/pluggy/pull/80
 
+
 0.5.1
 -----
 - fix a bug and add tests for case where ``firstresult`` hooks return
@@ -31,9 +54,9 @@
 .. _#69: https://github.com/pytest-dev/pluggy/pull/69
 .. _#68: https://github.com/pytest-dev/pluggy/issuses/68
 
+
 0.5.0
 -----
-
 - fix bug where callbacks for historic hooks would not be called for
   already registered plugins.  Thanks `@vodik`_ for the PR
   and `@hpk42`_ for further fixes.
@@ -93,7 +116,6 @@
 
 0.4.0
 -----
-
 - add ``has_plugin(name)`` method to pluginmanager.  thanks `@nicoddemus`_.
 
 - fix `#11`_: make plugin parsing more resilient against exceptions
@@ -108,15 +130,15 @@
 .. _#11: https://github.com/pytest-dev/pluggy/issues/11
 .. _#4: https://github.com/pytest-dev/pluggy/issues/4
 
+
 0.3.1
 -----
-
 - avoid using deprecated-in-python3.5 getargspec method. Thanks
   `@mdboom`_.
 
+
 0.3.0
 -----
-
 initial release
 
 .. contributors
