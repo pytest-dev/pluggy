@@ -626,6 +626,8 @@ class _HookCaller(object):
         self._call_history.append((kwargs or {}, proc))
         # historizing hooks don't return results
         res = self._hookexec(self, self._nonwrappers + self._wrappers, kwargs)
+        if proc is None:
+            return
         for x in res or []:
             proc(x)
 
