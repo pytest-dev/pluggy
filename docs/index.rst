@@ -81,7 +81,7 @@ decorators are used to *mark* functions for detection by a ``PluginManager``:
 
 Each decorator type takes a single ``project_name`` string as its
 lone argument the value of which is used to mark hooks for detection by
-by a similarly configured ``PluginManager`` instance.
+a similarly configured ``PluginManager`` instance.
 
 That is, a *mark* type called with ``project_name`` returns an object which
 can be used to decorate functions which will then be detected by a
