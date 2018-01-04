@@ -193,8 +193,7 @@ class PluginManager(object):
     You can register plugin objects (which contain hooks) by calling
     ``register(plugin)``.  The Pluginmanager is initialized with a
     prefix that is searched for in the names of the dict of registered
-    plugin objects.  An optional excludefunc allows to blacklist names which
-    are not considered as hooks despite a matching prefix.
+    plugin objects.
 
     For debugging purposes you can call ``enable_tracing()``
     which will subsequently send debug information to the trace helper.
