@@ -134,7 +134,7 @@ which has been appropriately marked.
 
 Optional validation
 ^^^^^^^^^^^^^^^^^^^
-Normally each *hookimpl* should be validated a against a corresponding
+Normally each *hookimpl* should be validated against a corresponding
 hook :ref:`specification <specs>`. If you want to make an exception
 then the *hookimpl* should be marked with the ``"optionalhook"`` option:
 
@@ -458,7 +458,7 @@ You can block any plugin from being registered using
 
 Inspection
 ----------
-You can use a variety of methods to inspect the both the registry
+You can use a variety of methods to inspect both the registry
 and particular plugins in it:
 
 - :py:meth:`~pluggy.PluginManager.list_name_plugin()` -
