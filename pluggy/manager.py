@@ -1,11 +1,7 @@
 import inspect
 import warnings
+from . import _tracing
 from .callers import _multicall, HookCallError, _Result, _legacymulticall
-
-__version__ = '0.6.0'
-
-__all__ = ["PluginManager", "PluginValidationError", "HookCallError",
-           "HookspecMarker", "HookimplMarker"]
 
 
 class PluginValidationError(Exception):
