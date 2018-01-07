@@ -7,8 +7,8 @@ Api Reference
     :show-inheritance:
 
 
-.. automethod:: pluggy._Result.get_result
+.. automethod:: pluggy.callers._Result.get_result
 
-.. automethod:: pluggy._Result.force_result
+.. automethod:: pluggy.callers._Result.force_result
 
-.. automethod:: pluggy._HookCaller.call_extra
+.. automethod:: pluggy.hooks._HookCaller.call_extra
