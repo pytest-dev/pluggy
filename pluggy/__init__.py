@@ -1,4 +1,4 @@
-__version__ = '0.6.0'
+__version__ = '0.6.1.dev'
 
 __all__ = ["PluginManager", "PluginValidationError", "HookCallError",
            "HookspecMarker", "HookimplMarker"]
