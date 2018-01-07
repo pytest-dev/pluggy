@@ -8,25 +8,6 @@ class PluginValidationError(Exception):
     """ plugin failed validation. """
 
 
-class _TracedHookExecution(object):
-    def __init__(self, pluginmanager, before, after):
-        self.pluginmanager = pluginmanager
-        self.before = before
-        self.after = after
-        self.oldcall = pluginmanager._inner_hookexec
-        assert not isinstance(self.oldcall, _TracedHookExecution)
-        self.pluginmanager._inner_hookexec = self
-
-    def __call__(self, hook, hook_impls, kwargs):
-        self.before(hook.name, hook_impls, kwargs)
-        outcome = _Result.from_call(lambda: self.oldcall(hook, hook_impls, kwargs))
-        self.after(outcome, hook.name, hook_impls, kwargs)
-        return outcome.get_result()
-
-    def undo(self):
-        self.pluginmanager._inner_hookexec = self.oldcall
-
-
 class PluginManager(object):
     """ Core Pluginmanager class which manages registration
     of plugin objects and 1:N hook calling.
@@ -271,7 +252,7 @@ class PluginManager(object):
         same arguments as ``before`` but also a :py:class:`_Result`` object
         which represents the result of the overall hook call.
         """
-        return _TracedHookExecution(self, before, after).undo
+        return _tracing._TracedHookExecution(self, before, after).undo
 
     def enable_tracing(self):
         """ enable tracing of hook calls and return an undo function. """
