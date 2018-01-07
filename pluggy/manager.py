@@ -1,6 +1,5 @@
 import inspect
 from . import _tracing
-from .callers import _Result
 from .hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 
 

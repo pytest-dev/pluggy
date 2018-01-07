@@ -1,6 +1,5 @@
 import pytest
 import types
-
 from pluggy import (PluginValidationError,
                     HookCallError, HookimplMarker, HookspecMarker)
 

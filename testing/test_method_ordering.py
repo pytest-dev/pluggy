@@ -1,10 +1,9 @@
 import pytest
-
-
 import sys
 import types
 
-from pluggy import PluginManager, HookImpl, HookimplMarker, HookspecMarker
+from pluggy import PluginManager, HookimplMarker, HookspecMarker
+from pluggy.hooks import HookImpl
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
