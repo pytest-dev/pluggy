@@ -1,8 +1,7 @@
 import warnings
-
 import pytest
-
-from pluggy import PluginManager, HookimplMarker, HookspecMarker, _Result
+from pluggy import PluginManager, HookimplMarker, HookspecMarker
+from pluggy.callers import _Result
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")

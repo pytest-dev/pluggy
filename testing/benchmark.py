@@ -2,8 +2,9 @@
 Benchmarking and performance tests.
 """
 import pytest
-from pluggy import (_multicall, _legacymulticall, HookImpl, HookspecMarker,
-                    HookimplMarker)
+from pluggy import HookspecMarker, HookimplMarker
+from pluggy.hooks import HookImpl
+from pluggy.callers import _multicall, _legacymulticall
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
