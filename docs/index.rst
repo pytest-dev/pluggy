@@ -239,11 +239,11 @@ be implemented as generator function with a single ``yield`` in its body:
         if config.use_defaults:
             outcome.force_result(defaults)
 
-The generator is `sent`_ a :py:class:`pluggy._Result` object which can
+The generator is `sent`_ a :py:class:`pluggy.callers._Result` object which can
 be assigned in the ``yield`` expression and used to override or inspect
 the final result(s) returned back to the caller using the
-:py:meth:`~pluggy._Result.force_result` or
-:py:meth:`~pluggy._Result.get_result` methods.
+:py:meth:`~pluggy.callers._Result.force_result` or
+:py:meth:`~pluggy.callers._Result.get_result` methods.
 
 .. note::
     Hook wrappers can **not** return results (as per generator function
