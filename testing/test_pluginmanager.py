@@ -183,24 +183,46 @@ def test_register_historic(pm):
     assert out == [1, 10, 120, 12]
 
 
-def test_with_result_memorized(pm):
+@pytest.mark.parametrize("result_callback", [True, False])
+def test_with_result_memorized(pm, result_callback):
+    """Verify that ``_HookCaller._maybe_apply_history()`
+    correctly applies the ``result_callback`` function, when provided,
+    to the result from calling each newly registered hook.
+    """
+    out = []
+    if result_callback:
+        def callback(res):
+            out.append(res)
+    else:
+        callback = None
+
     class Hooks(object):
         @hookspec(historic=True)
         def he_method1(self, arg):
             pass
+
     pm.add_hookspecs(Hooks)
 
-    he_method1 = pm.hook.he_method1
-    he_method1.call_historic(lambda res: out.append(res), dict(arg=1))
-    out = []
-
-    class Plugin(object):
+    class Plugin1(object):
         @hookimpl
         def he_method1(self, arg):
             return arg * 10
 
-    pm.register(Plugin())
-    assert out == [10]
+    pm.register(Plugin1())
+
+    he_method1 = pm.hook.he_method1
+    he_method1.call_historic(proc=callback, kwargs=dict(arg=1))
+
+    class Plugin2(object):
+        @hookimpl
+        def he_method1(self, arg):
+            return arg * 10
+
+    pm.register(Plugin2())
+    if result_callback:
+        assert out == [10, 10]
+    else:
+        assert out == []
 
 
 def test_with_callbacks_immediately_executed(pm):
