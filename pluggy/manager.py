@@ -4,7 +4,10 @@ from .hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 
 
 class PluginValidationError(Exception):
-    """ plugin failed validation. """
+    """ plugin failed validation. 
+
+    :param object plugin: the plugin which failed validation, may be a module or an arbitrary object.
+    """
 
     def __init__(self, plugin, message):
         self.plugin = plugin
