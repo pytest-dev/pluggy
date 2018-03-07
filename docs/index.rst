@@ -29,9 +29,9 @@ registered hook *implementations*.
 subscriptions and can be thought of and used as a rudimentary busless `publish-subscribe`_
 event system.
 
-``pluggy``'s approach is meant to let a designer think carefuly about which objects are
+``pluggy``'s approach is meant to let a designer think carefully about which objects are
 explicitly needed by an extension writer. This is in contrast to subclass-based extension
-systems which may expose unecessary state and behaviour or encourage `tight coupling`_
+systems which may expose unnecessary state and behaviour or encourage `tight coupling`_
 in overlying frameworks.
 
 
@@ -85,7 +85,7 @@ a similarly configured ``PluginManager`` instance.
 
 That is, a *mark* type called with ``project_name`` returns an object which
 can be used to decorate functions which will then be detected by a
-``PluginManager`` which was instantiated with the the same ``project_name``
+``PluginManager`` which was instantiated with the same ``project_name``
 value.
 
 Furthermore, each *hookimpl* or *hookspec* decorator can configure the
@@ -277,7 +277,7 @@ should be added before registering corresponding *hookimpls*:
 
     @hookspec
     def setup_project(config, args):
-        """This hook is used to process the inital config and input
+        """This hook is used to process the initial config and input
         arguments.
         """
 
@@ -433,7 +433,7 @@ definitions to populate the registry is described in detail in the section on
 In summary, you pass a plugin namespace object to the
 :py:meth:`~pluggy.PluginManager.register()` and
 :py:meth:`~pluggy.PluginManager.add_hookspec()` methods to collect
-hook *implementations* and *specfications* from *plugin* namespaces respectively.
+hook *implementations* and *specifications* from *plugin* namespaces respectively.
 
 You can unregister any *plugin*'s hooks using
 :py:meth:`~pluggy.PluginManager.unregister()` and check if a plugin is

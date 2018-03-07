@@ -52,7 +52,7 @@
   for the issue (`#68`_) and PR (`#69`_) respectively.
 
 .. _#69: https://github.com/pytest-dev/pluggy/pull/69
-.. _#68: https://github.com/pytest-dev/pluggy/issuses/68
+.. _#68: https://github.com/pytest-dev/pluggy/issues/68
 
 
 0.5.0
