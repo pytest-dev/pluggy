@@ -357,6 +357,7 @@ then ``None``.
 This can be useful for optimizing a call loop for which you are only
 interested in a single core *hookimpl*. An example is the
 `pytest_cmdline_main`_ central routine of ``pytest``.
+Note that all ``hookwrappers`` are still invoked with the first result.
 
 Also see the `first result`_ section in the ``pytest`` docs.
 
