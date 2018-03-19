@@ -103,9 +103,12 @@ def test_register_mismatch_method(he_pm):
         def he_method_notexists(self):
             pass
 
-    he_pm.register(hello())
-    with pytest.raises(PluginValidationError):
+    plugin = hello()
+
+    he_pm.register(plugin)
+    with pytest.raises(PluginValidationError) as excinfo:
         he_pm.check_pending()
+    assert excinfo.value.plugin is plugin
 
 
 def test_register_mismatch_arg(he_pm):
@@ -114,8 +117,11 @@ def test_register_mismatch_arg(he_pm):
         def he_method1(self, qlwkje):
             pass
 
-    with pytest.raises(PluginValidationError):
-        he_pm.register(hello())
+    plugin = hello()
+
+    with pytest.raises(PluginValidationError) as excinfo:
+        he_pm.register(plugin)
+    assert excinfo.value.plugin is plugin
 
 
 def test_register(pm):
