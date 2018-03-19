@@ -4,7 +4,14 @@ from .hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 
 
 class PluginValidationError(Exception):
-    """ plugin failed validation. """
+    """ plugin failed validation. 
+
+    :param object plugin: the plugin which failed validation, may be a module or an arbitrary object.
+    """
+
+    def __init__(self, plugin, message):
+        self.plugin = plugin
+        super(Exception, self).__init__(message)
 
 
 class PluginManager(object):
@@ -178,6 +185,7 @@ class PluginManager(object):
     def _verify_hook(self, hook, hookimpl):
         if hook.is_historic() and hookimpl.hookwrapper:
             raise PluginValidationError(
+                hookimpl.plugin,
                 "Plugin %r\nhook %r\nhistoric incompatible to hookwrapper" %
                 (hookimpl.plugin_name, hook.name))
 
@@ -185,6 +193,7 @@ class PluginManager(object):
         notinspec = set(hookimpl.argnames) - set(hook.argnames)
         if notinspec:
             raise PluginValidationError(
+                hookimpl.plugin,
                 "Plugin %r for hook %r\nhookimpl definition: %s\n"
                 "Argument(s) %s are declared in the hookimpl but "
                 "can not be found in the hookspec" %
@@ -202,6 +211,7 @@ class PluginManager(object):
                     for hookimpl in (hook._wrappers + hook._nonwrappers):
                         if not hookimpl.optionalhook:
                             raise PluginValidationError(
+                                hookimpl.plugin,
                                 "unknown hook %r in plugin %r" %
                                 (name, hookimpl.plugin))
 
