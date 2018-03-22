@@ -178,7 +178,7 @@ will be executed *first* or *last* respectively in the hook call loop:
         """Some other plugin defining the same hook.
         """
         @hookimpl(tryfirst=True)
-        def setup_project(config, args):
+        def setup_project(self, config, args):
             """Report what args were passed before calling
             downstream hooks.
             """
