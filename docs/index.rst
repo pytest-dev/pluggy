@@ -4,14 +4,14 @@
 The five minute elevator pitch
 ******************************
 
-``pluggy`` gives `users` the possibility to extend/modify the behaviour of a program like e.g. `pytest`_, `tox`_ or `devpi`_ by installing a `plugin` for that program. The plugin code will then be run as part of normal program execution changing/enhancing certain aspects of it.
+``pluggy`` gives `users` the possibility to extend or modify the behaviour of a program like e.g. `pytest`_, `tox`_ or `devpi`_ by installing a `plugin` for that program. The plugin code will run as part of normal program execution changing or enhancing certain aspects of it.
 
 There are three roles in which people might interact with ``pluggy``.
 
 Publisher
 +++++++++
 
-The `publisher` wants to enable an arbitrary number of `subscribers` to extend or modify some aspects of their programs execution. They write hook specifications, register them with a :py:class:`pluggy.PluginManager` and instantiate a marker object for the `subscriber` (:py:class:`~pluggy.HookimplMarker` - used to `decorate <https://www.python.org/dev/peps/pep-0318/#current-syntax>` a hook implementation function or method). This marker is usually called `hookimpl` and importable from the root package of the `publisher` project. They then add calls to their specified hooks in appropriate phases of program execution. ``pluggy`` will do all the magic.
+The `publisher` wants to enable an arbitrary number of `subscribers` to extend or modify some aspects of their programs execution. They write hook specifications, register them with a :py:class:`pluggy.PluginManager` and instantiate a marker object for the `subscriber` - a :py:class:`~pluggy.HookimplMarker` - used to `decorate <https://www.python.org/dev/peps/pep-0318/#current-syntax>` hook implementation functions. This marker is usually called `hookimpl` and importable from the root package of the `publisher` project. They then add calls to their specified hooks in appropriate phases of program execution. ``pluggy`` will then do all the magic.
 
 **FIXME not sure what is the right advice here - I am also not sure how we deal with different version dependencies atm. Do I need to vendor in pluggy as a publisher to avoid versioning conflicts? Should I just depend on pluggy without version and hope all is good?** To avoid compatibility issues they should always pin their ``pluggy`` version to the minor version used at implementation time (at the time of writing (spring 2018) ``pluggy`` is not at 1.0 yet, so breaking changes should be expected with any minor release).
 
@@ -20,7 +20,7 @@ They need to learn about ``pluggy`` and its capabilities and should at least loo
 Subscriber
 ++++++++++
 
-The `subscriber` wants to modify or extend the program execution of a `publisher` project. They install the project and import it wherever they want to use the `hookimpl` marker. They create one or more hook implementation functions matching the exact name of the `publisher` `hookspec` functions and decorate them with `@<publisher>.<hookimpl>`. They only need to declare the subset of parameters they actually use in their hook implementation. To make their plugin discoverable by the `publisher` they define an ``entry_point`` in their `setup.py` (defined by the publisher (e.g. `pytest11` for pytest plugins or `tox` for tox plugins). The result of this is called a plugin for a certain project. The plugin project naming rule is `<publisher>-<subscriber>` (e.g. `pytest-sugar`, `tox-conda` or `devpi-**FIXME I don't know any devpi plugins**`).
+The `subscriber` wants to modify or extend the program execution of a `publisher` project. They install the project and import it wherever they want to use the `hookimpl` marker. They create one or more hook implementation functions matching the exact name of the `publisher` `hookspec` functions and decorate them with `@<publisher>.<hookimpl>`. They only need to declare the subset of parameters they actually use in their hook implementation. To make their plugin discoverable by the `publisher` they define an `entry point <https://packaging.python.org/specifications/entry-points/>`_ in their `setup.py <https://docs.python.org/3.6/distutils/setupscript.html>`_ (defined by the publisher (e.g. `pytest11`, `tox` or `devpi_server`). The result of this is called a plugin for a certain project. The plugin project naming rule is `<publisher>-<subscriber>` (e.g. `pytest-sugar`, `tox-conda` or `devpi-ldap`).
 
 Depending on how involved the modifications are, they need to learn about how the `publisher` project works and about the parameters the hook functions provide. They also might have to learn a bit more about how ``pluggy`` executes hooks regarding ordering and other behavioral details.
 
@@ -707,7 +707,11 @@ in your project you should thus use a dependency restriction like
 
 .. hyperlinks
 .. _pytest:
-    http://pytest.org
+    https://pytest.org
+.. _tox:
+    https://tox.readthedocs.io
+.. _devpi:
+    https://devpi.net
 .. _request-response pattern:
     https://en.wikipedia.org/wiki/Request%E2%80%93response
 .. _publish-subscribe:
