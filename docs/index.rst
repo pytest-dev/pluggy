@@ -27,7 +27,7 @@ Depending on how involved the modifications are, they need to learn about how th
 User
 ++++
 
-The `user` wants to use new or changed features make available `subscribers` as so-called `plugins` for a `publisher` project. They install the `publisher` project and the `plugin` they want to use. Through the magic of entry points the `publisher` will discover the `plugin` hooks and start calling them as part of their normal program execution.
+The `user` wants to use new or changed features made available by `subscribers` as so-called `plugins` for a `publisher` project. They install the `publisher` project and the `plugin` they want to use. Through the magic of entry points the `publisher` will discover the `plugin` hooks and start calling them as part of their normal program execution.
 
 If a `user` doesn't need the changed behaviour of a `plugin` anymore, they uninstall it and all is back to normal.
 
