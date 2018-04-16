@@ -1,8 +1,41 @@
 ``pluggy``
 ==========
 
-The ``pytest`` plugin system
-****************************
+The five minute elevator pitch
+******************************
+
+``pluggy`` gives `users` the possibility to extend/modify the behaviour of a program like e.g. `pytest`_, `tox`_ or `devpi`_ by installing a `plugin` for that program. The plugin code will then be run as part of normal program execution changing/enhancing certain aspects of it.
+
+There are three roles in which people might interact with ``pluggy``.
+
+Publisher
++++++++++
+
+The `publisher` wants to enable an arbitrary number of `subscribers` to extend or modify some aspects of their programs execution. They write hook specifications, register them with a :py:class:`pluggy.PluginManager` and instantiate a marker object for the `subscriber` (:py:class:`~pluggy.HookimplMarker` - used to `decorate <https://www.python.org/dev/peps/pep-0318/#current-syntax>` a hook implementation function or method). This marker is usually called `hookimpl` and importable from the root package of the `publisher` project. They then add calls to their specified hooks in appropriate phases of program execution. ``pluggy`` will do all the magic.
+
+**FIXME not sure what is the right advice here - I am also not sure how we deal with different version dependencies atm. Do I need to vendor in pluggy as a publisher to avoid versioning conflicts? Should I just depend on pluggy without version and hope all is good?** To avoid compatibility issues they should always pin their ``pluggy`` version to the minor version used at implementation time (at the time of writing (spring 2018) ``pluggy`` is not at 1.0 yet, so breaking changes should be expected with any minor release).
+
+They need to learn about ``pluggy`` and its capabilities and should at least loosely follow the development of the ``pluggy`` project.
+
+Subscriber
+++++++++++
+
+The `subscriber` wants to modify or extend the program execution of a `publisher` project. They install the project and import it wherever they want to use the `hookimpl` marker. They create one or more hook implementation functions matching the exact name of the `publisher` `hookspec` functions and decorate them with `@<publisher>.<hookimpl>`. They only need to declare the subset of parameters they actually use in their hook implementation. To make their plugin discoverable by the `publisher` they define an ``entry_point`` in their `setup.py` (defined by the publisher (e.g. `pytest11` for pytest plugins or `tox` for tox plugins). The result of this is called a plugin for a certain project. The plugin project naming rule is `<publisher>-<subscriber>` (e.g. `pytest-sugar`, `tox-conda` or `devpi-**FIXME I don't know any devpi plugins**`).
+
+Depending on how involved the modifications are, they need to learn about how the `publisher` project works and about the parameters the hook functions provide. They also might have to learn a bit more about how ``pluggy`` executes hooks regarding ordering and other behavioral details.
+
+User
+++++
+
+The `user` wants to use new or changed features make available `subscribers` as so-called `plugins` for a `publisher` project. They install the `publisher` project and the `plugin` they want to use. Through the magic of entry points the `publisher` will discover the `plugin` hooks and start calling them as part of their normal program execution.
+
+If a `user` doesn't need the changed behaviour of a `plugin` anymore, they uninstall it and all is back to normal.
+
+`Users` don't need to know that the mechanism making this possible is provided by ``pluggy``.
+
+Origins: the ``pytest`` plugin system
+*************************************
+
 ``pluggy`` is the crystallized core of `plugin management and hook
 calling`_ for `pytest`_.
 
