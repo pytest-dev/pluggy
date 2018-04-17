@@ -210,7 +210,7 @@ class _HookCaller(object):
                 raise ValueError("plugin %r not found" % (plugin,))
 
     def _add_hookimpl(self, hookimpl):
-        """A an implementation to the callback chain.
+        """Add an implementation to the callback chain.
         """
         if hookimpl.hookwrapper:
             methods = self._wrappers
