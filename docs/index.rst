@@ -30,6 +30,8 @@ to the minor version used at implementation time (at the time of writing
 (spring 2018) ``pluggy`` is not at 1.0 yet, so breaking changes should be
 expected with any minor release).
 
+necessary knowledge about ``pluggy``:
+
 They need to learn about ``pluggy`` and its capabilities and should at least
 loosely follow the development of the ``pluggy`` project.
 
@@ -49,6 +51,8 @@ their `setup.py <https://docs.python.org/3.6/distutils/setupscript.html>`_
 of this is called a plugin for a certain project. The plugin project naming rule
 is `<publisher>-<subscriber>` (e.g. `pytest-sugar`, `tox-conda` or `devpi-ldap`).
 
+necessary knowledge about ``pluggy``:
+
 Depending on how involved the modifications are, they need to learn about how
 the `publisher` project works and about the parameters the hook functions provide.
 They also might have to learn a bit more about how ``pluggy`` executes hooks
@@ -65,6 +69,8 @@ of their normal program execution.
 
 If a `user` doesn't need the changed behaviour of a `plugin` anymore, they
 uninstall it and all is back to normal.
+
+necessary knowledge about ``pluggy``:
 
 `Users` don't need to know that the mechanism making this possible is provided by ``pluggy``.
 
