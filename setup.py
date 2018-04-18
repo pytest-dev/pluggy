@@ -1,5 +1,8 @@
 import os
 from setuptools import setup
+from setuptools.command.sdist import sdist as _sdist
+from setuptools.extension import Extension
+
 
 classifiers = [
     'Development Status :: 4 - Beta',
@@ -30,6 +33,32 @@ def get_version():
     raise ValueError("could not read version")
 
 
+cmdclass = {}
+
+
+class sdist(_sdist):
+    """Custom sdist building using cython
+    """
+    def run(self):
+        # Make sure the compiled Cython files in the distribution
+        # are up-to-date
+        from Cython.Build import cythonize
+        cythonize(["pluggy/callers/cythonized.pyx"])
+        _sdist.run(self)
+
+
+try:
+    from Cython.Build import cythonize
+    print("Building Cython extension(s)")
+    exts = cythonize(["pluggy/callers/cythonized.pyx"])
+    cmdclass['sdist'] = sdist
+except ImportError:
+    # When Cython is not installed build from C sources
+    print("Building C extension(s)")
+    exts = [Extension("pluggy.callers.cythonized",
+                      ["pluggy/callers/cythonized.c"])]
+
+
 def main():
     setup(
         name='pluggy',
@@ -43,7 +72,9 @@ def main():
         url='https://github.com/pytest-dev/pluggy',
         python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
         classifiers=classifiers,
-        packages=['pluggy'],
+        packages=['pluggy', 'pluggy.callers'],
+        ext_modules=exts,
+        cmdclass=cmdclass,
     )
 
 
