@@ -17,7 +17,7 @@ class HookspecMarker(object):
     def __init__(self, project_name):
         self.project_name = project_name
 
-    def __call__(self, function=None, firstresult=False, historic=False):
+    def __call__(self, function=None, firstresult=False, historic=False, warn_on_impl=None):
         """ if passed a function, directly sets attributes on the function
         which will make it discoverable to add_hookspecs().  If passed no
         function, returns a decorator which can be applied to a function
@@ -35,7 +35,8 @@ class HookspecMarker(object):
             if historic and firstresult:
                 raise ValueError("cannot have a historic firstresult hook")
             setattr(func, self.project_name + "_spec",
-                    dict(firstresult=firstresult, historic=historic))
+                    dict(firstresult=firstresult, historic=historic,
+                         warn_on_impl=warn_on_impl,))
             return func
 
         if function is not None:
@@ -195,6 +196,7 @@ class _HookCaller(object):
         self.spec_opts.update(spec_opts)
         if spec_opts.get("historic"):
             self._call_history = []
+        self.warn_on_impl = spec_opts.get('warn_on_impl')
 
     def is_historic(self):
         return hasattr(self, "_call_history")
