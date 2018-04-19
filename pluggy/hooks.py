@@ -168,8 +168,8 @@ class _HookRelay(object):
 
 
 class _HookCaller(object):
-    def __init__(self, name, hook_execute, specmodule_or_class=None,
-                 spec_opts=None):
+    def __init__(self, name, hook_execute, specmodule_or_class=None, spec_opts=None,
+                 iterate=False):
         self.name = name
         self._wrappers = []
         self._nonwrappers = []
@@ -177,7 +177,7 @@ class _HookCaller(object):
         self._specmodule_or_class = None
         self.argnames = None
         self.kwargnames = None
-        self.multicall = _multicall
+        self.multicall = _multicall if not iterate else _itercall
         self.spec_opts = spec_opts or {}
         if specmodule_or_class is not None:
             self.set_specification(specmodule_or_class, spec_opts)
