@@ -1,12 +1,23 @@
 import inspect
 from . import _tracing
 from .hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
+import warnings
+
+
+def _warn_for_function(warning, function):
+    warnings.warn_explicit(
+        warning,
+        type(warning),
+        lineno=function.__code__.co_firstlineno,
+        filename=function.__code__.co_filename,
+    )
 
 
 class PluginValidationError(Exception):
-    """ plugin failed validation. 
+    """ plugin failed validation.
 
-    :param object plugin: the plugin which failed validation, may be a module or an arbitrary object.
+    :param object plugin: the plugin which failed validation,
+        may be a module or an arbitrary object.
     """
 
     def __init__(self, plugin, message):
@@ -188,7 +199,8 @@ class PluginManager(object):
                 hookimpl.plugin,
                 "Plugin %r\nhook %r\nhistoric incompatible to hookwrapper" %
                 (hookimpl.plugin_name, hook.name))
-
+        if hook.warn_on_impl:
+            _warn_for_function(hook.warn_on_impl, hookimpl.function)
         # positional arg checking
         notinspec = set(hookimpl.argnames) - set(hook.argnames)
         if notinspec:

@@ -384,6 +384,21 @@ dynamically loaded plugins.
 For more info see :ref:`call_historic`.
 
 
+Warnings on hook implementation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As projects evolve new hooks may be introduced and/or deprecated.
+
+if a hookspec specifies a ``warn_on_impl``, pluggy will trigger it for any plugin implementing the hook.
+
+
+.. code-block:: python
+
+    @hookspec(warn_on_impl=DeprecationWarning("oldhook is deprecated and will be removed soon"))
+    def oldhook():
+        pass
+
+
 .. links
 .. _@contextlib.contextmanager:
     https://docs.python.org/3.6/library/contextlib.html#contextlib.contextmanager
