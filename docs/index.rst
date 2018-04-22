@@ -1,141 +1,179 @@
 ``pluggy``
 ==========
+**The pytest plugin system**
 
-The ``pytest`` plugin system
-****************************
-
+What is it?
+***********
 ``pluggy`` is the crystallized core of `plugin management and hook
-calling`_ for `pytest`_. It gives users the possibility to extend or modify
-the behaviour of a host program (e.g. `pytest`_, `tox`_ or `devpi`_) by
-installing a `plugin` for that program. The plugin code will run as part of
-normal program execution changing or enhancing certain aspects of it.
+calling`_ for `pytest`_. It enables `200+ plugins`_ to extend and customize
+``pytest``'s default behaviour. Even ``pytest`` itself is composed
+as a set of ``pluggy`` plugins which are invoked in sequence according to a
+well defined set of protocols.
 
-In fact, ``pytest`` is itself composed as a set of ``pluggy`` plugins
-which are invoked in sequence according to a well defined set of protocols.
-Some `200+ plugins`_ use ``pluggy`` to extend and customize ``pytest``'s default behaviour.
+It gives users the possibility to extend or modify the behaviour of a host
+program by installing a `plugin` for that program. The plugin code will run as
+part of normal program execution, changing or enhancing certain aspects of it.
 
-In essence, ``pluggy`` enables function `hooking`_ so you can build "pluggable" systems.
+In essence, ``pluggy`` enables function `hooking`_ so you can build
+"pluggable" systems.
 
-Introduction
-------------
+Why is it useful?
+*****************
 
-To explain how pluggy can be put to use we need to introduce three roles and explain their interaction with pluggy:
+There are some established mechanisms for modifying the behavior of other
+programs/libraries in Python like
+`method overriding <https://en.wikipedia.org/wiki/Method_overriding>`_
+(e.g. Jinja2) or
+`monkey patching <https://en.wikipedia.org/wiki/Monkey_patch>`_ (e.g. gevent
+or for `writing tests <https://docs.pytest.org/en/latest/monkeypatch.html>`_).
+These strategies become problematic though when several parties want to
+participate in the modification of the same program. Therefore ``pluggy``
+does not rely on these mechanisms to enable a more structured approach and
+avoid unnecessary exposure of state and behaviour. This leads to a more
+`loosely coupled <https://en.wikipedia.org/wiki/Loose_coupling>`_ relationship
+between ``host`` and ``plugins``.
 
-* The `hoster` - the person who wants to add extensibility to their program
-* The `implementer` - the person who wants to extend the `host` functionality by writing a plugin
-* the `user` - the person who installed the `host` and now wants to extend its functionality by using a plugin
+The ``pluggy`` approach puts the burden on the designer of the
+``host program`` to think carefully about which objects are explicitly needed
+by an implementation and gives designers of the ``plugin`` a clear framework
+for how to extend the ``host`` by giving them a well defined set of functions
+and objects to work with.
 
-Hoster
-++++++
+How does it work?
+*****************
 
-The `hoster` wants to enable an arbitrary number of `implementers` to extend
-or modify some aspects of their programs execution. They write hook specifications,
-register them with a :py:class:`pluggy.PluginManager` and instantiate a marker
-object for the `implementer` - a :py:class:`~pluggy.HookimplMarker` - used
-to `decorate <https://www.python.org/dev/peps/pep-0318/#current-syntax>` hook
-implementation functions. This marker is usually called `hookimpl` and
-importable from the root package of the `host` project. They then add
-calls to their specified hooks in appropriate phases of program execution.
-``pluggy`` will then do all the magic.
+Let us start with a short overview of what is involved:
 
-To avoid compatibility issues with other pluggy hosts installed in the same
-environment we recommend to not specify specific version ranges or keep them
-as broad as possible (at time of writing (Spring 2018) this would be
->=0.3,<1.0).
+* ``host`` or ``host program``: the program offering extensibility
+  by specifying ``hook functions`` and invoking their implementation(s) as
+  part of program execution
+* ``plugin``: the program implementing a subset of the specified hooks and
+  participating in program execution when the implementations are invoked
+  by the ``host``
+* ``pluggy``: connects ``host`` and ``plugins`` by using ...
 
-Necessary knowledge about ``pluggy``:
+    - the hook :ref:`specifications <specs>` defining call signatures
+      provided by the ``host`` (a.k.a ``hookspecs`` - see :ref:`marking_hooks`)
+    - the hook :ref:`implementations <impls>` provided by registered
+      ``plugins`` (a.k.a ``hookimpl`` - see `callbacks`_)
+    - the hook :ref:`caller <calling>` - a call loop triggered at appropriate
+      program positions in the ``host`` invoking the implementations
+      collecting the results
 
-They need to learn about ``pluggy`` and its capabilities and should at least
-loosely follow the development of the ``pluggy`` project.
+    ... where for each registered hook *specification*, a hook *call* will
+    invoke up to ``N`` registered hook *implementations*.
+* ``user``: the person who installed the ``host program`` and wants to
+  extend its functionality with ``plugins``. In the simplest case they install
+  the ``plugin`` in the same environment as the ``host`` and the magic will
+  happen when the ``host program`` is run the next time. Depending on
+  the ``plugin``, there might be other things they need to do. For example,
+  they might have to call the host with an additional commandline parameter
+  to the host that the ``plugin`` added.
 
-Implementer
-+++++++++++
+A toy example
+-------------
+Let us demonstrate the core functionality in one module and show how you can
+start experimenting with pluggy functionality.
 
-The `implementer` wants to modify or extend the program execution of a
-host project. They install the project and import it wherever they want
-to use the `hookimpl` marker. They create one or more hook implementation functions
-matching the exact name of the `hookspec` functions defined in the host project
-and decorate them with `@<hoster>.<hookimpl>`. They only need to declare the
-subset of parameters they actually use in their hook implementation.
-To make their plugin discoverable by the `hoster` they define an
-`entry point <https://packaging.python.org/specifications/entry-points/>`_ in
-their `setup.py <https://docs.python.org/3.6/distutils/setupscript.html>`_
-(defined by the hoster (e.g. `pytest11`, `tox` or `devpi_server`). The result
-of this is called a plugin for a certain project. The plugin project naming rule
-is `<host>-<implementation>` (e.g. `pytest-sugar`, `tox-conda` or `devpi-ldap`).
-
-Necessary knowledge about ``pluggy``:
-
-Depending on how involved the modifications are, they need to learn about how
-the host project works and about the parameters the hook functions provide.
-They also might have to learn a bit more about how ``pluggy`` executes hooks
-regarding ordering and other behavioral details.
-
-User
-++++
-
-The `user` wants to use new or changed features made available by `implementers`
-as so-called `plugins` for a host project. They install the host
-project and the `plugin` they want to use. Through the magic of entry points
-the host project will discover the `plugin` hooks and start calling them as part
-of their normal program execution.
-
-If a `user` doesn't need the changed behaviour of a `plugin` anymore, they
-uninstall it and all is back to normal.
-
-Necessary knowledge about ``pluggy``:
-
-`Users` don't need any knowledge about pluggy as such, but they need to know
-that they can extend the behaviour of the host program by installing plugins
-through their package manager.
-
-Technical overview
-------------------
-
-A `plugin` is a `namespace`_ which defines hook functions.
-
-``pluggy`` manages *plugins* by relying on:
-
-- a hook *specification* - defines a call signature
-- a set of hook *implementations* - aka `callbacks`_
-- the hook *caller* - a call loop which collects results
-
-where for each registered hook *specification*, a hook *call* will invoke up to ``N``
-registered hook *implementations*.
-
-``pluggy`` accomplishes all this by implementing a `request-response pattern`_ using *function*
-subscriptions and can be thought of and used as a rudimentary busless `publish-subscribe`_
-event system.
-
-``pluggy``'s approach is meant to let a designer think carefully about which objects are
-explicitly needed by an extension writer. This is in contrast to subclass-based extension
-systems which may expose unnecessary state and behaviour or encourage `tight coupling`_
-in overlying frameworks.
-
-
-A first example
----------------
-
-.. literalinclude:: examples/firstexample.py
+.. literalinclude:: examples/toy-example.py
 
 Running this directly gets us::
 
-    $ python docs/examples/firstexample.py
+    $ python docs/examples/toy-example.py
 
     inside Plugin_2.myhook()
     inside Plugin_1.myhook()
     [-1, 3]
 
+A complete example
+------------------
+Now let us demonstrate how this plays together in a vaguely real world scenario.
+
+Let's assume our ``host program`` is called **eggsample** where some eggs will
+be prepared and served with a tray containing condiments. As everybody knows:
+the more cooks are involved the better the food, so let us make the process
+pluggable and write a plugin that improves the meal with some spam and removes
+the steak sauce from the condiments tray (nobody likes that anyway).
+
+.. note::
+
+    **naming markers**: ``HookSpecMarker`` and ``HookImplMarker`` must be
+    the initialized with the name of the ``host`` project (the ``name``
+    parameter in ``setup()``) - so **eggsample** in our case.
+
+    **naming plugin projects**: they should be named in the form of
+    ``<host>-<plugin>`` (e.g. ``pytest-xdist``), therefore we call our
+    plugin *eggsample-spam*.
+
+The host
+^^^^^^^^
+``eggsample/eggsample/__init__.py``
+
+.. literalinclude:: examples/eggsample/eggsample/__init__.py
+
+``eggsample/eggsample/hookspecs.py``
+
+.. literalinclude:: examples/eggsample/eggsample/hookspecs.py
+
+``eggsample/eggsample/lib.py``
+
+.. literalinclude:: examples/eggsample/eggsample/lib.py
+
+``eggsample/eggsample/host.py``
+
+.. literalinclude:: examples/eggsample/eggsample/host.py
+
+Let's get cooking - we install the host and see what a program run looks like::
+
+    $ pip install -e pluggy/docs/examples/eggsample
+    $ eggsample
+
+    Add ['egg', 'egg', 'salt', 'pepper']
+    Your food: egg, salt, pepper, egg
+    Some condiments: pickled walnuts, steak sauce, mushy peas, mint sauce
+
+
+The plugin
+^^^^^^^^^^
+``eggsample-spam/eggsample_spam.py``
+
+.. literalinclude:: examples/eggsample-spam/eggsample_spam.py
+
+``eggsample-spam/setup.py``
+
+.. literalinclude:: examples/eggsample-spam/setup.py
+
+Let's get cooking with more cooks - we install the plugin and and see what
+we get::
+
+    $ pip install -e pluggy/docs/examples/eggsample-spam
+    $ eggsample
+
+    Add ['egg', 'egg', 'salt', 'pepper']
+    add ['lovely spam', 'wonderous spam', 'splendiferous spam']
+    Your food: egg, lovely spam, egg, pepper, salt, wonderous spam, splendiferous spam
+    Some condiments: pickled walnuts, mushy peas, mint sauce
+
+More real world examples
+------------------------
+
+To see how ``pluggy`` is used in the real world, have a look at these projects
+documentation and source code:
+
+* `pytest <https://docs.pytest.org/en/latest/writing_plugins.html>`__
+* `tox <https://tox.readthedocs.io/en/latest/plugins.html>`__
+* `devpi <https://devpi.net/docs/devpi/devpi/stable/+doc/devguide/index.html>`__
+
 For more details and advanced usage please read on.
 
 .. _define:
 
-Defining and Collecting Hooks
-*****************************
+Define and collect hooks
+************************
 A *plugin* is a namespace type (currently one of a ``class`` or module)
 which defines a set of *hook* functions.
 
-As mentioned in :ref:`manage`, all *plugins* which define *hooks*
+As mentioned in :ref:`manage`, all *plugins* which specify *hooks*
 are managed by an instance of a :py:class:`pluggy.PluginManager` which
 defines the primary ``pluggy`` API.
 
@@ -482,7 +520,7 @@ For more info see :ref:`call_historic`.
 
 .. _manage:
 
-The Plugin Registry
+The Plugin registry
 *******************
 ``pluggy`` manages plugins using instances of the
 :py:class:`pluggy.PluginManager`.
@@ -565,7 +603,7 @@ You can retrieve the *options* applied to a particular
 
 .. _calling:
 
-Calling Hooks
+Calling hooks
 *************
 The core functionality of ``pluggy`` enables an extension provider
 to override function calls made at certain points throughout a program.
@@ -752,7 +790,7 @@ in your project you should thus use a dependency restriction like
 
 .. hyperlinks
 .. _pytest:
-    http://pytest.org
+    https://pytest.org
 .. _request-response pattern:
     https://en.wikipedia.org/wiki/Request%E2%80%93response
 .. _publish-subscribe:
