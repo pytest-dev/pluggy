@@ -162,7 +162,7 @@ documentation and source code:
 
 * `pytest <https://docs.pytest.org/en/latest/writing_plugins.html>`__
 * `tox <https://tox.readthedocs.io/en/latest/plugins.html>`__
-* `devpi <https://devpi.net/docs/devpi/devpi/stable/+doc/devguide/index.html>`__
+* `devpi <https://devpi.net/docs/devpi/devpi/stable/+d/devguide/index.html>`__
 
 For more details and advanced usage please read on.
 
