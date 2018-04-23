@@ -1,7 +1,7 @@
 sudo: false
 language: python
 
-matrix:
+jobs:
   include:
     - python: '3.6'
       env: TOXENV=check
@@ -30,6 +30,22 @@ matrix:
     - python: '3.6'
       env: TOXENV=benchmark
 
+    - stage: deploy
+      python: '3.6'
+      env:
+      install: pip install -U setuptools setuptools_scm
+      script: skip
+      deploy:
+        provider: pypi
+        user: nicoddemus
+        distributions: sdist bdist_wheel
+        skip_upload_docs: true
+        password:
+          secure: PDvQCKfXrF1V/tdwEOfeDEjDs6vJ9gKWo4yrMUmBx1JL5plHZaqfHLftlGMoHekaQTHcfyYYbxignFw5IGsn97/nFKKWDPNBfZA+3RJJmeJfz2NQunYkSnoqtBtfEtWHzFPdkCm0w/CN9C8IpRjhvLnFTUQzil6iMy6wZG276gU=
+        on:
+          tags: true
+          repo: pytest-dev/pluggy
+
 install:
   - pip install -U setuptools pip
   - pip install -U tox
@@ -44,5 +60,3 @@ notifications:
     on_success: change
     on_failure: change
     skip_join: true
-#  email:
-#    - pytest-commit@python.org
