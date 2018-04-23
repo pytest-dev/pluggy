@@ -5,7 +5,7 @@ def eggsample_add_ingredients(ingredients):
     if len([e for e in ingredients if e == "egg"]) > 2:
         ingredients.remove("egg")
     spam = ["lovely spam", "wonderous spam", "splendiferous spam"]
-    print(f"add {spam}")
+    print(f"Add {spam}")
     ingredients.extend(spam)
 
 @eggsample.hookimpl

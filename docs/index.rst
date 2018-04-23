@@ -19,7 +19,6 @@ In essence, ``pluggy`` enables function `hooking`_ so you can build
 
 Why is it useful?
 *****************
-
 There are some established mechanisms for modifying the behavior of other
 programs/libraries in Python like
 `method overriding <https://en.wikipedia.org/wiki/Method_overriding>`_
@@ -41,7 +40,6 @@ and objects to work with.
 
 How does it work?
 *****************
-
 Let us start with a short overview of what is involved:
 
 * ``host`` or ``host program``: the program offering extensibility
@@ -57,7 +55,7 @@ Let us start with a short overview of what is involved:
     - the hook :ref:`implementations <impls>` provided by registered
       ``plugins`` (a.k.a ``hookimpl`` - see `callbacks`_)
     - the hook :ref:`caller <calling>` - a call loop triggered at appropriate
-      program positions in the ``host`` invoking the implementations
+      program positions in the ``host`` invoking the implementations and
       collecting the results
 
     ... where for each registered hook *specification*, a hook *call* will
@@ -98,7 +96,7 @@ the steak sauce from the condiments tray (nobody likes that anyway).
 .. note::
 
     **naming markers**: ``HookSpecMarker`` and ``HookImplMarker`` must be
-    the initialized with the name of the ``host`` project (the ``name``
+    initialized with the name of the ``host`` project (the ``name``
     parameter in ``setup()``) - so **eggsample** in our case.
 
     **naming plugin projects**: they should be named in the form of
@@ -132,7 +130,6 @@ Let's get cooking - we install the host and see what a program run looks like::
     Your food: egg, salt, pepper, egg
     Some condiments: pickled walnuts, steak sauce, mushy peas, mint sauce
 
-
 The plugin
 ^^^^^^^^^^
 ``eggsample-spam/eggsample_spam.py``
@@ -156,7 +153,6 @@ we get::
 
 More real world examples
 ------------------------
-
 To see how ``pluggy`` is used in the real world, have a look at these projects
 documentation and source code:
 
