@@ -27,10 +27,10 @@ def main():
     pluginmanager.add_hookspecs(hookspecs)
     pluginmanager.load_setuptools_entrypoints("eggsample")
     pluginmanager.register(lib)
-    fm2000 = EggselentCook(pluginmanager.hook)
-    fm2000.add_ingredients()
-    fm2000.prepare_the_food()
-    fm2000.serve_the_food()
+    cook = EggselentCook(pluginmanager.hook)
+    cook.add_ingredients()
+    cook.prepare_the_food()
+    cook.serve_the_food()
 
 if __name__ == '__main__':
     main()
