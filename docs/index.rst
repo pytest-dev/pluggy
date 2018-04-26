@@ -10,9 +10,10 @@ calling`_ for `pytest`_. It enables `200+ plugins`_ to extend and customize
 as a set of ``pluggy`` plugins which are invoked in sequence according to a
 well defined set of protocols.
 
-It gives users the possibility to extend or modify the behaviour of a host
-program by installing a `plugin` for that program. The plugin code will run as
-part of normal program execution, changing or enhancing certain aspects of it.
+It gives users the ability to extend or modify the behaviour of a
+``host program`` by installing a ``plugin`` for that program.
+The plugin code will run as part of normal program execution, changing or
+enhancing certain aspects of it.
 
 In essence, ``pluggy`` enables function `hooking`_ so you can build
 "pluggable" systems.
