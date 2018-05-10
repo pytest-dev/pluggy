@@ -301,6 +301,7 @@ class _HookCaller(object):
         savegames, and not notifying plugins of events that occurred prior
         to loading the current one.
         """
+        self._call_history.clear()
 
 
 class HookImpl(object):
