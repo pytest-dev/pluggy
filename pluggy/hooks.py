@@ -293,6 +293,14 @@ class _HookCaller(object):
                 res = self._hookexec(self, [method], kwargs)
                 if res and proc is not None:
                     proc(res[0])
+    
+    def clear_history(self):
+        """Clear the call history.  Only historic calls made after the most
+        recent call to this method will be replayed onto newly-registered
+        plugins.  Helpful for reusing plugin managers between, for example,
+        savegames, and not notifying plugins of events that occurred prior
+        to loading the current one.
+        """
 
 
 class HookImpl(object):
