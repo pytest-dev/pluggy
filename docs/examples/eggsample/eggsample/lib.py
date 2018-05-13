@@ -4,7 +4,7 @@ import eggsample
 def eggsample_add_ingredients(ingredients):
     basics = ["egg", "egg", "salt", "pepper"]
     print(f"Add {basics}")
-    ingredients.extend(basics)
+    return basics
 
 @eggsample.hookimpl
 def eggsample_prep_condiments(condiments):

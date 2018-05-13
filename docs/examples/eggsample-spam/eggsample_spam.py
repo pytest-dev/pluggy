@@ -6,7 +6,7 @@ def eggsample_add_ingredients(ingredients):
         ingredients.remove("egg")
     spam = ["lovely spam", "wonderous spam", "splendiferous spam"]
     print(f"Add {spam}")
-    ingredients.extend(spam)
+    return spam
 
 @eggsample.hookimpl
 def eggsample_prep_condiments(condiments):

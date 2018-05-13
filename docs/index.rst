@@ -34,9 +34,9 @@ avoid unnecessary exposure of state and behaviour. This leads to a more
 between ``host`` and ``plugins``.
 
 The ``pluggy`` approach puts the burden on the designer of the
-``host program`` to think carefully about which objects are explicitly needed
-by an implementation and gives designers of the ``plugin`` a clear framework
-for how to extend the ``host`` by giving them a well defined set of functions
+``host program`` to think carefully about which objects are really
+needed in a hook implementation, which gives `plugin` creators a clear
+framework for how to extend the ``host`` via a well defined set of functions
 and objects to work with.
 
 How does it work?
@@ -46,7 +46,7 @@ Let us start with a short overview of what is involved:
 * ``host`` or ``host program``: the program offering extensibility
   by specifying ``hook functions`` and invoking their implementation(s) as
   part of program execution
-* ``plugin``: the program implementing a subset of the specified hooks and
+* ``plugin``: the program implementing (a subset of) the specified hooks and
   participating in program execution when the implementations are invoked
   by the ``host``
 * ``pluggy``: connects ``host`` and ``plugins`` by using ...
