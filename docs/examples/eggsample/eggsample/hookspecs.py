@@ -15,5 +15,5 @@ def eggsample_prep_condiments(condiments: dict):
     """Reorganize the condiments tray to your heart's content.
 
     :param condiments: some sauces and stuff
-    :return: will be ignored by caller
+    :return: a witty comment about your activity
     """

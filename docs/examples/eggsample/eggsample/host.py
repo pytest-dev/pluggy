@@ -40,9 +40,12 @@ class EggsellentCook:
         random.shuffle(self.ingredients)
 
     def serve_the_food(self):
-        self.hook.eggsample_prep_condiments(condiments=condiments_tray)
-        print(f"Your food: {', '.join(self.ingredients)}")
-        print(f"Some condiments: {', '.join(condiments_tray.keys())}")
+        condiment_comments = self.hook.eggsample_prep_condiments(
+            condiments=condiments_tray)
+        print(f"Your food. Enjoy some {', '.join(self.ingredients)}")
+        print(f"Some condiments? We have {', '.join(condiments_tray.keys())}")
+        if any(condiment_comments):
+            print("\n".join(condiment_comments))
 
 if __name__ == '__main__':
     main()

@@ -127,9 +127,8 @@ Let's get cooking - we install the host and see what a program run looks like::
     $ pip install --editable pluggy/docs/examples/eggsample
     $ eggsample
 
-    Add ['salt', 'pepper', 'egg', 'egg']
-    Your food: pepper, egg, egg, egg, egg, salt, egg
-    Some condiments: pickled walnuts, steak sauce, mushy peas, mint sauce
+    Your food. Enjoy some egg, egg, salt, egg, egg, pepper, egg
+    Some condiments? We have pickled walnuts, steak sauce, mushy peas, mint sauce
 
 The plugin
 ^^^^^^^^^^
@@ -147,11 +146,9 @@ we get::
     $ pip install --editable pluggy/docs/examples/eggsample-spam
     $ eggsample
 
-    Add ['salt', 'pepper', 'egg', 'egg']
-    Add ['lovely spam', 'wonderous spam']
-    Now, this is what I call a condiments tray!
-    Your food: wonderous spam, pepper, egg, egg, egg, egg, lovely spam, egg, salt
-    Some condiments: pickled walnuts, mushy peas, mint sauce, spam sauce
+    Your food. Enjoy some egg, lovely spam, salt, egg, egg, egg, wonderous spam, egg, pepper
+    Some condiments? We have pickled walnuts, mushy peas, mint sauce, spam sauce
+    Now this is what I call a condiments tray!
 
 More real world examples
 ------------------------
