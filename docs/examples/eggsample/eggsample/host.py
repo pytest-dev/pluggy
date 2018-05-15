@@ -1,3 +1,4 @@
+import itertools
 import random
 
 import pluggy
@@ -6,16 +7,34 @@ from eggsample import hookspecs, lib
 
 condiments_tray = {"pickled walnuts": 13, "steak sauce": 4, "mushy peas": 2}
 
+def main():
+    pm = get_plugin_manager()
+    cook = EggsellentCook(pm.hook)
+    cook.add_ingredients()
+    cook.prepare_the_food()
+    cook.serve_the_food()
+
+def get_plugin_manager():
+    pm = pluggy.PluginManager("eggsample")
+    pm.add_hookspecs(hookspecs)
+    pm.load_setuptools_entrypoints("eggsample")
+    pm.register(lib)
+    return pm
+
 class EggsellentCook:
+    FAVORITE_INGREDIENTS = ("egg", "egg", "egg")
+
     def __init__(self, hook):
         self.hook = hook
-        self.ingredients = []
+        self.ingredients = None
 
     def add_ingredients(self):
-        more_ingredients = self.hook.eggsample_add_ingredients(
-            ingredients=self.ingredients)
-        # each hook implementation returned a list of ingredients
-        self.ingredients.extend(more_ingredients)
+        results = self.hook.eggsample_add_ingredients(
+            ingredients=self.FAVORITE_INGREDIENTS)
+        my_ingredients = list(self.FAVORITE_INGREDIENTS)
+        # Each hook returns a list - so we chain this list of lists
+        other_ingredients = list(itertools.chain(*results))
+        self.ingredients = my_ingredients + other_ingredients
 
     def prepare_the_food(self):
         random.shuffle(self.ingredients)
@@ -24,16 +43,6 @@ class EggsellentCook:
         self.hook.eggsample_prep_condiments(condiments=condiments_tray)
         print(f"Your food: {', '.join(self.ingredients)}")
         print(f"Some condiments: {', '.join(condiments_tray.keys())}")
-
-def main():
-    pluginmanager = pluggy.PluginManager("eggsample")
-    pluginmanager.add_hookspecs(hookspecs)
-    pluginmanager.load_setuptools_entrypoints("eggsample")
-    pluginmanager.register(lib)
-    cook = EggsellentCook(pluginmanager.hook)
-    cook.add_ingredients()
-    cook.prepare_the_food()
-    cook.serve_the_food()
 
 if __name__ == '__main__':
     main()

@@ -35,7 +35,7 @@ between ``host`` and ``plugins``.
 
 The ``pluggy`` approach puts the burden on the designer of the
 ``host program`` to think carefully about which objects are really
-needed in a hook implementation, which gives `plugin` creators a clear
+needed in a hook implementation. This gives `plugin` creators a clear
 framework for how to extend the ``host`` via a well defined set of functions
 and objects to work with.
 
@@ -91,8 +91,8 @@ Now let us demonstrate how this plays together in a vaguely real world scenario.
 Let's assume our ``host program`` is called **eggsample** where some eggs will
 be prepared and served with a tray containing condiments. As everybody knows:
 the more cooks are involved the better the food, so let us make the process
-pluggable and write a plugin that improves the meal with some spam and removes
-the steak sauce from the condiments tray (nobody likes that anyway).
+pluggable and write a plugin that improves the meal with some spam and replaces
+the steak sauce (nobody likes that anyway) with spam sauce (it's a thing - trust me).
 
 .. note::
 
@@ -124,11 +124,11 @@ The host
 
 Let's get cooking - we install the host and see what a program run looks like::
 
-    $ pip install -e pluggy/docs/examples/eggsample
+    $ pip install --editable pluggy/docs/examples/eggsample
     $ eggsample
 
-    Add ['egg', 'egg', 'salt', 'pepper']
-    Your food: egg, salt, pepper, egg
+    Add ['salt', 'pepper', 'egg', 'egg']
+    Your food: pepper, egg, egg, egg, egg, salt, egg
     Some condiments: pickled walnuts, steak sauce, mushy peas, mint sauce
 
 The plugin
@@ -144,13 +144,14 @@ The plugin
 Let's get cooking with more cooks - we install the plugin and and see what
 we get::
 
-    $ pip install -e pluggy/docs/examples/eggsample-spam
+    $ pip install --editable pluggy/docs/examples/eggsample-spam
     $ eggsample
 
-    Add ['egg', 'egg', 'salt', 'pepper']
-    add ['lovely spam', 'wonderous spam', 'splendiferous spam']
-    Your food: egg, lovely spam, egg, pepper, salt, wonderous spam, splendiferous spam
-    Some condiments: pickled walnuts, mushy peas, mint sauce
+    Add ['salt', 'pepper', 'egg', 'egg']
+    Add ['lovely spam', 'wonderous spam']
+    Now, this is what I call a condiments tray!
+    Your food: wonderous spam, pepper, egg, egg, egg, egg, lovely spam, egg, salt
+    Some condiments: pickled walnuts, mushy peas, mint sauce, spam sauce
 
 More real world examples
 ------------------------

@@ -3,15 +3,17 @@ import pluggy
 hookspec = pluggy.HookspecMarker("eggsample")
 
 @hookspec
-def eggsample_add_ingredients(ingredients):
-    """Change the used ingredients.
+def eggsample_add_ingredients(ingredients: tuple):
+    """Have a look at the ingredients and offer your own.
 
-    :param list ingredients: the ingredients to be modified
+    :param ingredients: the ingredients, don't touch them!
+    :return: a list of ingredients
     """
 
 @hookspec
-def eggsample_prep_condiments(condiments):
-    """Reorganize the condiments tray.
+def eggsample_prep_condiments(condiments: dict):
+    """Reorganize the condiments tray to your heart's content.
 
-    :param dict condiments: some sauces and stuff
+    :param condiments: some sauces and stuff
+    :return: will be ignored by caller
     """
