@@ -312,6 +312,9 @@ For another example see the `hook function ordering`_ section of the
     ``tryfirst`` and ``trylast`` hooks are still invoked in LIFO order within
     each category.
 
+
+.. _hookwrappers:
+
 Wrappers
 ^^^^^^^^
 A *hookimpl* can be marked with a ``"hookwrapper"`` option which indicates that
@@ -662,18 +665,21 @@ assertion should not error:
     hookimpl = HookimplMarker('myproject')
 
     class Plugin1(object):
+        @hookimpl
         def myhook(self, args):
             """Default implementation.
             """
             return 1
 
     class Plugin2(object):
+        @hookimpl
         def myhook(self, args):
             """Default implementation.
             """
             return 2
 
     class Plugin3(object):
+        @hookimpl
         def myhook(self, args):
             """Default implementation.
             """
@@ -698,6 +704,57 @@ its :ref:`firstresult` in which case only the first single value (which is not
 ``None``) will be returned.
 
 .. _call_historic:
+
+Exception handling
+------------------
+If any *hookimpl* errors with an exception no further callbacks
+are invoked and the exception is packaged up and delivered to
+any :ref:`hookwrappers` before being re-raised at the hook invocation
+point:
+
+.. code-block:: python
+
+    from pluggy import PluginManager, HookimplMarker
+
+    hookimpl = HookimplMarker('myproject')
+
+    class Plugin1(object):
+        @hookimpl
+        def myhook(self, args):
+            return 1
+
+    class Plugin2(object):
+        @hookimpl
+        def myhook(self, args):
+            raise RunTimeError
+
+    class Plugin3(object):
+        @hookimpl
+        def myhook(self, args):
+            return 3
+
+    @hookimpl(hookwrapper=True)
+    def myhook(self, args):
+        outcome = yield
+
+        try:
+            outcome.get_result()
+        except RuntimeError:
+            # log the error details
+            print(outcome.excinfo)
+
+    pm = PluginManager('myproject')
+
+    # register plugins
+    pm.register(Plugin1())
+    pm.register(Plugin2())
+    pm.register(Plugin3())
+
+    # register wrapper
+    pm.register(sys.modules[__name__])
+
+    # this raises RuntimeError due to Plugin2
+    pm.hook.myhook(args=())
 
 Historic calls
 --------------
