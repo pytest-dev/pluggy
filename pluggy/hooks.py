@@ -257,20 +257,32 @@ class _HookCaller(object):
                 )
         return self._hookexec(self, self._nonwrappers + self._wrappers, kwargs)
 
-    def call_historic(self, proc=None, kwargs=None):
-        """ call the hook with given ``kwargs`` for all registered plugins and
+    def call_historic(self, result_callback=None, kwargs=None, proc=None):
+        """Call the hook with given ``kwargs`` for all registered plugins and
         for all plugins which will be registered afterwards.
 
-        If ``proc`` is not None it will be called for for each non-None result
-        obtained from a hook implementation.
+        If ``result_callback`` is not ``None`` it will be called for for each
+        non-None result obtained from a hook implementation.
+
+        .. note::
+            The ``proc`` argument is now deprecated.
         """
-        self._call_history.append((kwargs or {}, proc))
+        if proc is not None:
+            warnings.warn(
+                "Support for `proc` argument is now deprecated and will be"
+                "removed in an upcoming release.",
+                DeprecationWarning
+            )
+            result_callback = proc
+
+        self._call_history.append((kwargs or {}, result_callback))
         # historizing hooks don't return results
         res = self._hookexec(self, self._nonwrappers + self._wrappers, kwargs)
-        if proc is None:
+        if result_callback is None:
             return
+        # XXX: remember firstresult isn't compat with historic
         for x in res or []:
-            proc(x)
+            result_callback(x)
 
     def call_extra(self, methods, kwargs):
         """ Call the hook with some additional temporarily participating
@@ -289,10 +301,10 @@ class _HookCaller(object):
         """Apply call history to a new hookimpl if it is marked as historic.
         """
         if self.is_historic():
-            for kwargs, proc in self._call_history:
+            for kwargs, result_callback in self._call_history:
                 res = self._hookexec(self, [method], kwargs)
-                if res and proc is not None:
-                    proc(res[0])
+                if res and result_callback is not None:
+                    result_callback(res[0])
 
 
 class HookImpl(object):

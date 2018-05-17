@@ -217,7 +217,7 @@ def test_with_result_memorized(pm, result_callback):
     pm.register(Plugin1())
 
     he_method1 = pm.hook.he_method1
-    he_method1.call_historic(proc=callback, kwargs=dict(arg=1))
+    he_method1.call_historic(result_callback=callback, kwargs=dict(arg=1))
 
     class Plugin2(object):
         @hookimpl
@@ -399,3 +399,20 @@ def example_hook():
     assert getattr(pm.hook, 'example_hook', None)  # conftest.example_hook should be collected
     assert pm.parse_hookimpl_opts(conftest, 'example_blah') is None
     assert pm.parse_hookimpl_opts(conftest, 'example_hook') == {}
+
+
+def test_callhistoric_proc_deprecated(pm):
+    """``proc`` kwarg to `PluginMananger.call_historic()` is now officially
+    deprecated.
+    """
+    class P1(object):
+        @hookspec(historic=True)
+        @hookimpl
+        def m(self, x):
+            pass
+
+    p1 = P1()
+    pm.add_hookspecs(p1)
+    pm.register(p1)
+    with pytest.deprecated_call():
+        pm.hook.m.call_historic(kwargs=dict(x=10), proc=lambda res: res)
