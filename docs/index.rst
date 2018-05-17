@@ -517,25 +517,6 @@ if a hookspec specifies a ``warn_on_impl``, pluggy will trigger it for any plugi
     def oldhook():
         pass
 
-
-.. links
-.. _@contextlib.contextmanager:
-    https://docs.python.org/3.6/library/contextlib.html#contextlib.contextmanager
-.. _pytest_cmdline_main:
-    https://github.com/pytest-dev/pytest/blob/master/_pytest/hookspec.py#L80
-.. _hookspec module:
-    https://github.com/pytest-dev/pytest/blob/master/_pytest/hookspec.py
-.. _Writing hook functions:
-    http://doc.pytest.org/en/latest/writing_plugins.html#writing-hook-functions
-.. _hookwrapper:
-    http://doc.pytest.org/en/latest/writing_plugins.html#hookwrapper-executing-around-other-hooks
-.. _hook function ordering:
-    http://doc.pytest.org/en/latest/writing_plugins.html#hook-function-ordering-call-example
-.. _first result:
-    http://doc.pytest.org/en/latest/writing_plugins.html#firstresult-stop-at-first-non-none-result
-.. _sent:
-    https://docs.python.org/3/reference/expressions.html#generator.send
-
 .. _manage:
 
 The Plugin registry
@@ -861,6 +842,22 @@ in your project you should thus use a dependency restriction like
 
 
 .. hyperlinks
+.. _@contextlib.contextmanager:
+    https://docs.python.org/3.6/library/contextlib.html#contextlib.contextmanager
+.. _pytest_cmdline_main:
+    https://github.com/pytest-dev/pytest/blob/master/_pytest/hookspec.py#L80
+.. _hookspec module:
+    https://github.com/pytest-dev/pytest/blob/master/_pytest/hookspec.py
+.. _Writing hook functions:
+    http://doc.pytest.org/en/latest/writing_plugins.html#writing-hook-functions
+.. _hookwrapper:
+    http://doc.pytest.org/en/latest/writing_plugins.html#hookwrapper-executing-around-other-hooks
+.. _hook function ordering:
+    http://doc.pytest.org/en/latest/writing_plugins.html#hook-function-ordering-call-example
+.. _first result:
+    http://doc.pytest.org/en/latest/writing_plugins.html#firstresult-stop-at-first-non-none-result
+.. _sent:
+    https://docs.python.org/3/reference/expressions.html#generator.send
 .. _pytest:
     https://pytest.org
 .. _request-response pattern:
