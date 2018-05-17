@@ -451,6 +451,11 @@ whereas this is not:
     def myhook(config, args, extra_arg):
         print(args)
 
+.. note::
+    The one exception to this rule (that a *hookspec* must have as least as
+    many arguments as its *hookimpls*) is the conventional `self`_ arg; this
+    is always ignored when *hookimpls* are defined as `methods`_.
+
 .. _firstresult:
 
 First result only
@@ -823,6 +828,10 @@ in your project you should thus use a dependency restriction like
     https://github.com/pytest-dev/pluggy/blob/master/tox.ini#L2
 .. _200+ plugins:
     http://plugincompat.herokuapp.com/
+.. _self:
+    https://docs.python.org/3.6/tutorial/classes.html#random-remarks
+.. _methods:
+    https://docs.python.org/3.6/tutorial/classes.html#method-objects
 
 
 .. Indices and tables
