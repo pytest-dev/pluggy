@@ -707,7 +707,7 @@ point:
     class Plugin2(object):
         @hookimpl
         def myhook(self, args):
-            raise RunTimeError
+            raise RuntimeError
 
     class Plugin3(object):
         @hookimpl
