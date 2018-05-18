@@ -4,7 +4,7 @@ Internal hook annotation, representation and calling machinery.
 import inspect
 import sys
 import warnings
-from .callers import _legacymulticall, _multicall
+from .callers import _multicall
 
 
 class HookspecMarker(object):
@@ -264,14 +264,6 @@ class _HookCaller(object):
                 i -= 1
             methods.insert(i + 1, hookimpl)
 
-        if "__multicall__" in hookimpl.argnames:
-            warnings.warn(
-                "Support for __multicall__ is now deprecated and will be"
-                "removed in an upcoming release.",
-                DeprecationWarning,
-            )
-            self.multicall = _legacymulticall
-
     def __repr__(self):
         return "<_HookCaller %r>" % (self.name,)
 
@@ -279,10 +271,9 @@ class _HookCaller(object):
         if args:
             raise TypeError("hook calling supports only keyword arguments")
         assert not self.is_historic()
+
         if self.spec and self.spec.argnames:
-            notincall = (
-                set(self.spec.argnames) - set(["__multicall__"]) - set(kwargs.keys())
-            )
+            notincall = set(self.spec.argnames) - set(kwargs.keys())
             if notincall:
                 warnings.warn(
                     "Argument(s) {} which are declared in the hookspec "
