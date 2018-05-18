@@ -4,7 +4,7 @@ Benchmarking and performance tests.
 import pytest
 from pluggy import HookspecMarker, HookimplMarker
 from pluggy.hooks import HookImpl
-from pluggy.callers import _multicall, _legacymulticall
+from pluggy.callers import _multicall
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
@@ -38,7 +38,10 @@ def wrappers(request):
     return [wrapper for i in range(request.param)]
 
 
-@pytest.fixture(params=[_multicall, _legacymulticall], ids=lambda item: item.__name__)
+@pytest.fixture(
+    params=[_multicall],
+    ids=lambda item: item.__name__
+)
 def callertype(request):
     return request.param
 
