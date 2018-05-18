@@ -124,3 +124,15 @@ def test_result_deprecated():
     r = _Result(10, None)
     with pytest.deprecated_call():
         assert r.result == 10
+
+
+def test_implprefix_deprecated():
+    with pytest.deprecated_call():
+        pm = PluginManager('blah', implprefix='blah_')
+
+    class Plugin:
+        def blah_myhook(self, arg1):
+            return arg1
+
+    with pytest.deprecated_call():
+        pm.register(Plugin())
