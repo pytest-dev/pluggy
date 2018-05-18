@@ -59,9 +59,9 @@ A definitive example
 
 .. badges
 .. |pypi| image:: https://img.shields.io/pypi/v/pluggy.svg
-    :target: https://pypi.python.org/pypi/pluggy
+    :target: https://pypi.org/pypi/pluggy
 .. |versions| image:: https://img.shields.io/pypi/pyversions/pluggy.svg
-    :target: https://pypi.python.org/pypi/pluggy
+    :target: https://pypi.org/pypi/pluggy
 .. |travis| image:: https://img.shields.io/travis/pytest-dev/pluggy/master.svg
     :target: https://travis-ci.org/pytest-dev/pluggy
 .. |appveyor| image:: https://img.shields.io/appveyor/ci/pytestbot/pluggy/master.svg

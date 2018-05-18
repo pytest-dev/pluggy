@@ -312,6 +312,9 @@ For another example see the `hook function ordering`_ section of the
     ``tryfirst`` and ``trylast`` hooks are still invoked in LIFO order within
     each category.
 
+
+.. _hookwrappers:
+
 Wrappers
 ^^^^^^^^
 A *hookimpl* can be marked with a ``"hookwrapper"`` option which indicates that
@@ -451,6 +454,11 @@ whereas this is not:
     def myhook(config, args, extra_arg):
         print(args)
 
+.. note::
+    The one exception to this rule (that a *hookspec* must have as least as
+    many arguments as its *hookimpls*) is the conventional `self`_ arg; this
+    is always ignored when *hookimpls* are defined as `methods`_.
+
 .. _firstresult:
 
 First result only
@@ -508,25 +516,6 @@ if a hookspec specifies a ``warn_on_impl``, pluggy will trigger it for any plugi
     @hookspec(warn_on_impl=DeprecationWarning("oldhook is deprecated and will be removed soon"))
     def oldhook():
         pass
-
-
-.. links
-.. _@contextlib.contextmanager:
-    https://docs.python.org/3.6/library/contextlib.html#contextlib.contextmanager
-.. _pytest_cmdline_main:
-    https://github.com/pytest-dev/pytest/blob/master/_pytest/hookspec.py#L80
-.. _hookspec module:
-    https://github.com/pytest-dev/pytest/blob/master/_pytest/hookspec.py
-.. _Writing hook functions:
-    http://doc.pytest.org/en/latest/writing_plugins.html#writing-hook-functions
-.. _hookwrapper:
-    http://doc.pytest.org/en/latest/writing_plugins.html#hookwrapper-executing-around-other-hooks
-.. _hook function ordering:
-    http://doc.pytest.org/en/latest/writing_plugins.html#hook-function-ordering-call-example
-.. _first result:
-    http://doc.pytest.org/en/latest/writing_plugins.html#firstresult-stop-at-first-non-none-result
-.. _sent:
-    https://docs.python.org/3/reference/expressions.html#generator.send
 
 .. _manage:
 
@@ -657,18 +646,21 @@ assertion should not error:
     hookimpl = HookimplMarker('myproject')
 
     class Plugin1(object):
+        @hookimpl
         def myhook(self, args):
             """Default implementation.
             """
             return 1
 
     class Plugin2(object):
+        @hookimpl
         def myhook(self, args):
             """Default implementation.
             """
             return 2
 
     class Plugin3(object):
+        @hookimpl
         def myhook(self, args):
             """Default implementation.
             """
@@ -693,6 +685,57 @@ its :ref:`firstresult` in which case only the first single value (which is not
 ``None``) will be returned.
 
 .. _call_historic:
+
+Exception handling
+------------------
+If any *hookimpl* errors with an exception no further callbacks
+are invoked and the exception is packaged up and delivered to
+any :ref:`hookwrappers` before being re-raised at the hook invocation
+point:
+
+.. code-block:: python
+
+    from pluggy import PluginManager, HookimplMarker
+
+    hookimpl = HookimplMarker('myproject')
+
+    class Plugin1(object):
+        @hookimpl
+        def myhook(self, args):
+            return 1
+
+    class Plugin2(object):
+        @hookimpl
+        def myhook(self, args):
+            raise RuntimeError
+
+    class Plugin3(object):
+        @hookimpl
+        def myhook(self, args):
+            return 3
+
+    @hookimpl(hookwrapper=True)
+    def myhook(self, args):
+        outcome = yield
+
+        try:
+            outcome.get_result()
+        except RuntimeError:
+            # log the error details
+            print(outcome.excinfo)
+
+    pm = PluginManager('myproject')
+
+    # register plugins
+    pm.register(Plugin1())
+    pm.register(Plugin2())
+    pm.register(Plugin3())
+
+    # register wrapper
+    pm.register(sys.modules[__name__])
+
+    # this raises RuntimeError due to Plugin2
+    pm.hook.myhook(args=())
 
 Historic calls
 --------------
@@ -799,6 +842,22 @@ in your project you should thus use a dependency restriction like
 
 
 .. hyperlinks
+.. _@contextlib.contextmanager:
+    https://docs.python.org/3.6/library/contextlib.html#contextlib.contextmanager
+.. _pytest_cmdline_main:
+    https://github.com/pytest-dev/pytest/blob/master/_pytest/hookspec.py#L80
+.. _hookspec module:
+    https://github.com/pytest-dev/pytest/blob/master/_pytest/hookspec.py
+.. _Writing hook functions:
+    http://doc.pytest.org/en/latest/writing_plugins.html#writing-hook-functions
+.. _hookwrapper:
+    http://doc.pytest.org/en/latest/writing_plugins.html#hookwrapper-executing-around-other-hooks
+.. _hook function ordering:
+    http://doc.pytest.org/en/latest/writing_plugins.html#hook-function-ordering-call-example
+.. _first result:
+    http://doc.pytest.org/en/latest/writing_plugins.html#firstresult-stop-at-first-non-none-result
+.. _sent:
+    https://docs.python.org/3/reference/expressions.html#generator.send
 .. _pytest:
     https://pytest.org
 .. _request-response pattern:
@@ -823,6 +882,10 @@ in your project you should thus use a dependency restriction like
     https://github.com/pytest-dev/pluggy/blob/master/tox.ini#L2
 .. _200+ plugins:
     http://plugincompat.herokuapp.com/
+.. _self:
+    https://docs.python.org/3.6/tutorial/classes.html#random-remarks
+.. _methods:
+    https://docs.python.org/3.6/tutorial/classes.html#method-objects
 
 
 .. Indices and tables
