@@ -749,20 +749,33 @@ using the :py:meth:`pluggy._HookCaller.call_historic()` method:
 
 .. code-block:: python
 
+    def callback(result):
+        print("historic call result is {result}".format(result=result))
+
     # call with history; no results returned
-    pm.hook.myhook.call_historic(config=config, args=sys.argv)
+    pm.hook.myhook.call_historic(
+        config=config, args=sys.argv,
+        result_callback=callback
+    )
 
     # ... more of our program ...
 
     # late loading of some plugin
     import mylateplugin
 
-    # historic call back is done here
+    # historic callback is invoked here
     pm.register(mylateplugin)
 
 Note that if you ``call_historic()`` the ``_HookCaller`` (and thus your
 calling code) can not receive results back from the underlying *hookimpl*
-functions.
+functions. Instead you can provide a *callback* for processing results
+(like the ``callback`` function above) which will be called as each
+new plugin is registered.
+
+.. note::
+    *historic* calls are incompatible with :ref:`firstresult` marked
+    hooks since only the first registered plugin's hook(s) would
+    ever be called.
 
 Calling with extras
 -------------------
