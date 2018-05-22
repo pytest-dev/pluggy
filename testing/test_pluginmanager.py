@@ -1,3 +1,6 @@
+"""
+``PluginManager`` unit and public API testing.
+"""
 import pytest
 import types
 import sys
@@ -12,6 +15,7 @@ hookimpl = HookimplMarker("example")
 
 
 def test_plugin_double_register(pm):
+    """Registering the same plugin more then once isn't allowed"""
     pm.register(42, name="abc")
     with pytest.raises(ValueError):
         pm.register(42, name="abc")
@@ -20,6 +24,7 @@ def test_plugin_double_register(pm):
 
 
 def test_pm(pm):
+    """Basic registration with objects"""
     class A(object):
         pass
 
