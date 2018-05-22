@@ -11,10 +11,12 @@ hookimpl = HookimplMarker("example")
 
 @pytest.fixture
 def hc(pm):
+
     class Hooks(object):
         @hookspec
         def he_method1(self, arg):
             pass
+
     pm.add_hookspecs(Hooks)
     return pm.hook.he_method1
 
@@ -177,6 +179,33 @@ def test_hookimpl(name, val):
         assert he_myhook1.example_impl.get(name)
     else:
         assert not hasattr(he_myhook1, name)
+
+
+def test_happypath(pm):
+    """Verify hook caller instances are registered by name onto the relay
+    and can be likewise unregistered."""
+    class Api(object):
+        @hookspec
+        def hello(self, arg):
+            "api hook 1"
+
+    pm.add_hookspecs(Api)
+    hook = pm.hook
+    assert hasattr(hook, 'hello')
+    assert repr(hook.hello).find("hello") != -1
+
+    class Plugin(object):
+        @hookimpl
+        def hello(self, arg):
+            return arg + 1
+
+    plugin = Plugin()
+    pm.register(plugin)
+    out = hook.hello(arg=3)
+    assert out == [4]
+    assert not hasattr(hook, 'world')
+    pm.unregister(plugin)
+    assert hook.hello(arg=3) == []
 
 
 def test_load_setuptools_instantiation(monkeypatch, pm):
