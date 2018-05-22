@@ -179,7 +179,7 @@ def test_hookimpl(name, val):
         assert not hasattr(he_myhook1, name)
 
 
-def test_happypath(pm):
+def test_hookrelay_registry(pm):
     """Verify hook caller instances are registered by name onto the relay
     and can be likewise unregistered."""
     class Api(object):

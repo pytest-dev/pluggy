@@ -1,7 +1,6 @@
 import warnings
 import pytest
 from pluggy import PluginManager, HookimplMarker, HookspecMarker
-from pluggy.callers import _Result
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
@@ -118,21 +117,3 @@ def test_warning_on_call_vs_hookspec_arg_mismatch():
         warning = warns[-1]
         assert issubclass(warning.category, Warning)
         assert "Argument(s) ('arg2',)" in str(warning.message)
-
-
-def test_result_deprecated():
-    r = _Result(10, None)
-    with pytest.deprecated_call():
-        assert r.result == 10
-
-
-def test_implprefix_deprecated():
-    with pytest.deprecated_call():
-        pm = PluginManager('blah', implprefix='blah_')
-
-    class Plugin:
-        def blah_myhook(self, arg1):
-            return arg1
-
-    with pytest.deprecated_call():
-        pm.register(Plugin())
