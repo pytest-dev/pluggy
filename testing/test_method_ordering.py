@@ -291,7 +291,8 @@ def test_hook_tracing(he_pm):
 
 @pytest.mark.parametrize('include_hookspec', [True, False])
 def test_prefix_hookimpl(include_hookspec):
-    pm = PluginManager(hookspec.project_name, "hello_")
+    with pytest.deprecated_call():
+        pm = PluginManager(hookspec.project_name, "hello_")
 
     if include_hookspec:
         class HookSpec(object):
@@ -305,14 +306,16 @@ def test_prefix_hookimpl(include_hookspec):
         def hello_myhook(self, arg1):
             return arg1 + 1
 
-    pm.register(Plugin())
-    pm.register(Plugin())
+    with pytest.deprecated_call():
+        pm.register(Plugin())
+        pm.register(Plugin())
     results = pm.hook.hello_myhook(arg1=17)
     assert results == [18, 18]
 
 
 def test_prefix_hookimpl_dontmatch_module():
-    pm = PluginManager(hookspec.project_name, "hello_")
+    with pytest.deprecated_call():
+        pm = PluginManager(hookspec.project_name, "hello_")
 
     class BadPlugin(object):
         hello_module = __import__('email')
