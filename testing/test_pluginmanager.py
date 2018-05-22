@@ -393,12 +393,14 @@ def example_hook():
 """)
     exec(src, conftest.__dict__)
     conftest.example_blah = types.ModuleType("example_blah")
-    name = pm.register(conftest)
+    with pytest.deprecated_call():
+        name = pm.register(conftest)
     assert name == 'conftest'
     assert getattr(pm.hook, 'example_blah', None) is None
     assert getattr(pm.hook, 'example_hook', None)  # conftest.example_hook should be collected
-    assert pm.parse_hookimpl_opts(conftest, 'example_blah') is None
-    assert pm.parse_hookimpl_opts(conftest, 'example_hook') == {}
+    with pytest.deprecated_call():
+        assert pm.parse_hookimpl_opts(conftest, 'example_blah') is None
+        assert pm.parse_hookimpl_opts(conftest, 'example_hook') == {}
 
 
 def test_callhistoric_proc_deprecated(pm):

@@ -40,7 +40,7 @@ class PluginManager(object):
     """
 
     def __init__(self, project_name, implprefix=None):
-        """ if implprefix is given implementation functions
+        """If ``implprefix`` is given implementation functions
         will be recognized if their name matches the implprefix. """
         self.project_name = project_name
         self._name2plugin = {}
@@ -48,6 +48,12 @@ class PluginManager(object):
         self._plugin_distinfo = []
         self.trace = _tracing.TagTracer().get("pluginmanage")
         self.hook = _HookRelay(self.trace.root.get("hook"))
+        if implprefix is not None:
+            warnings.warn(
+                "Support for the `implprefix` arg is now deprecated and will "
+                "be removed in an upcoming release. Please use HookimplMarker.",
+                DeprecationWarning
+            )
         self._implprefix = implprefix
         self._inner_hookexec = lambda hook, methods, kwargs: \
             hook.multicall(
@@ -106,7 +112,14 @@ class PluginManager(object):
         if res is not None and not isinstance(res, dict):
             # false positive
             res = None
+        # TODO: remove when we drop implprefix in 1.0
         elif res is None and self._implprefix and name.startswith(self._implprefix):
+            _warn_for_function(
+                DeprecationWarning(
+                    "The `implprefix` system is deprecated please decorate "
+                    "this function using an instance of HookimplMarker."),
+                method
+            )
             res = {}
         return res
 
