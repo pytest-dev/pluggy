@@ -6,31 +6,6 @@ hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
 
 
-def test_happypath(pm):
-    class Api(object):
-        @hookspec
-        def hello(self, arg):
-            "api hook 1"
-
-    pm.add_hookspecs(Api)
-    hook = pm.hook
-    assert hasattr(hook, 'hello')
-    assert repr(hook.hello).find("hello") != -1
-
-    class Plugin(object):
-        @hookimpl
-        def hello(self, arg):
-            return arg + 1
-
-    plugin = Plugin()
-    pm.register(plugin)
-    out = hook.hello(arg=3)
-    assert out == [4]
-    assert not hasattr(hook, 'world')
-    pm.unregister(plugin)
-    assert hook.hello(arg=3) == []
-
-
 def test_argmismatch(pm):
     class Api(object):
         @hookspec
