@@ -117,3 +117,20 @@ def test_warning_on_call_vs_hookspec_arg_mismatch():
         warning = warns[-1]
         assert issubclass(warning.category, Warning)
         assert "Argument(s) ('arg2',)" in str(warning.message)
+
+
+def test_repr():
+    class Plugin:
+        @hookimpl
+        def myhook():
+            raise NotImplementedError()
+
+    pm = PluginManager(hookspec.project_name)
+
+    plugin = Plugin()
+    pname = pm.register(plugin)
+    assert repr(pm.hook.myhook._nonwrappers[0]) == (
+        "<HookImpl plugin_name=%r, plugin=%r>" % (
+            pname,
+            plugin,
+        ))
