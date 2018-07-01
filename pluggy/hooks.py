@@ -315,3 +315,9 @@ class HookImpl(object):
         self.opts = hook_impl_opts
         self.plugin_name = plugin_name
         self.__dict__.update(hook_impl_opts)
+
+    def __repr__(self):
+        return "<HookImpl plugin_name=%r, plugin_file=%r>" % (
+            self.plugin_name,
+            self.plugin.__file__,
+        )
