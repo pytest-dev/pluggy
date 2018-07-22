@@ -1,9 +1,13 @@
 Release Procedure
 -----------------
 
-#. Update the ``CHANGELOG.rst`` for the new release and commit.
+#. From a clean work tree, execute::
 
-#. Open a PR named ``release-X.Y.Z`` targeting ``master``.
+    tox -e release -- VERSION
+
+   This will create the branch ready to be pushed.
+
+#. Open a PR targeting ``master``.
 
 #. All tests must pass and the PR must be approved by at least another maintainer.
 
@@ -16,5 +20,5 @@ Release Procedure
 
 #. Make sure it is `available on PyPI <https://pypi.org/project/pluggy>`_.
 
-#. Merge ``release-X.Y.Z`` into ``master``, either manually or using GitHub's web interface.
+#. Merge the PR into ``master``, either manually or using GitHub's web interface.
 
