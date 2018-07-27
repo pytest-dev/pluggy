@@ -1,3 +1,67 @@
+Pluggy 0.7.0 (2018-07-26)
+=========================
+
+Deprecations and Removals
+-------------------------
+
+- `#116 <https://github.com/pytest-dev/pluggy/issues/116>`_: Deprecate the ``implprefix`` kwarg to ``PluginManager`` and instead
+  expect users to start using explicit ``HookimplMarker`` everywhere.
+
+
+
+Features
+--------
+
+- `#122 <https://github.com/pytest-dev/pluggy/issues/122>`_: Add ``.plugin`` member to ``PluginValidationError`` to access failing plugin during post-mortem.
+
+
+- `#131 <https://github.com/pytest-dev/pluggy/issues/131>`_: Automate ``setuptools`` wheels building and PyPi upload using TravisCI.
+
+
+- `#138 <https://github.com/pytest-dev/pluggy/issues/138>`_: Add per implementation warnings support for hookspecs allowing for both
+  deprecation and future warnings of legacy and (future) experimental hooks
+  respectively.
+
+
+- `#66 <https://github.com/pytest-dev/pluggy/issues/66>`_: Start using ``towncrier`` and a custom ``tox`` environment to prepare releases!
+
+
+
+Bug Fixes
+---------
+
+- `#110 <https://github.com/pytest-dev/pluggy/issues/110>`_: Fix a bug where ``_HookCaller.call_historic()`` would call the ``proc``
+  arg even when the default is ``None`` resulting in a ``TypeError``.
+
+
+
+Improved Documentation
+----------------------
+
+- `#123 <https://github.com/pytest-dev/pluggy/issues/123>`_: Document how exceptions are handled and how the hook call loop
+  terminates immediately on the first error which is then delivered
+  to any surrounding wrappers.
+
+
+- `#136 <https://github.com/pytest-dev/pluggy/issues/136>`_: Docs rework including a much better introduction and comprehensive example
+  set for new users. A big thanks goes out to @obestwalter for the great work!
+
+
+
+Trivial/Internal Changes
+------------------------
+
+- `#117 <https://github.com/pytest-dev/pluggy/issues/117>`_: Break up the main monolithic package modules into separate modules by concern
+
+
+- `#153 <https://github.com/pytest-dev/pluggy/issues/153>`_: Reorganize tests more appropriately by modules relating to each
+  internal component/feature. This is in an effort to avoid (future)
+  duplication and better separation of concerns in the test set.
+
+
+- `#156 <https://github.com/pytest-dev/pluggy/issues/156>`_: Add ``HookImpl.__repr__()`` for better debugging.
+
+
 0.6.0
 -----
 - Add CI testing for the features, release, and master
