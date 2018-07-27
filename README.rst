@@ -1,5 +1,9 @@
 pluggy - A minimalist production ready plugin system
 ====================================================
+
+.. image:: https://badges.gitter.im/pytest-dev/pluggy.svg
+   :alt: Join the chat at https://gitter.im/pytest-dev/pluggy
+   :target: https://gitter.im/pytest-dev/pluggy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 |pypi| |anaconda| |versions| |travis| |appveyor|
 
 
