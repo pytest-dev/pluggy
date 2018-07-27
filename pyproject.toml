@@ -10,6 +10,7 @@ package = "pluggy"
 package_dir = "pluggy"
 filename = "CHANGELOG.rst"
 directory = "changelog/"
+title_format = "pluggy {version} ({project_date})"
 template = "changelog/_template.rst"
 
   [[tool.towncrier.type]]
