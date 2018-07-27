@@ -1,0 +1,1 @@
+Fix problem when handling ``VersionConflict`` errors when loading setuptools plugins.
