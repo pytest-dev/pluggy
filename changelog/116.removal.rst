@@ -1,2 +1,0 @@
-Deprecate the ``implprefix`` kwarg to ``PluginManager`` and instead
-expect users to start using explicit ``HookimplMarker`` everywhere.
