@@ -1,0 +1,2 @@
+Fix a bug where ``_HookCaller.call_historic()`` would call the ``proc``
+arg even when the default is ``None`` resulting in a ``TypeError``.

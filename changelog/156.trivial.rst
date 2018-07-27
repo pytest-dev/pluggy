@@ -1,0 +1,1 @@
+Add ``HookImpl.__repr__()`` for better debugging.
