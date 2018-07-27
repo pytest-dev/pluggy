@@ -1,0 +1,1 @@
+Add ``.plugin`` member to ``PluginValidationError`` to access failing plugin during post-mortem.

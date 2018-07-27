@@ -1,0 +1,2 @@
+Docs rework including a much better introduction and comprehensive example
+set for new users. A big thanks goes out to @obestwalter for the great work!

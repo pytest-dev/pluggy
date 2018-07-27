@@ -1,0 +1,1 @@
+Automate ``setuptools`` wheels building and PyPi upload using TravisCI.
