@@ -1,4 +1,4 @@
-Pluggy 0.7.0 (2018-07-26)
+pluggy 0.7.1 (2018-07-28)
 =========================
 
 Deprecations and Removals
@@ -26,6 +26,8 @@ Bug Fixes
 
 - `#110 <https://github.com/pytest-dev/pluggy/issues/110>`_: Fix a bug where ``_HookCaller.call_historic()`` would call the ``proc``
   arg even when the default is ``None`` resulting in a ``TypeError``.
+
+- `#160 <https://github.com/pytest-dev/pluggy/issues/160>`_: Fix problem when handling ``VersionConflict`` errors when loading setuptools plugins.
 
 
 
@@ -61,6 +63,11 @@ Trivial/Internal Changes
 
 - `#66 <https://github.com/pytest-dev/pluggy/issues/66>`_: Start using ``towncrier`` and a custom ``tox`` environment to prepare releases!
 
+
+pluggy 0.7.0 (Unreleased)
+=========================
+
+* `#160 <https://github.com/pytest-dev/pluggy/issues/160>`_: We discovered a deployment issue so this version was never released to PyPI, only the tag exists.
 
 0.6.0
 -----
