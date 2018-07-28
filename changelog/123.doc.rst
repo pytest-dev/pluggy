@@ -1,3 +1,0 @@
-Document how exceptions are handled and how the hook call loop
-terminates immediately on the first error which is then delivered
-to any surrounding wrappers.

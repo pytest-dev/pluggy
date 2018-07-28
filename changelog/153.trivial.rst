@@ -1,3 +1,0 @@
-Reorganize tests more appropriately by modules relating to each
-internal component/feature. This is in an effort to avoid (future)
-duplication and better separation of concerns in the test set.

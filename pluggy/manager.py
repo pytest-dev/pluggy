@@ -255,7 +255,8 @@ class PluginManager(object):
                 continue
             except VersionConflict as e:
                 raise PluginValidationError(
-                    "Plugin %r could not be loaded: %s!" % (ep.name, e))
+                    plugin=None,
+                    message="Plugin %r could not be loaded: %s!" % (ep.name, e))
             self.register(plugin, name=ep.name)
             self._plugin_distinfo.append((plugin, ep.dist))
         return len(self._plugin_distinfo)

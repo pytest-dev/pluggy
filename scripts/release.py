@@ -37,8 +37,8 @@ def pre_release(version):
     """Generates new docs, release announcements and creates a local tag."""
     repo = create_branch(version)
     changelog(version, write_out=True)
-    repo.index.add(['CHANGELOG.rst', 'changelog'])
-    repo.index.commit(f"Preparing release {version}")
+
+    check_call(['git', 'commit', '-a', '-m', f"Preparing release {version}"])
 
     print()
     print(f"{Fore.GREEN}Please push your branch to your fork and open a PR.")
