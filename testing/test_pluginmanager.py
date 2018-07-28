@@ -427,6 +427,28 @@ def test_load_setuptools_instantiation(monkeypatch, pm):
     assert pm.list_plugin_distinfo() == [(plugin, None)]
 
 
+def test_load_setuptools_version_conflict(monkeypatch, pm):
+    """Check that we properly handle a VersionConflict problem when loading entry points"""
+    pkg_resources = pytest.importorskip("pkg_resources")
+
+    def my_iter(name):
+        assert name == "hello"
+
+        class EntryPoint(object):
+            name = "myname"
+            dist = None
+
+            def load(self):
+                raise pkg_resources.VersionConflict('Some conflict')
+
+        return iter([EntryPoint()])
+
+    monkeypatch.setattr(pkg_resources, 'iter_entry_points', my_iter)
+    with pytest.raises(PluginValidationError,
+                       match="Plugin 'myname' could not be loaded: Some conflict!"):
+        pm.load_setuptools_entrypoints("hello")
+
+
 def test_load_setuptools_not_installed(monkeypatch, pm):
     monkeypatch.setitem(
         sys.modules, 'pkg_resources',
