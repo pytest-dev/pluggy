@@ -1,3 +1,4 @@
+====================================================
 pluggy - A minimalist production ready plugin system
 ====================================================
 
@@ -8,7 +9,7 @@ This is the core framework used by the `pytest`_, `tox`_, and `devpi`_ projects.
 Please `read the docs`_ to learn more!
 
 A definitive example
-********************
+====================
 .. code-block:: python
 
     import pluggy
