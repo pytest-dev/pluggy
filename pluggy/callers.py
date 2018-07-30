@@ -31,13 +31,28 @@ class _Result(object):
 
     @property
     def excinfo(self):
+        """Get the exception info for this hook call (DEPRECATED in favor of
+        ``get_result()``).
+        """
+        warnings.warn(
+            DeprecationWarning(
+                '`_Result.excinfo` is deprecated use `get_result()` to raise '
+                'the underlying exception'),
+                stacklevel=2
+        )
         return self._excinfo
 
     @property
     def result(self):
-        """Get the result(s) for this hook call (DEPRECATED in favor of ``get_result()``)."""
-        msg = 'Use get_result() which forces correct exception handling'
-        warnings.warn(DeprecationWarning(msg), stacklevel=2)
+        """Get the result(s) for this hook call (DEPRECATED in favor of
+        ``get_result()``).
+        """
+        warnings.warn(
+            DeprecationWarning(
+                '`_Result.result` is deprecated use `get_result()` to force '
+                'correct exception handling'),
+                stacklevel=2
+        )
         return self._result
 
     @classmethod
@@ -62,7 +77,7 @@ class _Result(object):
         self._excinfo = None
 
     def get_result(self):
-        """Get the result(s) for this hook call.
+        """Get the result(s) for this hook call; raises any caught exception.
 
         If the hook was marked as a ``firstresult`` only a single value
         will be returned otherwise a list of results.

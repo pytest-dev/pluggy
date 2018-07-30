@@ -298,7 +298,7 @@ class PluginManager(object):
             hooktrace(hook_name, kwargs)
 
         def after(outcome, hook_name, methods, kwargs):
-            if outcome.excinfo is None:
+            if outcome._excinfo is None:
                 hooktrace("finish", hook_name, "-->", outcome.get_result())
             hooktrace.root.indent -= 1
 

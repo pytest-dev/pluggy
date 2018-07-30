@@ -1,0 +1,1 @@
+Deprecate ``_Result.excinfo`` in favor of ``_Result.get_result()``.
