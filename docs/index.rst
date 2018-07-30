@@ -854,6 +854,17 @@ in your project you should thus use a dependency restriction like
 ``"pluggy>=0.1.0,<1.0"`` to avoid surprises.
 
 
+Table of contents
+*****************
+
+.. toctree::
+    :maxdepth: 2
+
+    api_reference
+    changelog
+
+
+
 .. hyperlinks
 .. _@contextlib.contextmanager:
     https://docs.python.org/3.6/library/contextlib.html#contextlib.contextmanager

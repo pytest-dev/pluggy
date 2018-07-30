@@ -15,8 +15,11 @@ classifiers = [
     ('Programming Language :: Python :: %s' % x) for x in
     '2 2.7 3 3.4 3.5 3.6'.split()]
 
-with open('README.rst') as fd:
-    long_description = fd.read()
+with open('README.rst', 'rb') as fd:
+    long_description = fd.read().decode('utf-8')
+
+with open('CHANGELOG.rst', 'rb') as fd:
+    long_description += "\n\n" + fd.read().decode('utf-8')
 
 
 def main():
