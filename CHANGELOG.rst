@@ -76,8 +76,9 @@ pluggy 0.7.0 (Unreleased)
 
 * `#160 <https://github.com/pytest-dev/pluggy/issues/160>`_: We discovered a deployment issue so this version was never released to PyPI, only the tag exists.
 
-0.6.0
------
+pluggy 0.6.0 (2017-11-24)
+=========================
+
 - Add CI testing for the features, release, and master
   branches of ``pytest`` (PR `#79`_).
 - Document public API for ``_Result`` objects passed to wrappers
@@ -105,8 +106,9 @@ pluggy 0.7.0 (Unreleased)
 .. _#103: https://github.com/pytest-dev/pluggy/pull/103
 
 
-0.5.2
------
+pluggy 0.5.2 (2017-09-06)
+=========================
+
 - fix bug where ``firstresult`` wrappers were being sent an incorrectly configured
   ``_Result`` (a list was set instead of a single value). Add tests to check for
   this as well as ``_Result.force_result()`` behaviour. Thanks to `@tgoodlet`_
@@ -123,8 +125,9 @@ pluggy 0.7.0 (Unreleased)
 .. _#80: https://github.com/pytest-dev/pluggy/pull/80
 
 
-0.5.1
------
+pluggy 0.5.1 (2017-08-29)
+=========================
+
 - fix a bug and add tests for case where ``firstresult`` hooks return
   ``None`` results. Thanks to `@RonnyPfannschmidt`_ and `@tgoodlet`_
   for the issue (`#68`_) and PR (`#69`_) respectively.
@@ -133,8 +136,9 @@ pluggy 0.7.0 (Unreleased)
 .. _#68: https://github.com/pytest-dev/pluggy/issues/68
 
 
-0.5.0
------
+pluggy 0.5.0 (2017-08-28)
+=========================
+
 - fix bug where callbacks for historic hooks would not be called for
   already registered plugins.  Thanks `@vodik`_ for the PR
   and `@hpk42`_ for further fixes.
@@ -192,8 +196,9 @@ pluggy 0.7.0 (Unreleased)
 .. _#14: https://github.com/pytest-dev/pluggy/issues/14
 
 
-0.4.0
------
+pluggy 0.4.0 (2016-09-25)
+=========================
+
 - add ``has_plugin(name)`` method to pluginmanager.  thanks `@nicoddemus`_.
 
 - fix `#11`_: make plugin parsing more resilient against exceptions
@@ -209,14 +214,16 @@ pluggy 0.7.0 (Unreleased)
 .. _#4: https://github.com/pytest-dev/pluggy/issues/4
 
 
-0.3.1
------
+pluggy 0.3.1 (2015-09-17)
+=========================
+
 - avoid using deprecated-in-python3.5 getargspec method. Thanks
   `@mdboom`_.
 
 
-0.3.0
------
+pluggy 0.3.0 (2015-05-07)
+=========================
+
 initial release
 
 .. contributors
