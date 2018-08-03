@@ -2,7 +2,7 @@
 pluggy - A minimalist production ready plugin system
 ====================================================
 
-|pypi| |anaconda| |versions| |travis| |appveyor| |gitter|
+|pypi| |anaconda| |versions| |travis| |appveyor| |gitter| |black|
 
 This is the core framework used by the `pytest`_, `tox`_, and `devpi`_ projects.
 
@@ -59,19 +59,28 @@ A definitive example
 
 
 .. badges
+
 .. |pypi| image:: https://img.shields.io/pypi/v/pluggy.svg
     :target: https://pypi.org/pypi/pluggy
+
 .. |versions| image:: https://img.shields.io/pypi/pyversions/pluggy.svg
     :target: https://pypi.org/pypi/pluggy
+
 .. |travis| image:: https://img.shields.io/travis/pytest-dev/pluggy/master.svg
     :target: https://travis-ci.org/pytest-dev/pluggy
+
 .. |appveyor| image:: https://img.shields.io/appveyor/ci/pytestbot/pluggy/master.svg
     :target: https://ci.appveyor.com/project/pytestbot/pluggy
+
 .. |anaconda| image:: https://anaconda.org/conda-forge/pluggy/badges/version.svg
     :target: https://anaconda.org/conda-forge/pluggy
+
 .. |gitter| image:: https://badges.gitter.im/pytest-dev/pluggy.svg
     :alt: Join the chat at https://gitter.im/pytest-dev/pluggy
     :target: https://gitter.im/pytest-dev/pluggy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+
+.. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/ambv/black
 
 .. links
 .. _pytest:
