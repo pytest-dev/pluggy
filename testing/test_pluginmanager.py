@@ -5,8 +5,11 @@ import pytest
 import types
 import sys
 from pluggy import (
-    PluginManager, PluginValidationError,
-    HookCallError, HookimplMarker, HookspecMarker
+    PluginManager,
+    PluginValidationError,
+    HookCallError,
+    HookimplMarker,
+    HookspecMarker,
 )
 
 
@@ -25,6 +28,7 @@ def test_plugin_double_register(pm):
 
 def test_pm(pm):
     """Basic registration with objects"""
+
     class A(object):
         pass
 
@@ -36,7 +40,7 @@ def test_pm(pm):
     out = pm.get_plugins()
     assert a1 in out
     assert a2 in out
-    assert pm.get_plugin('hello') == a2
+    assert pm.get_plugin("hello") == a2
     assert pm.unregister(a1) == a1
     assert not pm.is_registered(a1)
 
@@ -50,9 +54,9 @@ def test_has_plugin(pm):
         pass
 
     a1 = A()
-    pm.register(a1, 'hello')
+    pm.register(a1, "hello")
     assert pm.is_registered(a1)
-    assert pm.has_plugin('hello')
+    assert pm.has_plugin("hello")
 
 
 def test_register_dynamic_attr(he_pm):
@@ -135,6 +139,7 @@ def test_register_mismatch_arg(he_pm):
 def test_register(pm):
     class MyPlugin(object):
         pass
+
     my = MyPlugin()
     pm.register(my)
     assert my in pm.get_plugins()
@@ -173,6 +178,7 @@ def test_register_historic(pm):
         @hookspec(historic=True)
         def he_method1(self, arg):
             pass
+
     pm.add_hookspecs(Hooks)
 
     pm.hook.he_method1.call_historic(kwargs=dict(arg=1))
@@ -205,8 +211,10 @@ def test_with_result_memorized(pm, result_callback):
     """
     out = []
     if result_callback:
+
         def callback(res):
             out.append(res)
+
     else:
         callback = None
 
@@ -244,6 +252,7 @@ def test_with_callbacks_immediately_executed(pm):
         @hookspec(historic=True)
         def he_method1(self, arg):
             pass
+
     pm.add_hookspecs(Hooks)
 
     class Plugin1(object):
@@ -318,6 +327,7 @@ def test_call_with_too_few_args(pm):
         @hookimpl
         def he_method1(self, arg):
             0 / 0
+
     pm.register(Plugin1())
     with pytest.raises(HookCallError):
         with pytest.warns(UserWarning):
@@ -384,22 +394,24 @@ def test_reject_prefixed_module(pm):
     prefix in its name (in this case `'example_*'` isn't collected
     when registering a module which imports it.
     """
-    pm._implprefix = 'example'
+    pm._implprefix = "example"
     conftest = types.ModuleType("conftest")
-    src = ("""
+    src = """
 def example_hook():
     pass
-""")
+"""
     exec(src, conftest.__dict__)
     conftest.example_blah = types.ModuleType("example_blah")
     with pytest.deprecated_call():
         name = pm.register(conftest)
-    assert name == 'conftest'
-    assert getattr(pm.hook, 'example_blah', None) is None
-    assert getattr(pm.hook, 'example_hook', None)  # conftest.example_hook should be collected
+    assert name == "conftest"
+    assert getattr(pm.hook, "example_blah", None) is None
+    assert getattr(
+        pm.hook, "example_hook", None
+    )  # conftest.example_hook should be collected
     with pytest.deprecated_call():
-        assert pm.parse_hookimpl_opts(conftest, 'example_blah') is None
-        assert pm.parse_hookimpl_opts(conftest, 'example_hook') == {}
+        assert pm.parse_hookimpl_opts(conftest, "example_blah") is None
+        assert pm.parse_hookimpl_opts(conftest, "example_hook") == {}
 
 
 def test_load_setuptools_instantiation(monkeypatch, pm):
@@ -415,11 +427,12 @@ def test_load_setuptools_instantiation(monkeypatch, pm):
             def load(self):
                 class PseudoPlugin(object):
                     x = 42
+
                 return PseudoPlugin()
 
         return iter([EntryPoint()])
 
-    monkeypatch.setattr(pkg_resources, 'iter_entry_points', my_iter)
+    monkeypatch.setattr(pkg_resources, "iter_entry_points", my_iter)
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 1
     plugin = pm.get_plugin("myname")
@@ -439,20 +452,20 @@ def test_load_setuptools_version_conflict(monkeypatch, pm):
             dist = None
 
             def load(self):
-                raise pkg_resources.VersionConflict('Some conflict')
+                raise pkg_resources.VersionConflict("Some conflict")
 
         return iter([EntryPoint()])
 
-    monkeypatch.setattr(pkg_resources, 'iter_entry_points', my_iter)
-    with pytest.raises(PluginValidationError,
-                       match="Plugin 'myname' could not be loaded: Some conflict!"):
+    monkeypatch.setattr(pkg_resources, "iter_entry_points", my_iter)
+    with pytest.raises(
+        PluginValidationError,
+        match="Plugin 'myname' could not be loaded: Some conflict!",
+    ):
         pm.load_setuptools_entrypoints("hello")
 
 
 def test_load_setuptools_not_installed(monkeypatch, pm):
-    monkeypatch.setitem(
-        sys.modules, 'pkg_resources',
-        types.ModuleType("pkg_resources"))
+    monkeypatch.setitem(sys.modules, "pkg_resources", types.ModuleType("pkg_resources"))
 
     with pytest.raises(ImportError):
         pm.load_setuptools_entrypoints("qwe")
@@ -520,8 +533,8 @@ def test_hook_tracing(he_pm):
         he_pm.hook.he_method1(arg=1)
         assert indent == he_pm.trace.root.indent
         assert len(out) == 2
-        assert 'he_method1' in out[0]
-        assert 'finish' in out[1]
+        assert "he_method1" in out[0]
+        assert "finish" in out[1]
 
         out[:] = []
         he_pm.register(api2())
@@ -534,12 +547,13 @@ def test_hook_tracing(he_pm):
         undo()
 
 
-@pytest.mark.parametrize('include_hookspec', [True, False])
+@pytest.mark.parametrize("include_hookspec", [True, False])
 def test_prefix_hookimpl(include_hookspec):
     with pytest.deprecated_call():
         pm = PluginManager(hookspec.project_name, "hello_")
 
     if include_hookspec:
+
         class HookSpec(object):
             @hookspec
             def hello_myhook(self, arg1):
@@ -563,7 +577,7 @@ def test_prefix_hookimpl_dontmatch_module():
         pm = PluginManager(hookspec.project_name, "hello_")
 
     class BadPlugin(object):
-        hello_module = __import__('email')
+        hello_module = __import__("email")
 
     pm.register(BadPlugin())
     pm.check_pending()

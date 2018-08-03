@@ -17,7 +17,7 @@ def test_result_deprecated():
 
 def test_implprefix_deprecated():
     with pytest.deprecated_call():
-        pm = PluginManager('blah', implprefix='blah_')
+        pm = PluginManager("blah", implprefix="blah_")
 
     class Plugin:
         def blah_myhook(self, arg1):
@@ -31,6 +31,7 @@ def test_callhistoric_proc_deprecated(pm):
     """``proc`` kwarg to `PluginMananger.call_historic()` is now officially
     deprecated.
     """
+
     class P1(object):
         @hookspec(historic=True)
         @hookimpl

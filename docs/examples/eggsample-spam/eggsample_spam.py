@@ -1,5 +1,6 @@
 import eggsample
 
+
 @eggsample.hookimpl
 def eggsample_add_ingredients(ingredients):
     """Here the caller expects us to return a list."""
@@ -9,6 +10,7 @@ def eggsample_add_ingredients(ingredients):
         spam = ["splendiferous spam", "magnificent spam"]
     return spam
 
+
 @eggsample.hookimpl
 def eggsample_prep_condiments(condiments):
     """Here the caller passes a mutable object, so we mess with it directly."""
@@ -16,5 +18,5 @@ def eggsample_prep_condiments(condiments):
         del condiments["steak sauce"]
     except KeyError:
         pass
-    condiments['spam sauce'] = 42
+    condiments["spam sauce"] = 42
     return f"Now this is what I call a condiments tray!"

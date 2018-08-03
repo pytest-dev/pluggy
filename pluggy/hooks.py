@@ -17,7 +17,9 @@ class HookspecMarker(object):
     def __init__(self, project_name):
         self.project_name = project_name
 
-    def __call__(self, function=None, firstresult=False, historic=False, warn_on_impl=None):
+    def __call__(
+        self, function=None, firstresult=False, historic=False, warn_on_impl=None
+    ):
         """ if passed a function, directly sets attributes on the function
         which will make it discoverable to add_hookspecs().  If passed no
         function, returns a decorator which can be applied to a function
@@ -31,12 +33,19 @@ class HookspecMarker(object):
         on later registered plugins.
 
         """
+
         def setattr_hookspec_opts(func):
             if historic and firstresult:
                 raise ValueError("cannot have a historic firstresult hook")
-            setattr(func, self.project_name + "_spec",
-                    dict(firstresult=firstresult, historic=historic,
-                         warn_on_impl=warn_on_impl,))
+            setattr(
+                func,
+                self.project_name + "_spec",
+                dict(
+                    firstresult=firstresult,
+                    historic=historic,
+                    warn_on_impl=warn_on_impl,
+                ),
+            )
             return func
 
         if function is not None:
@@ -52,11 +61,18 @@ class HookimplMarker(object):
     Calling PluginManager.register later will discover all marked functions
     if the PluginManager uses the same project_name.
     """
+
     def __init__(self, project_name):
         self.project_name = project_name
 
-    def __call__(self, function=None, hookwrapper=False, optionalhook=False,
-                 tryfirst=False, trylast=False):
+    def __call__(
+        self,
+        function=None,
+        hookwrapper=False,
+        optionalhook=False,
+        tryfirst=False,
+        trylast=False,
+    ):
 
         """ if passed a function, directly sets attributes on the function
         which will make it discoverable to register().  If passed no function,
@@ -80,10 +96,18 @@ class HookimplMarker(object):
         calls).
 
         """
+
         def setattr_hookimpl_opts(func):
-            setattr(func, self.project_name + "_impl",
-                    dict(hookwrapper=hookwrapper, optionalhook=optionalhook,
-                         tryfirst=tryfirst, trylast=trylast))
+            setattr(
+                func,
+                self.project_name + "_impl",
+                dict(
+                    hookwrapper=hookwrapper,
+                    optionalhook=optionalhook,
+                    tryfirst=tryfirst,
+                    trylast=trylast,
+                ),
+            )
             return func
 
         if function is None:
@@ -99,10 +123,14 @@ def normalize_hookimpl_opts(opts):
     opts.setdefault("optionalhook", False)
 
 
-if hasattr(inspect, 'getfullargspec'):
+if hasattr(inspect, "getfullargspec"):
+
     def _getargspec(func):
         return inspect.getfullargspec(func)
+
+
 else:
+
     def _getargspec(func):
         return inspect.getargspec(func)
 
@@ -127,7 +155,7 @@ def varnames(func):
             return (), ()
     elif not inspect.isroutine(func):  # callable object?
         try:
-            func = getattr(func, '__call__', func)
+            func = getattr(func, "__call__", func)
         except Exception:
             return ()
 
@@ -146,7 +174,7 @@ def varnames(func):
     # strip any implicit instance arg
     if args:
         if inspect.ismethod(func) or (
-            '.' in getattr(func, '__qualname__', ()) and args[0] == 'self'
+            "." in getattr(func, "__qualname__", ()) and args[0] == "self"
         ):
             args = args[1:]
 
@@ -169,8 +197,7 @@ class _HookRelay(object):
 
 
 class _HookCaller(object):
-    def __init__(self, name, hook_execute, specmodule_or_class=None,
-                 spec_opts=None):
+    def __init__(self, name, hook_execute, specmodule_or_class=None, spec_opts=None):
         self.name = name
         self._wrappers = []
         self._nonwrappers = []
@@ -196,7 +223,7 @@ class _HookCaller(object):
         self.spec_opts.update(spec_opts)
         if spec_opts.get("historic"):
             self._call_history = []
-        self.warn_on_impl = spec_opts.get('warn_on_impl')
+        self.warn_on_impl = spec_opts.get("warn_on_impl")
 
     def is_historic(self):
         return hasattr(self, "_call_history")
@@ -207,6 +234,7 @@ class _HookCaller(object):
                 if method.plugin == plugin:
                     del wrappers[i]
                     return True
+
         if remove(self._wrappers) is None:
             if remove(self._nonwrappers) is None:
                 raise ValueError("plugin %r not found" % (plugin,))
@@ -230,11 +258,11 @@ class _HookCaller(object):
                 i -= 1
             methods.insert(i + 1, hookimpl)
 
-        if '__multicall__' in hookimpl.argnames:
+        if "__multicall__" in hookimpl.argnames:
             warnings.warn(
                 "Support for __multicall__ is now deprecated and will be"
                 "removed in an upcoming release.",
-                DeprecationWarning
+                DeprecationWarning,
             )
             self.multicall = _legacymulticall
 
@@ -246,13 +274,11 @@ class _HookCaller(object):
             raise TypeError("hook calling supports only keyword arguments")
         assert not self.is_historic()
         if self.argnames:
-            notincall = set(self.argnames) - set(['__multicall__']) - set(
-                kwargs.keys())
+            notincall = set(self.argnames) - set(["__multicall__"]) - set(kwargs.keys())
             if notincall:
                 warnings.warn(
                     "Argument(s) {} which are declared in the hookspec "
-                    "can not be found in this hook call"
-                    .format(tuple(notincall)),
+                    "can not be found in this hook call".format(tuple(notincall)),
                     stacklevel=2,
                 )
         return self._hookexec(self, self._nonwrappers + self._wrappers, kwargs)
@@ -271,7 +297,7 @@ class _HookCaller(object):
             warnings.warn(
                 "Support for `proc` argument is now deprecated and will be"
                 "removed in an upcoming release.",
-                DeprecationWarning
+                DeprecationWarning,
             )
             result_callback = proc
 
@@ -317,7 +343,4 @@ class HookImpl(object):
         self.__dict__.update(hook_impl_opts)
 
     def __repr__(self):
-        return "<HookImpl plugin_name=%r, plugin=%r>" % (
-            self.plugin_name,
-            self.plugin,
-        )
+        return "<HookImpl plugin_name=%r, plugin=%r>" % (self.plugin_name, self.plugin)

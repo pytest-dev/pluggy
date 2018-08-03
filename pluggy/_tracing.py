@@ -23,9 +23,7 @@ class TagTracer(object):
         content = " ".join(map(str, args))
         indent = "  " * self.indent
 
-        lines = [
-            "%s%s [%s]\n" % (indent, content, ":".join(tags))
-        ]
+        lines = ["%s%s [%s]\n" % (indent, content, ":".join(tags))]
 
         for name, value in extra.items():
             lines.append("%s    %s: %s\n" % (indent, name, value))
@@ -34,7 +32,7 @@ class TagTracer(object):
     def processmessage(self, tags, args):
         if self.writer is not None and args:
             lines = self.format_message(tags, args)
-            self.writer(''.join(lines))
+            self.writer("".join(lines))
         try:
             self._tag2proc[tags](tags, args)
         except KeyError:

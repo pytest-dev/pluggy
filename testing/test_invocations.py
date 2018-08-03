@@ -118,6 +118,7 @@ def test_firstresult_definition(pm):
 def test_firstresult_force_result(pm):
     """Verify forcing a result in a wrapper.
     """
+
     class Api(object):
         @hookspec(firstresult=True)
         def hello(self, arg):
@@ -154,6 +155,7 @@ def test_firstresult_returns_none(pm):
     """If None results are returned by underlying implementations ensure
     the multi-call loop returns a None value.
     """
+
     class Api(object):
         @hookspec(firstresult=True)
         def hello(self, arg):
@@ -175,6 +177,7 @@ def test_firstresult_no_plugin(pm):
     """If no implementations/plugins have been registered for a firstresult
     hook the multi-call loop should return a None value.
     """
+
     class Api(object):
         @hookspec(firstresult=True)
         def hello(self, arg):

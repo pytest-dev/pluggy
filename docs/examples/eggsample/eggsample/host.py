@@ -7,6 +7,7 @@ from eggsample import hookspecs, lib
 
 condiments_tray = {"pickled walnuts": 13, "steak sauce": 4, "mushy peas": 2}
 
+
 def main():
     pm = get_plugin_manager()
     cook = EggsellentCook(pm.hook)
@@ -14,12 +15,14 @@ def main():
     cook.prepare_the_food()
     cook.serve_the_food()
 
+
 def get_plugin_manager():
     pm = pluggy.PluginManager("eggsample")
     pm.add_hookspecs(hookspecs)
     pm.load_setuptools_entrypoints("eggsample")
     pm.register(lib)
     return pm
+
 
 class EggsellentCook:
     FAVORITE_INGREDIENTS = ("egg", "egg", "egg")
@@ -30,7 +33,8 @@ class EggsellentCook:
 
     def add_ingredients(self):
         results = self.hook.eggsample_add_ingredients(
-            ingredients=self.FAVORITE_INGREDIENTS)
+            ingredients=self.FAVORITE_INGREDIENTS
+        )
         my_ingredients = list(self.FAVORITE_INGREDIENTS)
         # Each hook returns a list - so we chain this list of lists
         other_ingredients = list(itertools.chain(*results))
@@ -41,11 +45,13 @@ class EggsellentCook:
 
     def serve_the_food(self):
         condiment_comments = self.hook.eggsample_prep_condiments(
-            condiments=condiments_tray)
+            condiments=condiments_tray
+        )
         print(f"Your food. Enjoy some {', '.join(self.ingredients)}")
         print(f"Some condiments? We have {', '.join(condiments_tray.keys())}")
         if any(condiment_comments):
             print("\n".join(condiment_comments))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

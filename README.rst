@@ -53,7 +53,7 @@ A definitive example
     pm.register(Plugin_1())
     pm.register(Plugin_2())
 
-    # call our `myhook` hook
+    # call our ``myhook`` hook
     results = pm.hook.myhook(arg1=1, arg2=2)
     print(results)
 
@@ -68,10 +68,10 @@ A definitive example
 .. |appveyor| image:: https://img.shields.io/appveyor/ci/pytestbot/pluggy/master.svg
     :target: https://ci.appveyor.com/project/pytestbot/pluggy
 .. |anaconda| image:: https://anaconda.org/conda-forge/pluggy/badges/version.svg
-    :target: https://anaconda.org/conda-forge/pluggy    
+    :target: https://anaconda.org/conda-forge/pluggy
 .. |gitter| image:: https://badges.gitter.im/pytest-dev/pluggy.svg
     :alt: Join the chat at https://gitter.im/pytest-dev/pluggy
-    :target: https://gitter.im/pytest-dev/pluggy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge    
+    :target: https://gitter.im/pytest-dev/pluggy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
 .. links
 .. _pytest:

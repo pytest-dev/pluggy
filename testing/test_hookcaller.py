@@ -9,7 +9,6 @@ hookimpl = HookimplMarker("example")
 
 @pytest.fixture
 def hc(pm):
-
     class Hooks(object):
         @hookspec
         def he_method1(self, arg):
@@ -23,11 +22,12 @@ def hc(pm):
 def addmeth(hc):
     def addmeth(tryfirst=False, trylast=False, hookwrapper=False):
         def wrap(func):
-            hookimpl(tryfirst=tryfirst, trylast=trylast,
-                     hookwrapper=hookwrapper)(func)
+            hookimpl(tryfirst=tryfirst, trylast=trylast, hookwrapper=hookwrapper)(func)
             hc._add_hookimpl(HookImpl(None, "<temp>", func, func.example_impl))
             return func
+
         return wrap
+
     return addmeth
 
 
@@ -47,6 +47,7 @@ def test_adding_nonwrappers(hc, addmeth):
     @addmeth()
     def he_method3():
         pass
+
     assert funcs(hc._nonwrappers) == [he_method1, he_method2, he_method3]
 
 
@@ -62,6 +63,7 @@ def test_adding_nonwrappers_trylast(hc, addmeth):
     @addmeth()
     def he_method1_b():
         pass
+
     assert funcs(hc._nonwrappers) == [he_method1, he_method1_middle, he_method1_b]
 
 
@@ -81,8 +83,13 @@ def test_adding_nonwrappers_trylast3(hc, addmeth):
     @addmeth(trylast=True)
     def he_method1_d():
         pass
-    assert funcs(hc._nonwrappers) == \
-        [he_method1_d, he_method1_b, he_method1_a, he_method1_c]
+
+    assert funcs(hc._nonwrappers) == [
+        he_method1_d,
+        he_method1_b,
+        he_method1_a,
+        he_method1_c,
+    ]
 
 
 def test_adding_nonwrappers_trylast2(hc, addmeth):
@@ -97,8 +104,8 @@ def test_adding_nonwrappers_trylast2(hc, addmeth):
     @addmeth(trylast=True)
     def he_method1():
         pass
-    assert funcs(hc._nonwrappers) == \
-        [he_method1, he_method1_middle, he_method1_b]
+
+    assert funcs(hc._nonwrappers) == [he_method1, he_method1_middle, he_method1_b]
 
 
 def test_adding_nonwrappers_tryfirst(hc, addmeth):
@@ -113,8 +120,8 @@ def test_adding_nonwrappers_tryfirst(hc, addmeth):
     @addmeth()
     def he_method1_b():
         pass
-    assert funcs(hc._nonwrappers) == [
-        he_method1_middle, he_method1_b, he_method1]
+
+    assert funcs(hc._nonwrappers) == [he_method1_middle, he_method1_b, he_method1]
 
 
 def test_adding_wrappers_ordering(hc, addmeth):
@@ -167,12 +174,13 @@ def test_hookspec(pm):
     assert not pm.hook.he_myhook3.spec_opts["firstresult"]
 
 
-@pytest.mark.parametrize('name', ["hookwrapper", "optionalhook", "tryfirst", "trylast"])
-@pytest.mark.parametrize('val', [True, False])
+@pytest.mark.parametrize("name", ["hookwrapper", "optionalhook", "tryfirst", "trylast"])
+@pytest.mark.parametrize("val", [True, False])
 def test_hookimpl(name, val):
     @hookimpl(**{name: val})
     def he_myhook1(arg1):
         pass
+
     if val:
         assert he_myhook1.example_impl.get(name)
     else:
@@ -182,6 +190,7 @@ def test_hookimpl(name, val):
 def test_hookrelay_registry(pm):
     """Verify hook caller instances are registered by name onto the relay
     and can be likewise unregistered."""
+
     class Api(object):
         @hookspec
         def hello(self, arg):
@@ -189,7 +198,7 @@ def test_hookrelay_registry(pm):
 
     pm.add_hookspecs(Api)
     hook = pm.hook
-    assert hasattr(hook, 'hello')
+    assert hasattr(hook, "hello")
     assert repr(hook.hello).find("hello") != -1
 
     class Plugin(object):
@@ -201,6 +210,6 @@ def test_hookrelay_registry(pm):
     pm.register(plugin)
     out = hook.hello(arg=3)
     assert out == [4]
-    assert not hasattr(hook, 'world')
+    assert not hasattr(hook, "world")
     pm.unregister(plugin)
     assert hook.hello(arg=3) == []

@@ -37,22 +37,25 @@ def test_indent(rootlogger):
     log.root.indent -= 1
     log("last")
     assert len(out) == 7
-    names = [x[:x.rfind(' [')] for x in out]
+    names = [x[: x.rfind(" [")] for x in out]
     assert names == [
-        'hello', '  line1', '  line2',
-        '    line3', '    line4', '  line5', 'last']
+        "hello",
+        "  line1",
+        "  line2",
+        "    line3",
+        "    line4",
+        "  line5",
+        "last",
+    ]
 
 
 def test_readable_output_dictargs(rootlogger):
 
-    out = rootlogger.format_message(['test'], [1])
-    assert out == ['1 [test]\n']
+    out = rootlogger.format_message(["test"], [1])
+    assert out == ["1 [test]\n"]
 
-    out2 = rootlogger.format_message(['test'], ['test', {'a': 1}])
-    assert out2 == [
-        'test [test]\n',
-        '    a: 1\n'
-    ]
+    out2 = rootlogger.format_message(["test"], ["test", {"a": 1}])
+    assert out2 == ["test [test]\n", "    a: 1\n"]
 
 
 def test_setprocessor(rootlogger):

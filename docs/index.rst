@@ -35,7 +35,7 @@ between ``host`` and ``plugins``.
 
 The ``pluggy`` approach puts the burden on the designer of the
 ``host program`` to think carefully about which objects are really
-needed in a hook implementation. This gives `plugin` creators a clear
+needed in a hook implementation. This gives ``plugin`` creators a clear
 framework for how to extend the ``host`` via a well defined set of functions
 and objects to work with.
 
