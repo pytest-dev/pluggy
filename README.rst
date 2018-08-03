@@ -21,6 +21,7 @@ A definitive example
     class MySpec(object):
         """A hook specification namespace.
         """
+
         @hookspec
         def myhook(self, arg1, arg2):
             """My special little hook that you can customize.
@@ -30,6 +31,7 @@ A definitive example
     class Plugin_1(object):
         """A hook implementation namespace.
         """
+
         @hookimpl
         def myhook(self, arg1, arg2):
             print("inside Plugin_1.myhook()")
@@ -39,6 +41,7 @@ A definitive example
     class Plugin_2(object):
         """A 2nd hook implementation namespace.
         """
+
         @hookimpl
         def myhook(self, arg1, arg2):
             print("inside Plugin_2.myhook()")

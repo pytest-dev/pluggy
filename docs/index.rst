@@ -186,8 +186,8 @@ decorators are used to *mark* functions for detection by a ``PluginManager``:
 
     from pluggy import HookspecMarker, HookimplMarker
 
-    hookspec = HookspecMarker('project_name')
-    hookimpl = HookimplMarker('project_name')
+    hookspec = HookspecMarker("project_name")
+    hookimpl = HookimplMarker("project_name")
 
 
 Each decorator type takes a single ``project_name`` string as its
@@ -224,7 +224,8 @@ which has been appropriately marked.
     import sys
     from pluggy import PluginManager, HookimplMarker
 
-    hookimpl = HookimplMarker('myproject')
+    hookimpl = HookimplMarker("myproject")
+
 
     @hookimpl
     def setup_project(config, args):
@@ -236,7 +237,8 @@ which has been appropriately marked.
 
         return config
 
-    pm = PluginManager('myproject')
+
+    pm = PluginManager("myproject")
 
     # load all hookimpls from the local module's namespace
     plugin_name = pm.register(sys.modules[__name__])
@@ -273,7 +275,8 @@ will be executed *first* or *last* respectively in the hook call loop:
     import sys
     from pluggy import PluginManager, HookimplMarker
 
-    hookimpl = HookimplMarker('myproject')
+    hookimpl = HookimplMarker("myproject")
+
 
     @hookimpl(trylast=True)
     def setup_project(config, args):
@@ -288,6 +291,7 @@ will be executed *first* or *last* respectively in the hook call loop:
     class SomeOtherPlugin(object):
         """Some other plugin defining the same hook.
         """
+
         @hookimpl(tryfirst=True)
         def setup_project(self, config, args):
             """Report what args were passed before calling
@@ -298,7 +302,8 @@ will be executed *first* or *last* respectively in the hook call loop:
 
             return config
 
-    pm = PluginManager('myproject')
+
+    pm = PluginManager("myproject")
 
     # load from the local module's namespace
     pm.register(sys.modules[__name__])
@@ -334,8 +339,7 @@ be implemented as generator function with a single ``yield`` in its body:
         should return json encoded config options.
         """
         if config.debug:
-            print("Pre-hook config is {}".format(
-                config.tojson()))
+            print("Pre-hook config is {}".format(config.tojson()))
 
         # get initial default config
         defaults = config.tojson()
@@ -347,8 +351,7 @@ be implemented as generator function with a single ``yield`` in its body:
             print("JSON config override is {}".format(item))
 
         if config.debug:
-            print("Post-hook config is {}".format(
-                config.tojson()))
+            print("Post-hook config is {}".format(config.tojson()))
 
         if config.use_defaults:
             outcome.force_result(defaults)
@@ -387,7 +390,8 @@ should be added before registering corresponding *hookimpls*:
     import sys
     from pluggy import PluginManager, HookspecMarker
 
-    hookspec = HookspecMarker('myproject')
+    hookspec = HookspecMarker("myproject")
+
 
     @hookspec
     def setup_project(config, args):
@@ -395,7 +399,8 @@ should be added before registering corresponding *hookimpls*:
         arguments.
         """
 
-    pm = PluginManager('myproject')
+
+    pm = PluginManager("myproject")
 
     # load from the local module's namespace
     pm.add_hookspecs(sys.modules[__name__])
@@ -437,6 +442,7 @@ In other words this is ok:
     def myhook(config, args):
         pass
 
+
     @hookimpl
     def myhook(args):
         print(args)
@@ -449,6 +455,7 @@ whereas this is not:
     @hookspec
     def myhook(config, args):
         pass
+
 
     @hookimpl
     def myhook(config, args, extra_arg):
@@ -513,7 +520,9 @@ if a hookspec specifies a ``warn_on_impl``, pluggy will trigger it for any plugi
 
 .. code-block:: python
 
-    @hookspec(warn_on_impl=DeprecationWarning("oldhook is deprecated and will be removed soon"))
+    @hookspec(
+        warn_on_impl=DeprecationWarning("oldhook is deprecated and will be removed soon")
+    )
     def oldhook():
         pass
 
@@ -530,7 +539,8 @@ A ``PluginManager`` is instantiated with a single
 .. code-block:: python
 
     import pluggy
-    pm = pluggy.PluginManager('my_project_name')
+
+    pm = pluggy.PluginManager("my_project_name")
 
 
 The ``project_name`` value is used when a ``PluginManager`` scans for *hook*
@@ -643,7 +653,8 @@ assertion should not error:
 
     from pluggy import PluginManager, HookimplMarker
 
-    hookimpl = HookimplMarker('myproject')
+    hookimpl = HookimplMarker("myproject")
+
 
     class Plugin1(object):
         @hookimpl
@@ -652,12 +663,14 @@ assertion should not error:
             """
             return 1
 
+
     class Plugin2(object):
         @hookimpl
         def myhook(self, args):
             """Default implementation.
             """
             return 2
+
 
     class Plugin3(object):
         @hookimpl
@@ -666,7 +679,8 @@ assertion should not error:
             """
             return 3
 
-    pm = PluginManager('myproject')
+
+    pm = PluginManager("myproject")
     pm.register(Plugin1())
     pm.register(Plugin2())
     pm.register(Plugin3())
@@ -697,22 +711,26 @@ point:
 
     from pluggy import PluginManager, HookimplMarker
 
-    hookimpl = HookimplMarker('myproject')
+    hookimpl = HookimplMarker("myproject")
+
 
     class Plugin1(object):
         @hookimpl
         def myhook(self, args):
             return 1
 
+
     class Plugin2(object):
         @hookimpl
         def myhook(self, args):
             raise RuntimeError
 
+
     class Plugin3(object):
         @hookimpl
         def myhook(self, args):
             return 3
+
 
     @hookimpl(hookwrapper=True)
     def myhook(self, args):
@@ -724,7 +742,8 @@ point:
             # log the error details
             print(outcome.excinfo)
 
-    pm = PluginManager('myproject')
+
+    pm = PluginManager("myproject")
 
     # register plugins
     pm.register(Plugin1())
@@ -752,11 +771,9 @@ using the :py:meth:`pluggy._HookCaller.call_historic()` method:
     def callback(result):
         print("historic call result is {result}".format(result=result))
 
+
     # call with history; no results returned
-    pm.hook.myhook.call_historic(
-        config=config, args=sys.argv,
-        result_callback=callback
-    )
+    pm.hook.myhook.call_historic(config=config, args=sys.argv, result_callback=callback)
 
     # ... more of our program ...
 
@@ -813,7 +830,7 @@ undo function to disable the behaviour.
 
 .. code-block:: python
 
-    pm = PluginManager('myproject')
+    pm = PluginManager("myproject")
     # magic line to set a writer function
     pm.trace.root.setwriter(print)
     undo = pm.enable_tracing()
@@ -831,6 +848,7 @@ The expected signature and default implementations for these functions is:
 
     def before(hook_name, methods, kwargs):
         pass
+
 
     def after(outcome, hook_name, methods, kwargs):
         pass
