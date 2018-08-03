@@ -2,6 +2,7 @@ import pluggy
 
 hookspec = pluggy.HookspecMarker("eggsample")
 
+
 @hookspec
 def eggsample_add_ingredients(ingredients: tuple):
     """Have a look at the ingredients and offer your own.
@@ -9,6 +10,7 @@ def eggsample_add_ingredients(ingredients: tuple):
     :param ingredients: the ingredients, don't touch them!
     :return: a list of ingredients
     """
+
 
 @hookspec
 def eggsample_prep_condiments(condiments: dict):

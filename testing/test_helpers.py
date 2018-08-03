@@ -15,8 +15,8 @@ def test_varnames():
             pass
 
     assert varnames(f) == (("x",), ())
-    assert varnames(A().f) == (('y',), ())
-    assert varnames(B()) == (('z',), ())
+    assert varnames(A().f) == (("y",), ())
+    assert varnames(B()) == (("z",), ())
 
 
 def test_varnames_default():
@@ -51,7 +51,7 @@ def test_formatdef():
     def function1():
         pass
 
-    assert _formatdef(function1) == 'function1()'
+    assert _formatdef(function1) == "function1()"
 
     def function2(arg1):
         pass

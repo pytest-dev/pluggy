@@ -23,7 +23,7 @@ def MC(methods, kwargs, firstresult=False):
     for method in methods:
         f = HookImpl(None, "<temp>", method, method.example_impl)
         hookfuncs.append(f)
-        if '__multicall__' in f.argnames:
+        if "__multicall__" in f.argnames:
             caller = _legacymulticall
     return caller(hookfuncs, kwargs, firstresult=firstresult)
 
@@ -69,6 +69,7 @@ def test_keyword_args_with_defaultargs():
     @hookimpl
     def f(x, z=1):
         return x + z
+
     reslist = MC([f], dict(x=23, y=24))
     assert reslist == [24]
 
@@ -77,6 +78,7 @@ def test_tags_call_error():
     @hookimpl
     def f(x):
         return x
+
     with pytest.raises(HookCallError):
         MC([f], {})
 
@@ -171,7 +173,7 @@ def test_hookwrapper_too_many_yield():
     with pytest.raises(RuntimeError) as ex:
         MC([m1], {})
     assert "m1" in str(ex.value)
-    assert (__file__ + ':') in str(ex.value)
+    assert (__file__ + ":") in str(ex.value)
 
 
 @pytest.mark.parametrize("exc", [ValueError, SystemExit])

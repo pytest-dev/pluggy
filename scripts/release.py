@@ -11,9 +11,9 @@ from git import Repo, Remote
 
 def create_branch(version):
     """Create a fresh branch from upstream/master"""
-    repo = Repo.init('.')
+    repo = Repo.init(".")
     if repo.is_dirty(untracked_files=True):
-        raise RuntimeError(f'Repository is dirty, please commit/stash your changes.')
+        raise RuntimeError(f"Repository is dirty, please commit/stash your changes.")
 
     branch_name = f"release-{version}"
     print(f"{Fore.CYAN}Create {branch_name} branch from upstream master")
@@ -35,10 +35,10 @@ def get_upstream(repo: Repo) -> Remote:
 
 def pre_release(version):
     """Generates new docs, release announcements and creates a local tag."""
-    repo = create_branch(version)
+    create_branch(version)
     changelog(version, write_out=True)
 
-    check_call(['git', 'commit', '-a', '-m', f"Preparing release {version}"])
+    check_call(["git", "commit", "-a", "-m", f"Preparing release {version}"])
 
     print()
     print(f"{Fore.GREEN}Please push your branch to your fork and open a PR.")
@@ -61,7 +61,7 @@ def main():
     try:
         pre_release(options.version)
     except RuntimeError as e:
-        print(f'{Fore.RED}ERROR: {e}')
+        print(f"{Fore.RED}ERROR: {e}")
         return 1
 
 

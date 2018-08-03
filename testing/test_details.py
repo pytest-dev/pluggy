@@ -9,8 +9,7 @@ hookimpl = HookimplMarker("example")
 def test_parse_hookimpl_override():
     class MyPluginManager(PluginManager):
         def parse_hookimpl_opts(self, module_or_class, name):
-            opts = PluginManager.parse_hookimpl_opts(
-                self, module_or_class, name)
+            opts = PluginManager.parse_hookimpl_opts(self, module_or_class, name)
             if opts is None:
                 if name.startswith("x1"):
                     opts = {}
@@ -73,9 +72,10 @@ def test_plugin_getattr_raises_errors():
     """Pluggy must be able to handle plugins which raise weird exceptions
     when getattr() gets called (#11).
     """
+
     class DontTouchMe(object):
         def __getattr__(self, x):
-            raise Exception('cant touch me')
+            raise Exception("cant touch me")
 
     class Module(object):
         pass
@@ -85,14 +85,15 @@ def test_plugin_getattr_raises_errors():
 
     pm = PluginManager(hookspec.project_name)
     # register() would raise an error
-    pm.register(module, 'donttouch')
-    assert pm.get_plugin('donttouch') is module
+    pm.register(module, "donttouch")
+    assert pm.get_plugin("donttouch") is module
 
 
 def test_warning_on_call_vs_hookspec_arg_mismatch():
     """Verify that is a hook is called with less arguments then defined in the
     spec that a warning is emitted.
     """
+
     class Spec:
         @hookspec
         def myhook(self, arg1, arg2):
@@ -108,7 +109,7 @@ def test_warning_on_call_vs_hookspec_arg_mismatch():
     pm.add_hookspecs(Spec())
 
     with warnings.catch_warnings(record=True) as warns:
-        warnings.simplefilter('always')
+        warnings.simplefilter("always")
 
         # calling should trigger a warning
         pm.hook.myhook(arg1=1)
@@ -130,7 +131,5 @@ def test_repr():
     plugin = Plugin()
     pname = pm.register(plugin)
     assert repr(pm.hook.myhook._nonwrappers[0]) == (
-        "<HookImpl plugin_name=%r, plugin=%r>" % (
-            pname,
-            plugin,
-        ))
+        "<HookImpl plugin_name=%r, plugin=%r>" % (pname, plugin)
+    )

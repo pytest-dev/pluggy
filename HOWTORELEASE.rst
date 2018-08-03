@@ -21,4 +21,3 @@ Release Procedure
 #. Make sure it is `available on PyPI <https://pypi.org/project/pluggy>`_.
 
 #. Merge the PR into ``master``, either manually or using GitHub's web interface.
-

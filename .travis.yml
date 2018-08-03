@@ -4,7 +4,7 @@ language: python
 jobs:
   include:
     - python: '3.6'
-      env: TOXENV=check
+      env: TOXENV=linting
     - python: '3.6'
       env: TOXENV=docs
     - python: '2.7'

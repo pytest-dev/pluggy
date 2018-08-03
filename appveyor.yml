@@ -1,7 +1,7 @@
 environment:
   matrix:
   # note: please use "tox --listenvs" to populate the build matrix below
-  - TOXENV: "check"
+  - TOXENV: "linting"
   - TOXENV: "docs"
   - TOXENV: "py27-pytestrelease"
   - TOXENV: "py34-pytestrelease"
