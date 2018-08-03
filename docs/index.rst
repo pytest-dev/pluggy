@@ -846,6 +846,19 @@ projects rely on it. Our Github integrated CI process runs the full
 `tox test suite`_ on each commit so be sure your changes can run on
 all required `Python interpreters`_ and ``pytest`` versions.
 
+For development, we suggest to create a virtual environment and install ``pluggy`` in
+editable mode and ``dev`` dependencies::
+
+    $ python3 -m venv .env
+    $ source .env/bin/activate
+    $ pip install -e .[dev]
+
+To make sure you follow the code style used in the project, install ``pre-commit`` which
+will run style checks before each commit::
+
+    $ pre-commit install
+
+
 Release Policy
 **************
 Pluggy uses `Semantic Versioning`_. Breaking changes are only foreseen for
