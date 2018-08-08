@@ -5,7 +5,7 @@
 What is it?
 ***********
 ``pluggy`` is the crystallized core of `plugin management and hook
-calling`_ for `pytest`_. It enables `200+ plugins`_ to extend and customize
+calling`_ for `pytest`_. It enables `500+ plugins`_ to extend and customize
 ``pytest``'s default behaviour. Even ``pytest`` itself is composed
 as a set of ``pluggy`` plugins which are invoked in sequence according to a
 well defined set of protocols.
@@ -935,7 +935,7 @@ Table of contents
     https://en.wikipedia.org/wiki/Coupling_%28computer_programming%29#Types_of_coupling
 .. _Python interpreters:
     https://github.com/pytest-dev/pluggy/blob/master/tox.ini#L2
-.. _200+ plugins:
+.. _500+ plugins:
     http://plugincompat.herokuapp.com/
 .. _self:
     https://docs.python.org/3.6/tutorial/classes.html#random-remarks
