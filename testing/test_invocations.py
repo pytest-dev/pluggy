@@ -39,6 +39,34 @@ def test_only_kwargs(pm):
     assert comprehensible in str(exc.value)
 
 
+def test_opt_in_args(pm):
+    """Verfiy that two hookimpls with mutex args can serve
+    under the same spec.
+    """
+
+    class Api(object):
+        @hookspec
+        def hello(self, arg1, arg2, common_arg):
+            "api hook 1"
+
+    class Plugin1(object):
+        @hookimpl
+        def hello(self, arg1, common_arg):
+            return arg1 + common_arg
+
+    class Plugin2(object):
+        @hookimpl
+        def hello(self, arg2, common_arg):
+            return arg2 + common_arg
+
+    pm.add_hookspecs(Api)
+    pm.register(Plugin1())
+    pm.register(Plugin2())
+
+    results = pm.hook.hello(arg1=1, arg2=2, common_arg=0)
+    assert results == [2, 1]
+
+
 def test_call_order(pm):
     class Api(object):
         @hookspec
