@@ -440,6 +440,29 @@ def test_load_setuptools_instantiation(monkeypatch, pm):
     assert pm.list_plugin_distinfo() == [(plugin, None)]
 
 
+def test_load_setuptools_does_not_ignore_distribution_errors(monkeypatch, pm):
+    """Ensure loading entry points does not silently eat DistributionNotFound errors (#174)"""
+    pkg_resources = pytest.importorskip("pkg_resources")
+
+    def my_iter(name):
+        assert name == "hello"
+
+        class EntryPoint(object):
+            name = "myname"
+            dist = None
+
+            def load(self):
+                raise pkg_resources.DistributionNotFound(
+                    "error on load", "requirement: mock"
+                )
+
+        return iter([EntryPoint()])
+
+    monkeypatch.setattr(pkg_resources, "iter_entry_points", my_iter)
+    with pytest.raises(pkg_resources.DistributionNotFound, match="error on load"):
+        pm.load_setuptools_entrypoints("hello")
+
+
 def test_load_setuptools_version_conflict(monkeypatch, pm):
     """Check that we properly handle a VersionConflict problem when loading entry points"""
     pkg_resources = pytest.importorskip("pkg_resources")
