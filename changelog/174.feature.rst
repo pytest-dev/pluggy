@@ -1,0 +1,1 @@
+No longer silently skip setuptools plugins that raise ``DistributionNotFound`` errors.

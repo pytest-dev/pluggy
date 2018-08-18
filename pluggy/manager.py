@@ -251,11 +251,7 @@ class PluginManager(object):
     def load_setuptools_entrypoints(self, entrypoint_name):
         """ Load modules from querying the specified setuptools entrypoint name.
         Return the number of loaded plugins. """
-        from pkg_resources import (
-            iter_entry_points,
-            DistributionNotFound,
-            VersionConflict,
-        )
+        from pkg_resources import iter_entry_points, VersionConflict
 
         for ep in iter_entry_points(entrypoint_name):
             # is the plugin registered or blocked?
@@ -263,8 +259,6 @@ class PluginManager(object):
                 continue
             try:
                 plugin = ep.load()
-            except DistributionNotFound:
-                continue
             except VersionConflict as e:
                 raise PluginValidationError(
                     plugin=None,
