@@ -410,7 +410,7 @@ def test_get_hookimpl(pm):
     pm.register(plugin2)
     pm.register(plugin3)
 
-    hookimpls = pm.get_hookimpl("he_method1")
+    hookimpls = pm.hook.he_method1.get_hookimpl()
     hook_plugins = [hookimpl.plugin for hookimpl in hookimpls]
 
     assert plugin1 in hook_plugins

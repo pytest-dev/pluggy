@@ -233,6 +233,9 @@ class _HookCaller(object):
             if remove(self._nonwrappers) is None:
                 raise ValueError("plugin %r not found" % (plugin,))
 
+    def get_hookimpl(self):
+        return self._wrappers + self._nonwrappers
+
     def _add_hookimpl(self, hookimpl):
         """Add an implementation to the callback chain.
         """
