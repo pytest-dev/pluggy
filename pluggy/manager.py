@@ -290,7 +290,7 @@ class PluginManager(object):
         return self._plugin2hookcallers.get(plugin)
 
     def get_hookimpl(self, name):
-        """ Return a list of all plugins that implements a given hook. """
+        """ Return a list of all hook implementations (HookImpl) for a given hook. """
         hc = getattr(self.hook, name)
         return hc._wrappers + hc._nonwrappers
 
