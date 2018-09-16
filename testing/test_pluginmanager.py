@@ -384,6 +384,43 @@ def test_subset_hook_caller(pm):
     assert out == [10]
 
 
+def test_get_hookimpl(pm):
+    class Hooks(object):
+        @hookspec
+        def he_method1(self, arg):
+            pass
+
+    pm.add_hookspecs(Hooks)
+
+    class Plugin1(object):
+        @hookimpl
+        def he_method1(self, arg):
+            pass
+
+    class Plugin2(object):
+        @hookimpl
+        def he_method1(self, arg):
+            pass
+
+    class PluginNo(object):
+        pass
+
+    plugin1, plugin2, plugin3 = Plugin1(), Plugin2(), PluginNo()
+    pm.register(plugin1)
+    pm.register(plugin2)
+    pm.register(plugin3)
+
+    hook_plugins = pm.get_hookimpl("he_method1")
+
+    assert plugin1.he_method1 in hook_plugins
+    hook_plugins.remove(plugin1.he_method1)
+
+    assert plugin2.he_method1 in hook_plugins
+    hook_plugins.remove(plugin2.he_method1)
+
+    assert len(hook_plugins) == 0
+
+
 def test_add_hookspecs_nohooks(pm):
     with pytest.raises(ValueError):
         pm.add_hookspecs(10)

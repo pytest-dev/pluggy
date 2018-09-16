@@ -289,6 +289,11 @@ class PluginManager(object):
         """ get all hook callers for the specified plugin. """
         return self._plugin2hookcallers.get(plugin)
 
+    def get_hookimpl(self, name):
+        """ Return a list of all plugins that implements a given hook. """
+        hc = getattr(self.hook, name)
+        return hc._wrappers + hc._nonwrappers
+
     def add_hookcall_monitoring(self, before, after):
         """ add before/after tracing functions for all hooks
         and return an undo function which, when called,
