@@ -384,13 +384,14 @@ def test_subset_hook_caller(pm):
     assert out == [10]
 
 
-def test_get_hookimpl(pm):
+def test_get_hookimpls(pm):
     class Hooks(object):
         @hookspec
         def he_method1(self, arg):
             pass
 
     pm.add_hookspecs(Hooks)
+    assert pm.hook.he_method1.get_hookimpls() == []
 
     class Plugin1(object):
         @hookimpl
@@ -410,7 +411,7 @@ def test_get_hookimpl(pm):
     pm.register(plugin2)
     pm.register(plugin3)
 
-    hookimpls = pm.hook.he_method1.get_hookimpl()
+    hookimpls = pm.hook.he_method1.get_hookimpls()
     hook_plugins = [item.plugin for item in hookimpls]
 
     assert plugin1 in hook_plugins

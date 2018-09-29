@@ -233,7 +233,7 @@ class _HookCaller(object):
             if remove(self._nonwrappers) is None:
                 raise ValueError("plugin %r not found" % (plugin,))
 
-    def get_hookimpl(self):
+    def get_hookimpls(self):
         return self._wrappers + self._nonwrappers
 
     def _add_hookimpl(self, hookimpl):
@@ -280,7 +280,7 @@ class _HookCaller(object):
                     "can not be found in this hook call".format(tuple(notincall)),
                     stacklevel=2,
                 )
-        return self._hookexec(self, self._nonwrappers + self._wrappers, kwargs)
+        return self._hookexec(self, self.get_hookimpls(), kwargs)
 
     def call_historic(self, result_callback=None, kwargs=None, proc=None):
         """Call the hook with given ``kwargs`` for all registered plugins and
@@ -302,7 +302,7 @@ class _HookCaller(object):
 
         self._call_history.append((kwargs or {}, result_callback))
         # historizing hooks don't return results
-        res = self._hookexec(self, self._nonwrappers + self._wrappers, kwargs)
+        res = self._hookexec(self, self.get_hookimpls(), kwargs)
         if result_callback is None:
             return
         # XXX: remember firstresult isn't compat with historic
