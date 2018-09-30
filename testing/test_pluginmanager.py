@@ -413,10 +413,7 @@ def test_get_hookimpls(pm):
 
     hookimpls = pm.hook.he_method1.get_hookimpls()
     hook_plugins = [item.plugin for item in hookimpls]
-
-    assert plugin1 in hook_plugins
-    assert plugin2 in hook_plugins
-    assert plugin3 not in hook_plugins
+    assert hook_plugins == [plugin1, plugin2]
 
 
 def test_add_hookspecs_nohooks(pm):
