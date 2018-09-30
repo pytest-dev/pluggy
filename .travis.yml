@@ -1,6 +1,11 @@
 sudo: false
 language: python
 
+stages:
+- test
+- name: deploy
+  if: repo = pytest-dev/pluggy AND tag IS present
+
 jobs:
   include:
     - python: '3.6'
