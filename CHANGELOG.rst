@@ -1,3 +1,25 @@
+pluggy 0.8.0 (2018-10-15)
+=========================
+
+Features
+--------
+
+- `#177 <https://github.com/pytest-dev/pluggy/issues/177>`_: Add ``get_hookimpls()`` method to hook callers.
+
+
+
+Trivial/Internal Changes
+------------------------
+
+- `#165 <https://github.com/pytest-dev/pluggy/issues/165>`_: Add changelog in long package description and documentation.
+
+
+- `#172 <https://github.com/pytest-dev/pluggy/issues/172>`_: Add a test exemplifying the opt-in nature of spec defined args.
+
+
+- `#57 <https://github.com/pytest-dev/pluggy/issues/57>`_: Encapsulate hook specifications in a type for easier introspection.
+
+
 =========
 Changelog
 =========

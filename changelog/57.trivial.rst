@@ -1,1 +1,0 @@
-Encapsulate hook specifications in a type for easier introspection.

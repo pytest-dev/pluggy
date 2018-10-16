@@ -1,1 +1,0 @@
-Add a test exemplifying the opt-in nature of spec defined args.
