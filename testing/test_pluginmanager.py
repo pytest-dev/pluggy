@@ -579,6 +579,12 @@ def test_hook_tracing(he_pm):
         undo()
 
 
+def test_implprefix_warning(recwarn):
+    PluginManager(hookspec.project_name, "hello_")
+    w = recwarn.pop(DeprecationWarning)
+    assert "test_pluginmanager.py" in w.filename
+
+
 @pytest.mark.parametrize("include_hookspec", [True, False])
 def test_prefix_hookimpl(include_hookspec):
     with pytest.deprecated_call():

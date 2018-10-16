@@ -53,6 +53,7 @@ class PluginManager(object):
                 "Support for the `implprefix` arg is now deprecated and will "
                 "be removed in an upcoming release. Please use HookimplMarker.",
                 DeprecationWarning,
+                stacklevel=2,
             )
         self._implprefix = implprefix
         self._inner_hookexec = lambda hook, methods, kwargs: hook.multicall(
