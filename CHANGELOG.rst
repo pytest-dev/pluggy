@@ -1,3 +1,12 @@
+pluggy 0.8.1 (2018-11-09)
+=========================
+
+Trivial/Internal Changes
+------------------------
+
+- `#166 <https://github.com/pytest-dev/pluggy/issues/166>`_: Add ``stacklevel=2`` to implprefix warning so that the reported location of warning is the caller of PluginManager.
+
+
 pluggy 0.8.0 (2018-10-15)
 =========================
 
