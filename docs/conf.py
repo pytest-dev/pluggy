@@ -33,18 +33,23 @@ version = u".".join(dist.version.split(".")[:2])
 language = None
 
 pygments_style = "sphinx"
-html_logo = "_static/img/plug.png"
+# html_logo = "_static/img/plug.png"
 html_theme = "alabaster"
 html_theme_options = {
-    # 'logo': 'img/plug.png',
-    # 'logo_name': 'true',
-    "description": "The `pytest` plugin system",
+    "logo": "img/plug.png",
+    "description": "The pytest plugin system",
     "github_user": "pytest-dev",
     "github_repo": "pluggy",
     "github_button": "true",
     "github_banner": "true",
+    "github_type": "star",
+    "travis_button": "true",
+    "badge_branch": "master",
     "page_width": "1080px",
     "fixed_sidebar": "false",
+}
+html_sidebars = {
+    "**": ["about.html", "localtoc.html", "relations.html", "searchbox.html"]
 }
 html_static_path = ["_static"]
 
