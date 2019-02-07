@@ -449,8 +449,8 @@ def example_hook():
 def test_load_setuptools_instantiation(monkeypatch, pm):
     pkg_resources = pytest.importorskip("pkg_resources")
 
-    def my_iter(name):
-        assert name == "hello"
+    def my_iter(group, name=None):
+        assert group == "hello"
 
         class EntryPoint(object):
             name = "myname"
@@ -470,14 +470,16 @@ def test_load_setuptools_instantiation(monkeypatch, pm):
     plugin = pm.get_plugin("myname")
     assert plugin.x == 42
     assert pm.list_plugin_distinfo() == [(plugin, None)]
+    num = pm.load_setuptools_entrypoints("hello")
+    assert num == 0  # no plugin loaded by this call
 
 
 def test_load_setuptools_version_conflict(monkeypatch, pm):
     """Check that we properly handle a VersionConflict problem when loading entry points"""
     pkg_resources = pytest.importorskip("pkg_resources")
 
-    def my_iter(name):
-        assert name == "hello"
+    def my_iter(group, name=None):
+        assert group == "hello"
 
         class EntryPoint(object):
             name = "myname"
