@@ -1,4 +1,5 @@
 import inspect
+import importlib_metadata
 from . import _tracing
 from .hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 import warnings
@@ -254,25 +255,14 @@ class PluginManager(object):
     def load_setuptools_entrypoints(self, entrypoint_name):
         """ Load modules from querying the specified setuptools entrypoint name.
         Return the number of loaded plugins. """
-        from pkg_resources import (
-            iter_entry_points,
-            DistributionNotFound,
-            VersionConflict,
-        )
-
-        for ep in iter_entry_points(entrypoint_name):
+        for ep in importlib_metadata.entry_points().get(entrypoint_name, ()):
             # is the plugin registered or blocked?
             if self.get_plugin(ep.name) or self.is_blocked(ep.name):
                 continue
             try:
                 plugin = ep.load()
-            except DistributionNotFound:
+            except (ImportError, AttributeError):
                 continue
-            except VersionConflict as e:
-                raise PluginValidationError(
-                    plugin=None,
-                    message="Plugin %r could not be loaded: %s!" % (ep.name, e),
-                )
             self.register(plugin, name=ep.name)
             self._plugin_distinfo.append((plugin, ep.dist))
         return len(self._plugin_distinfo)

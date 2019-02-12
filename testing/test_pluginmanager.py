@@ -3,7 +3,7 @@
 """
 import pytest
 import types
-import sys
+import importlib_metadata
 from pluggy import (
     PluginManager,
     PluginValidationError,
@@ -447,60 +447,25 @@ def example_hook():
 
 
 def test_load_setuptools_instantiation(monkeypatch, pm):
-    pkg_resources = pytest.importorskip("pkg_resources")
+    class EntryPoint(object):
+        name = "myname"
+        dist = None
 
-    def my_iter(name):
-        assert name == "hello"
+        def load(self):
+            class PseudoPlugin(object):
+                x = 42
 
-        class EntryPoint(object):
-            name = "myname"
-            dist = None
+            return PseudoPlugin()
 
-            def load(self):
-                class PseudoPlugin(object):
-                    x = 42
+    def eps():
+        return {"hello": (EntryPoint(),)}
 
-                return PseudoPlugin()
-
-        return iter([EntryPoint()])
-
-    monkeypatch.setattr(pkg_resources, "iter_entry_points", my_iter)
+    monkeypatch.setattr(importlib_metadata, "entry_points", eps)
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 1
     plugin = pm.get_plugin("myname")
     assert plugin.x == 42
     assert pm.list_plugin_distinfo() == [(plugin, None)]
-
-
-def test_load_setuptools_version_conflict(monkeypatch, pm):
-    """Check that we properly handle a VersionConflict problem when loading entry points"""
-    pkg_resources = pytest.importorskip("pkg_resources")
-
-    def my_iter(name):
-        assert name == "hello"
-
-        class EntryPoint(object):
-            name = "myname"
-            dist = None
-
-            def load(self):
-                raise pkg_resources.VersionConflict("Some conflict")
-
-        return iter([EntryPoint()])
-
-    monkeypatch.setattr(pkg_resources, "iter_entry_points", my_iter)
-    with pytest.raises(
-        PluginValidationError,
-        match="Plugin 'myname' could not be loaded: Some conflict!",
-    ):
-        pm.load_setuptools_entrypoints("hello")
-
-
-def test_load_setuptools_not_installed(monkeypatch, pm):
-    monkeypatch.setitem(sys.modules, "pkg_resources", types.ModuleType("pkg_resources"))
-
-    with pytest.raises(ImportError):
-        pm.load_setuptools_entrypoints("qwe")
 
 
 def test_add_tracefuncs(he_pm):

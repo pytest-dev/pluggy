@@ -25,7 +25,6 @@ repos:
         files: ^(CHANGELOG.rst|HOWTORELEASE.rst|README.rst|changelog/.*)$
         language: python
         additional_dependencies: [pygments, restructuredtext_lint]
-        python_version: python3.6
 -   repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.0.0
     hooks:
