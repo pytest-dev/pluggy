@@ -1,0 +1,1 @@
+Fix internal ``varnames`` function for PyPy3.

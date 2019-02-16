@@ -22,6 +22,8 @@ jobs:
       env: TOXENV=py36-pytestrelease
     - python: 'pypy'
       env: TOXENV=pypy-pytestrelease
+    - python: 'pypy3.5'
+      env: TOXENV=pypy3-pytestrelease
     - python: 'nightly'
       env: TOXENV=py37-pytestrelease
     - python: '2.7'
