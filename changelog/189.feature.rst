@@ -1,0 +1,5 @@
+``PluginManager.load_setuptools_entrypoints`` now accepts a ``name`` parameter that when given will
+load only entry points with that name.
+
+``PluginManager.load_setuptools_entrypoints`` also now returns the number of plugins loaded by the
+call, as opposed to the number of all plugins loaded by all calls to this method.
