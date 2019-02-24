@@ -1,3 +1,23 @@
+pluggy 0.9.0 (2019-02-21)
+=========================
+
+Features
+--------
+
+- `#189 <https://github.com/pytest-dev/pluggy/issues/189>`_: ``PluginManager.load_setuptools_entrypoints`` now accepts a ``name`` parameter that when given will
+  load only entry points with that name.
+
+  ``PluginManager.load_setuptools_entrypoints`` also now returns the number of plugins loaded by the
+  call, as opposed to the number of all plugins loaded by all calls to this method.
+
+
+
+Bug Fixes
+---------
+
+- `#187 <https://github.com/pytest-dev/pluggy/issues/187>`_: Fix internal ``varnames`` function for PyPy3.
+
+
 pluggy 0.8.1 (2018-11-09)
 =========================
 
