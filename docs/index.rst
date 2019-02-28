@@ -122,6 +122,10 @@ The host
 
 .. literalinclude:: examples/eggsample/eggsample/host.py
 
+``eggsample/setup.py``
+
+.. literalinclude:: examples/eggsample/setup.py
+
 Let's get cooking - we install the host and see what a program run looks like::
 
     $ pip install --editable pluggy/docs/examples/eggsample
