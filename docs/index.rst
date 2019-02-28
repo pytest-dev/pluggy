@@ -558,7 +558,7 @@ definitions to populate the registry is described in detail in the section on
 
 In summary, you pass a plugin namespace object to the
 :py:meth:`~pluggy.PluginManager.register()` and
-:py:meth:`~pluggy.PluginManager.add_hookspec()` methods to collect
+:py:meth:`~pluggy.PluginManager.add_hookspecs()` methods to collect
 hook *implementations* and *specifications* from *plugin* namespaces respectively.
 
 You can unregister any *plugin*'s hooks using
