@@ -122,6 +122,10 @@ The host
 
 .. literalinclude:: examples/eggsample/eggsample/host.py
 
+``eggsample/setup.py``
+
+.. literalinclude:: examples/eggsample/setup.py
+
 Let's get cooking - we install the host and see what a program run looks like::
 
     $ pip install --editable pluggy/docs/examples/eggsample
@@ -558,7 +562,7 @@ definitions to populate the registry is described in detail in the section on
 
 In summary, you pass a plugin namespace object to the
 :py:meth:`~pluggy.PluginManager.register()` and
-:py:meth:`~pluggy.PluginManager.add_hookspec()` methods to collect
+:py:meth:`~pluggy.PluginManager.add_hookspecs()` methods to collect
 hook *implementations* and *specifications* from *plugin* namespaces respectively.
 
 You can unregister any *plugin*'s hooks using
