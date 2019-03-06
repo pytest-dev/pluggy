@@ -312,7 +312,7 @@ will be executed *first* or *last* respectively in the hook call loop:
     # load from the local module's namespace
     pm.register(sys.modules[__name__])
     # load a plugin defined on a class
-    pm.register(SomePlugin())
+    pm.register(SomeOtherPlugin())
 
 For another example see the `hook function ordering`_ section of the
 ``pytest`` docs.
