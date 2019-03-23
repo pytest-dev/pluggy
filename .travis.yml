@@ -11,6 +11,9 @@ jobs:
   include:
     - python: '3.6'
       env: TOXENV=linting
+      cache:
+        directories:
+          - $HOME/.cache/pre-commit
     - python: '3.6'
       env: TOXENV=docs
     - python: '2.7'
