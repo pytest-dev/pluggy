@@ -2,7 +2,7 @@
 pluggy - A minimalist production ready plugin system
 ====================================================
 
-|pypi| |conda-forge| |versions| |travis| |appveyor| |gitter| |black|
+|pypi| |conda-forge| |versions| |travis| |appveyor| |gitter| |black| |codecov|
 
 This is the core framework used by the `pytest`_, `tox`_, and `devpi`_ projects.
 
@@ -84,6 +84,10 @@ A definitive example
 
 .. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
+
+.. |codecov| image:: https://codecov.io/gh/pytest-dev/pluggy/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/pytest-dev/pluggy
+    :alt: Code coverage Status
 
 .. links
 .. _pytest:
