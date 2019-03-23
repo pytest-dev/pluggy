@@ -1,4 +1,4 @@
-sudo: false
+dist: xenial
 language: python
 
 stages:
@@ -24,11 +24,11 @@ jobs:
       env: TOXENV=py35-pytestrelease
     - python: '3.6'
       env: TOXENV=py36-pytestrelease
-    - python: 'pypy'
+    - python: 'pypy2.7-6.0'
       env: TOXENV=pypy-pytestrelease
-    - python: 'pypy3.5'
+    - python: 'pypy3.5-6.0'
       env: TOXENV=pypy3-pytestrelease
-    - python: 'nightly'
+    - python: '3.7'
       env: TOXENV=py37-pytestrelease
     - python: '2.7'
       env: TOXENV=py27-pytestmaster
