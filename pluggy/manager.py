@@ -152,7 +152,7 @@ class PluginManager(object):
         self._name2plugin[name] = None
 
     def is_blocked(self, name):
-        """ return True if the name blogs registering plugins of that name. """
+        """ return True if the given plugin name is blocked. """
         return name in self._name2plugin and self._name2plugin[name] is None
 
     def add_hookspecs(self, module_or_class):
