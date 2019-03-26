@@ -17,27 +17,27 @@ jobs:
     - python: '3.6'
       env: TOXENV=docs
     - python: '2.7'
-      env: TOXENV=py27-pytestrelease
+      env: TOXENV=py27-pytestrelease-coverage
     - python: '3.4'
-      env: TOXENV=py34-pytestrelease
+      env: TOXENV=py34-pytestrelease-coverage
     - python: '3.5'
-      env: TOXENV=py35-pytestrelease
+      env: TOXENV=py35-pytestrelease-coverage
     - python: '3.6'
-      env: TOXENV=py36-pytestrelease
+      env: TOXENV=py36-pytestrelease-coverage
     - python: 'pypy2.7-6.0'
-      env: TOXENV=pypy-pytestrelease
+      env: TOXENV=pypy-pytestrelease-coverage
     - python: 'pypy3.5-6.0'
-      env: TOXENV=pypy3-pytestrelease
+      env: TOXENV=pypy3-pytestrelease-coverage
     - python: '3.7'
-      env: TOXENV=py37-pytestrelease
+      env: TOXENV=py37-pytestrelease-coverage
     - python: '2.7'
-      env: TOXENV=py27-pytestmaster
+      env: TOXENV=py27-pytestmaster-coverage
     - python: '2.7'
-      env: TOXENV=py27-pytestfeatures
+      env: TOXENV=py27-pytestfeatures-coverage
     - python: '3.6'
-      env: TOXENV=py36-pytestmaster
+      env: TOXENV=py36-pytestmaster-coverage
     - python: '3.6'
-      env: TOXENV=py36-pytestfeatures
+      env: TOXENV=py36-pytestfeatures-coverage
     - python: '3.6'
       env: TOXENV=benchmark
 
@@ -63,6 +63,12 @@ install:
 
 script:
   - tox
+
+after_script:
+  - |
+    if [[ "${TOXENV%-coverage}" != "$TOXENV" ]]; then
+      bash <(curl -s https://codecov.io/bash) -Z -X gcov -X coveragepy -X search -X xcode -X gcovout -X fix -f coverage.xml -n $TOXENV
+    fi
 
 notifications:
   irc:
