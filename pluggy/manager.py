@@ -27,6 +27,23 @@ class PluginValidationError(Exception):
         super(Exception, self).__init__(message)
 
 
+class DistFacade(object):
+    """Emulate a pkg_resources Distribution"""
+
+    def __init__(self, dist):
+        self._dist = dist
+
+    @property
+    def project_name(self):
+        return self.metadata["name"]
+
+    def __getattr__(self, attr, default=None):
+        return getattr(self._dist, attr, default)
+
+    def __dir__(self):
+        return sorted(dir(self._dist) + ["_dist", "project_name"])
+
+
 class PluginManager(object):
     """ Core Pluginmanager class which manages registration
     of plugin objects and 1:N hook calling.
@@ -274,8 +291,7 @@ class PluginManager(object):
                 except (ImportError, AttributeError):
                     continue
                 self.register(plugin, name=ep.name)
-                # TODO: `dist.project_name` is not a thing with importlib-metadata
-                self._plugin_distinfo.append((plugin, dist))
+                self._plugin_distinfo.append((plugin, DistFacade(dist)))
                 count += 1
         return count
 
