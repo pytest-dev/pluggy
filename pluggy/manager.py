@@ -3,6 +3,8 @@ from . import _tracing
 from .hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 import warnings
 
+import importlib_metadata
+
 
 def _warn_for_function(warning, function):
     warnings.warn_explicit(
@@ -259,29 +261,22 @@ class PluginManager(object):
         :rtype: int
         :return: return the number of loaded plugins by this call.
         """
-        from pkg_resources import (
-            iter_entry_points,
-            DistributionNotFound,
-            VersionConflict,
-        )
-
         count = 0
-        for ep in iter_entry_points(group, name=name):
-            # is the plugin registered or blocked?
-            if self.get_plugin(ep.name) or self.is_blocked(ep.name):
-                continue
-            try:
-                plugin = ep.load()
-            except DistributionNotFound:
-                continue
-            except VersionConflict as e:
-                raise PluginValidationError(
-                    plugin=None,
-                    message="Plugin %r could not be loaded: %s!" % (ep.name, e),
-                )
-            self.register(plugin, name=ep.name)
-            self._plugin_distinfo.append((plugin, ep.dist))
-            count += 1
+        for dist in importlib_metadata.distributions():
+            for ep in dist.entry_points:
+                if ep.group != group or (name is not None and ep.name != name):
+                    continue
+                # is the plugin registered or blocked?
+                if self.get_plugin(ep.name) or self.is_blocked(ep.name):
+                    continue
+                try:
+                    plugin = ep.load()
+                except (ImportError, AttributeError):
+                    continue
+                self.register(plugin, name=ep.name)
+                # TODO: `dist.project_name` is not a thing with importlib-metadata
+                self._plugin_distinfo.append((plugin, dist))
+                count += 1
         return count
 
     def list_plugin_distinfo(self):
