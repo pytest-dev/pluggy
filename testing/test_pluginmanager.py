@@ -471,7 +471,12 @@ def test_load_setuptools_instantiation(monkeypatch, pm):
     assert num == 1
     plugin = pm.get_plugin("myname")
     assert plugin.x == 42
-    assert pm.list_plugin_distinfo() == [(plugin, dist)]
+    ret = pm.list_plugin_distinfo()
+    # poor man's `assert ret == [(plugin, mock.ANY)]`
+    assert len(ret) == 1
+    assert len(ret[0]) == 2
+    assert ret[0][0] == plugin
+    assert ret[0][1]._dist == dist
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 0  # no plugin loaded by this call
 
