@@ -286,10 +286,7 @@ class PluginManager(object):
                 # is the plugin registered or blocked?
                 if self.get_plugin(ep.name) or self.is_blocked(ep.name):
                     continue
-                try:
-                    plugin = ep.load()
-                except (ImportError, AttributeError):
-                    continue
+                plugin = ep.load()
                 self.register(plugin, name=ep.name)
                 self._plugin_distinfo.append((plugin, DistFacade(dist)))
                 count += 1
