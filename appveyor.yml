@@ -31,7 +31,7 @@ install:
 build: false  # Not a C# project, build stuff at the test step instead.
 
 test_script:
-  - C:\Python35\python -m tox
+  - C:\Python35\Scripts\tox
 
 # We don't deploy anything on tags with AppVeyor, we use Travis instead, so we
 # might as well save resources
