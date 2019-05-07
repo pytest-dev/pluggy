@@ -4,6 +4,15 @@ Changelog
 
 .. towncrier release notes start
 
+pluggy 0.11.0 (2019-05-07)
+==========================
+
+Bug Fixes
+---------
+
+- `#205 <https://github.com/pytest-dev/pluggy/issues/205>`_: Revert changes made in 0.10.0 release breaking ``.egg`` installs.
+
+
 pluggy 0.10.0 (2019-05-07)
 ==========================
 
