@@ -3,7 +3,7 @@
 """
 import pytest
 import types
-import importlib_metadata
+import sys
 from pluggy import (
     PluginManager,
     PluginValidationError,
@@ -447,38 +447,62 @@ def example_hook():
 
 
 def test_load_setuptools_instantiation(monkeypatch, pm):
-    class EntryPoint(object):
-        name = "myname"
-        group = "hello"
-        value = "myname:foo"
+    pkg_resources = pytest.importorskip("pkg_resources")
 
-        def load(self):
-            class PseudoPlugin(object):
-                x = 42
+    def my_iter(group, name=None):
+        assert group == "hello"
 
-            return PseudoPlugin()
+        class EntryPoint(object):
+            name = "myname"
+            dist = None
 
-    class Distribution(object):
-        entry_points = (EntryPoint(),)
+            def load(self):
+                class PseudoPlugin(object):
+                    x = 42
 
-    dist = Distribution()
+                return PseudoPlugin()
 
-    def my_distributions():
-        return (dist,)
+        return iter([EntryPoint()])
 
-    monkeypatch.setattr(importlib_metadata, "distributions", my_distributions)
+    monkeypatch.setattr(pkg_resources, "iter_entry_points", my_iter)
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 1
     plugin = pm.get_plugin("myname")
     assert plugin.x == 42
-    ret = pm.list_plugin_distinfo()
-    # poor man's `assert ret == [(plugin, mock.ANY)]`
-    assert len(ret) == 1
-    assert len(ret[0]) == 2
-    assert ret[0][0] == plugin
-    assert ret[0][1]._dist == dist
+    assert pm.list_plugin_distinfo() == [(plugin, None)]
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 0  # no plugin loaded by this call
+
+
+def test_load_setuptools_version_conflict(monkeypatch, pm):
+    """Check that we properly handle a VersionConflict problem when loading entry points"""
+    pkg_resources = pytest.importorskip("pkg_resources")
+
+    def my_iter(group, name=None):
+        assert group == "hello"
+
+        class EntryPoint(object):
+            name = "myname"
+            dist = None
+
+            def load(self):
+                raise pkg_resources.VersionConflict("Some conflict")
+
+        return iter([EntryPoint()])
+
+    monkeypatch.setattr(pkg_resources, "iter_entry_points", my_iter)
+    with pytest.raises(
+        PluginValidationError,
+        match="Plugin 'myname' could not be loaded: Some conflict!",
+    ):
+        pm.load_setuptools_entrypoints("hello")
+
+
+def test_load_setuptools_not_installed(monkeypatch, pm):
+    monkeypatch.setitem(sys.modules, "pkg_resources", types.ModuleType("pkg_resources"))
+
+    with pytest.raises(ImportError):
+        pm.load_setuptools_entrypoints("qwe")
 
 
 def test_add_tracefuncs(he_pm):

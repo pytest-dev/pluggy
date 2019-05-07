@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import importlib_metadata
+import pkg_resources
 
 
 extensions = [
@@ -20,13 +20,14 @@ master_doc = "index"
 
 # General information about the project.
 
-project = "pluggy"
+dist = pkg_resources.get_distribution("pluggy")
+project = dist.project_name
 copyright = u"2016, Holger Krekel"
 author = "Holger Krekel"
 
-release = importlib_metadata.version(project)
+release = dist.version
 # The short X.Y version.
-version = u".".join(release.split(".")[:2])
+version = u".".join(dist.version.split(".")[:2])
 
 
 language = None
