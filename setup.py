@@ -28,7 +28,7 @@ def main():
         name="pluggy",
         description="plugin and hook calling mechanisms for python",
         long_description=long_description,
-        use_scm_version={"write_to": "pluggy/_version.py"},
+        use_scm_version={"write_to": "src/pluggy/_version.py"},
         setup_requires=["setuptools-scm"],
         license="MIT license",
         platforms=["unix", "linux", "osx", "win32"],
@@ -39,6 +39,7 @@ def main():
         extras_require={"dev": ["pre-commit", "tox"]},
         classifiers=classifiers,
         packages=["pluggy"],
+        package_dir={"": "src"},
     )
 
 

@@ -7,7 +7,7 @@ requires = [
 
 [tool.towncrier]
 package = "pluggy"
-package_dir = "pluggy"
+package_dir = "src/pluggy"
 filename = "CHANGELOG.rst"
 directory = "changelog/"
 title_format = "pluggy {version} ({project_date})"
