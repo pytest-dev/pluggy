@@ -55,6 +55,14 @@ Changelog
 
 .. towncrier release notes start
 
+pluggy 0.10.0 (2019-05-07)
+==========================
+
+Features
+--------
+
+- `#199 <https://github.com/pytest-dev/pluggy/issues/199>`_: Switch from ``pkg_resources`` to ``importlib-metadata`` for entrypoint detection for improved performance and import time.
+
 
 pluggy 0.7.1 (2018-07-28)
 =========================
