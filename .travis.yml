@@ -58,8 +58,8 @@ jobs:
           repo: pytest-dev/pluggy
 
 install:
-  - pip install -U setuptools pip
-  - pip install -U tox
+  - pip install -U pip
+  - pip install -U setuptools tox
 
 script:
   - tox
