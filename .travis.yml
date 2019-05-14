@@ -30,6 +30,8 @@ jobs:
       env: TOXENV=pypy3-pytestrelease-coverage
     - python: '3.7'
       env: TOXENV=py37-pytestrelease-coverage
+    - python: '3.8-dev'
+      env: TOXENV=py38-pytestrelease-coverage
     - python: '2.7'
       env: TOXENV=py27-pytestmaster-coverage
     - python: '2.7'
@@ -58,8 +60,8 @@ jobs:
           repo: pytest-dev/pluggy
 
 install:
-  - pip install -U setuptools pip
-  - pip install -U tox
+  - pip install -U pip
+  - pip install -U --force-reinstall setuptools tox
 
 script:
   - tox

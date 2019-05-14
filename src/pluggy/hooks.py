@@ -6,6 +6,11 @@ import sys
 import warnings
 from .callers import _legacymulticall, _multicall
 
+if sys.version_info[0] >= 3:
+    from inspect import signature, Parameter
+else:
+    from funcsigs import signature, Parameter
+
 
 class HookspecMarker(object):
     """ Decorator helper class for marking functions as hook specifications.
@@ -124,19 +129,23 @@ def normalize_hookimpl_opts(opts):
     opts.setdefault("optionalhook", False)
 
 
-if hasattr(inspect, "getfullargspec"):
-
-    def _getargspec(func):
-        return inspect.getfullargspec(func)
+_PYPY = hasattr(sys, "pypy_version_info")
 
 
-else:
+def _is_unbound_method(func):
+    # eliminate a bound method right away
+    if getattr(func, "__self__", None) is not None:
+        return False
 
-    def _getargspec(func):
-        return inspect.getargspec(func)
+    # on Python 2, unbound methods are recognized
+    if inspect.ismethod(func):
+        return True
 
+    # on Python 3, we can only guess from the name (__qualname__ is Python 3 only)
+    if "." in getattr(func, "__qualname__", ""):
+        return True
 
-_PYPY3 = hasattr(sys, "pypy_version_info") and sys.version_info.major == 3
+    return False
 
 
 def varnames(func):
@@ -163,25 +172,23 @@ def varnames(func):
         except Exception:
             return ()
 
-    try:  # func MUST be a function or method here or we won't parse any args
-        spec = _getargspec(func)
-    except TypeError:
+    try:
+        sig = signature(func)
+    except ValueError:
+        # func MUST be a function or method here or we won't parse any args
         return (), ()
 
-    args, defaults = tuple(spec.args), spec.defaults
-    if defaults:
-        index = -len(defaults)
-        args, defaults = args[:index], tuple(args[index:])
-    else:
-        defaults = ()
+    variable = (Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD)
+    parameters = sig.parameters.values()
+    parameters = tuple(p for p in parameters if p.kind not in variable)
+    args = tuple(p.name for p in parameters if p.default is Parameter.empty)
+    defaults = tuple(p.name for p in parameters if p.default is not Parameter.empty)
 
-    # strip any implicit instance arg
-    # pypy3 uses "obj" instead of "self" for default dunder methods
-    implicit_names = ("self",) if not _PYPY3 else ("self", "obj")
+    # strip any implicit instance arg of unbound methods
+    # pypy uses "obj" instead of "self" for default dunder methods
+    implicit_names = ("self",) if not _PYPY else ("self", "obj")
     if args:
-        if inspect.ismethod(func) or (
-            "." in getattr(func, "__qualname__", ()) and args[0] in implicit_names
-        ):
+        if _is_unbound_method(func) and args[0] in implicit_names:
             args = args[1:]
 
     try:

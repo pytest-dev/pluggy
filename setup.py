@@ -13,7 +13,8 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ] + [
-    ("Programming Language :: Python :: %s" % x) for x in "2 2.7 3 3.4 3.5 3.6".split()
+    ("Programming Language :: Python :: %s" % x)
+    for x in "2 2.7 3 3.4 3.5 3.6 3.7 3.8".split()
 ]
 
 with open("README.rst", "rb") as fd:
@@ -36,6 +37,7 @@ def main():
         author_email="holger@merlinux.eu",
         url="https://github.com/pytest-dev/pluggy",
         python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
+        install_requires='funcsigs;python_version<="2.7"',
         extras_require={"dev": ["pre-commit", "tox"]},
         classifiers=classifiers,
         packages=["pluggy"],
