@@ -13,7 +13,8 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ] + [
-    ("Programming Language :: Python :: %s" % x) for x in "2 2.7 3 3.4 3.5 3.6".split()
+    ("Programming Language :: Python :: %s" % x)
+    for x in "2 2.7 3 3.4 3.5 3.6 3.7 3.8".split()
 ]
 
 with open("README.rst", "rb") as fd:
