@@ -1,3 +1,15 @@
+pluggy 0.11.1 (2019-05-14)
+==========================
+
+Trivial/Internal Changes
+------------------------
+
+- `#209 <https://github.com/pytest-dev/pluggy/issues/209>`_: Use ``inspect.signature()`` instead of ``inspect.getfullargspec()`` internally. The latter is emitting a deprecation warning in Python 3.8 and
+  breaks test suites that turn warnings into errors.
+
+  Because of this fix, ``pluggy`` now depends on the ``funcsigs`` package on Python 2.
+
+
 =========
 Changelog
 =========
