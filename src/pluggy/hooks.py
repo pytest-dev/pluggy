@@ -6,6 +6,11 @@ import sys
 import warnings
 from .callers import _legacymulticall, _multicall
 
+try:
+    from inspect import signature, Parameter
+except ImportError:
+    from funcsigs import signature, Parameter
+
 
 class HookspecMarker(object):
     """ Decorator helper class for marking functions as hook specifications.
@@ -124,7 +129,7 @@ def normalize_hookimpl_opts(opts):
     opts.setdefault("optionalhook", False)
 
 
-_PYPY3 = hasattr(sys, "pypy_version_info") and sys.version_info.major == 3
+_PYPY = hasattr(sys, "pypy_version_info")
 
 
 def varnames(func):
@@ -151,44 +156,27 @@ def varnames(func):
         except Exception:
             return ()
 
-    # func MUST be a function or method here or we won't parse any args
-    # this is what we return if it is not
-    non_function = (), ()
+    try:
+        sig = signature(func)
+    except ValueError:
+        # func MUST be a function or method here or we won't parse any args
+        return (), ()
 
-    if hasattr(inspect, "signature"):
-        try:
-            signature = inspect.signature(func)
-        except ValueError:
-            return non_function
+    variable = (Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD)
+    parameters = sig.parameters.values()
+    parameters = tuple(p for p in parameters if p.kind not in variable)
+    args = tuple(p.name for p in parameters if p.default is Parameter.empty)
+    defaults = tuple(p.name for p in parameters if p.default is not Parameter.empty)
 
-        empty = inspect.Parameter.empty
-        variable = (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
-        parameters = signature.parameters.values()
-        parameters = tuple(p for p in parameters if p.kind not in variable)
-        args = tuple(p.name for p in parameters if p.default is empty)
-        defaults = tuple(p.name for p in parameters if p.default is not empty)
-        mangled_self = inspect.ismethod(func)
-    else:
-        try:
-            spec = inspect.getargspec(func)
-        except TypeError:
-            return non_function
-
-        args, defaults = tuple(spec.args), spec.defaults
-        if defaults:
-            index = -len(defaults)
-            args, defaults = args[:index], tuple(args[index:])
-        else:
-            defaults = ()
-        mangled_self = False
-
-    # strip any implicit instance arg
-    # pypy3 uses "obj" instead of "self" for default dunder methods
-    implicit_names = ("self",) if not _PYPY3 else ("self", "obj")
-    if args and not mangled_self:
-        if inspect.ismethod(func) or (
-            "." in getattr(func, "__qualname__", ()) and args[0] in implicit_names
-        ):
+    # strip any implicit instance arg of unbound methods
+    # python2 recognizes unbound methods
+    # python3 allows __qualname__
+    # pypy uses "obj" instead of "self" for default dunder methods
+    implicit_names = ("self",) if not _PYPY else ("self", "obj")
+    if args:
+        if (
+            "." in getattr(func, "__qualname__", "") or inspect.ismethod(func)
+        ) and args[0] in implicit_names:
             args = args[1:]
 
     try:

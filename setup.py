@@ -36,6 +36,7 @@ def main():
         author_email="holger@merlinux.eu",
         url="https://github.com/pytest-dev/pluggy",
         python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
+        install_requires='funcsigs;python_version<="2.7"',
         extras_require={"dev": ["pre-commit", "tox"]},
         classifiers=classifiers,
         packages=["pluggy"],
