@@ -6,9 +6,9 @@ import sys
 import warnings
 from .callers import _legacymulticall, _multicall
 
-try:
+if sys.version_info[0] >= 3:
     from inspect import signature, Parameter
-except ImportError:
+else:
     from funcsigs import signature, Parameter
 
 
