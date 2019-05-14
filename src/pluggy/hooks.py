@@ -132,6 +132,22 @@ def normalize_hookimpl_opts(opts):
 _PYPY = hasattr(sys, "pypy_version_info")
 
 
+def _is_unbound_method(func):
+    # eliminate a bound method right away
+    if getattr(func, "__self__", None) is not None:
+        return False
+
+    # on Python 2, unbound methods are recognized
+    if inspect.ismethod(func):
+        return True
+
+    # on Python 3, we can only guess from the name (__qualname__ is Python 3 only)
+    if "." in getattr(func, "__qualname__", ""):
+        return True
+
+    return False
+
+
 def varnames(func):
     """Return tuple of positional and keywrord argument names for a function,
     method, class or callable.
@@ -169,14 +185,10 @@ def varnames(func):
     defaults = tuple(p.name for p in parameters if p.default is not Parameter.empty)
 
     # strip any implicit instance arg of unbound methods
-    # python2 recognizes unbound methods
-    # python3 allows __qualname__
     # pypy uses "obj" instead of "self" for default dunder methods
     implicit_names = ("self",) if not _PYPY else ("self", "obj")
     if args:
-        if (
-            "." in getattr(func, "__qualname__", "") or inspect.ismethod(func)
-        ) and args[0] in implicit_names:
+        if _is_unbound_method(func) and args[0] in implicit_names:
             args = args[1:]
 
     try:
