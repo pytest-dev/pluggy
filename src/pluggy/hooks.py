@@ -178,9 +178,9 @@ def varnames(func):
         # func MUST be a function or method here or we won't parse any args
         return (), ()
 
-    variable = (Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD)
+    positional = (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD)
     parameters = sig.parameters.values()
-    parameters = tuple(p for p in parameters if p.kind not in variable)
+    parameters = tuple(p for p in parameters if p.kind in positional)
     args = tuple(p.name for p in parameters if p.default is Parameter.empty)
     defaults = tuple(p.name for p in parameters if p.default is not Parameter.empty)
 
