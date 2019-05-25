@@ -281,10 +281,13 @@ class PluginManager(object):
         count = 0
         for dist in importlib_metadata.distributions():
             for ep in dist.entry_points:
-                if ep.group != group or (name is not None and ep.name != name):
-                    continue
-                # is the plugin registered or blocked?
-                if self.get_plugin(ep.name) or self.is_blocked(ep.name):
+                if (
+                    ep.group != group
+                    or (name is not None and ep.name != name)
+                    # already registered
+                    or self.get_plugin(ep.name)
+                    or self.is_blocked(ep.name)
+                ):
                     continue
                 plugin = ep.load()
                 self.register(plugin, name=ep.name)
