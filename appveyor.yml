@@ -7,9 +7,8 @@ environment:
   - TOXENV: "py34-pytestrelease"
   - TOXENV: "py35-pytestrelease"
   - TOXENV: "py36-pytestrelease"
+  - TOXENV: "py37-pytestrelease"
   - TOXENV: "pypy-pytestrelease"
-  - TOXENV: "py27-pytestmaster"
-  - TOXENV: "py27-pytestfeatures"
   - TOXENV: "py36-pytestmaster"
   - TOXENV: "py36-pytestfeatures"
 

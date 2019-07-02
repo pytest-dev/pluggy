@@ -32,16 +32,16 @@ jobs:
       env: TOXENV=py37-pytestrelease-coverage
     - python: '3.8-dev'
       env: TOXENV=py38-pytestrelease-coverage
-    - python: '2.7'
-      env: TOXENV=py27-pytestmaster-coverage
-    - python: '2.7'
-      env: TOXENV=py27-pytestfeatures-coverage
     - python: '3.6'
       env: TOXENV=py36-pytestmaster-coverage
     - python: '3.6'
       env: TOXENV=py36-pytestfeatures-coverage
     - python: '3.6'
       env: TOXENV=benchmark
+    - python: '3.7'
+      env: TOXENV=py37-pytestmaster-coverage
+    - python: '3.7'
+      env: TOXENV=py37-pytestfeatures-coverage
 
     - stage: deploy
       python: '3.6'
