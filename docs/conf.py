@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
-import importlib_metadata
+import sys
+
+if sys.version_info >= (3, 8):
+    from importlib import metadata
+else:
+    import importlib_metadata as metadata
 
 
 extensions = [
@@ -24,7 +29,7 @@ project = "pluggy"
 copyright = u"2016, Holger Krekel"
 author = "Holger Krekel"
 
-release = importlib_metadata.version(project)
+release = metadata.version(project)
 # The short X.Y version.
 version = u".".join(release.split(".")[:2])
 
