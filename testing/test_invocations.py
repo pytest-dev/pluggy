@@ -1,12 +1,12 @@
 import pytest
-from pluggy import PluginValidationError, HookimplMarker, HookspecMarker
+from pluggy import PluginManager, PluginValidationError, HookimplMarker, HookspecMarker
 
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
 
 
-def test_argmismatch(pm):
+def test_argmismatch(pm: PluginManager) -> None:
     class Api:
         @hookspec
         def hello(self, arg):
@@ -25,7 +25,7 @@ def test_argmismatch(pm):
     assert "argwrong" in str(exc.value)
 
 
-def test_only_kwargs(pm):
+def test_only_kwargs(pm: PluginManager) -> None:
     class Api:
         @hookspec
         def hello(self, arg):
@@ -39,7 +39,7 @@ def test_only_kwargs(pm):
     assert comprehensible in str(exc.value)
 
 
-def test_opt_in_args(pm):
+def test_opt_in_args(pm: PluginManager) -> None:
     """Verfiy that two hookimpls with mutex args can serve
     under the same spec.
     """
@@ -67,7 +67,7 @@ def test_opt_in_args(pm):
     assert results == [2, 1]
 
 
-def test_call_order(pm):
+def test_call_order(pm: PluginManager) -> None:
     class Api:
         @hookspec
         def hello(self, arg):
@@ -105,7 +105,7 @@ def test_call_order(pm):
     assert res == [3, 2, 1]
 
 
-def test_firstresult_definition(pm):
+def test_firstresult_definition(pm: PluginManager) -> None:
     class Api:
         @hookspec(firstresult=True)
         def hello(self, arg):
@@ -143,7 +143,7 @@ def test_firstresult_definition(pm):
     assert res == 2
 
 
-def test_firstresult_force_result(pm):
+def test_firstresult_force_result(pm: PluginManager) -> None:
     """Verify forcing a result in a wrapper."""
 
     class Api:
@@ -178,7 +178,7 @@ def test_firstresult_force_result(pm):
     assert res == 0  # this result is forced and not a list
 
 
-def test_firstresult_returns_none(pm):
+def test_firstresult_returns_none(pm: PluginManager) -> None:
     """If None results are returned by underlying implementations ensure
     the multi-call loop returns a None value.
     """
@@ -200,7 +200,7 @@ def test_firstresult_returns_none(pm):
     assert res is None
 
 
-def test_firstresult_no_plugin(pm):
+def test_firstresult_no_plugin(pm: PluginManager) -> None:
     """If no implementations/plugins have been registered for a firstresult
     hook the multi-call loop should return a None value.
     """

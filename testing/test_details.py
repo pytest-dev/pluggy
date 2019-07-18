@@ -6,13 +6,13 @@ hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
 
 
-def test_parse_hookimpl_override():
+def test_parse_hookimpl_override() -> None:
     class MyPluginManager(PluginManager):
         def parse_hookimpl_opts(self, module_or_class, name):
             opts = PluginManager.parse_hookimpl_opts(self, module_or_class, name)
             if opts is None:
                 if name.startswith("x1"):
-                    opts = {}
+                    opts = {}  # type: ignore[assignment]
             return opts
 
     class Plugin:
@@ -44,7 +44,7 @@ def test_parse_hookimpl_override():
     assert pm.hook.x1meth2._wrappers[0].hookwrapper
 
 
-def test_warn_when_deprecated_specified(recwarn):
+def test_warn_when_deprecated_specified(recwarn) -> None:
     warning = DeprecationWarning("foo is deprecated")
 
     class Spec:
@@ -68,7 +68,7 @@ def test_warn_when_deprecated_specified(recwarn):
     assert record.lineno == Plugin.foo.__code__.co_firstlineno
 
 
-def test_plugin_getattr_raises_errors():
+def test_plugin_getattr_raises_errors() -> None:
     """Pluggy must be able to handle plugins which raise weird exceptions
     when getattr() gets called (#11).
     """
@@ -81,7 +81,7 @@ def test_plugin_getattr_raises_errors():
         pass
 
     module = Module()
-    module.x = DontTouchMe()
+    module.x = DontTouchMe()  # type: ignore[attr-defined]
 
     pm = PluginManager(hookspec.project_name)
     # register() would raise an error
@@ -89,7 +89,7 @@ def test_plugin_getattr_raises_errors():
     assert pm.get_plugin("donttouch") is module
 
 
-def test_warning_on_call_vs_hookspec_arg_mismatch():
+def test_warning_on_call_vs_hookspec_arg_mismatch() -> None:
     """Verify that is a hook is called with less arguments then defined in the
     spec that a warning is emitted.
     """
@@ -106,7 +106,7 @@ def test_warning_on_call_vs_hookspec_arg_mismatch():
 
     pm = PluginManager(hookspec.project_name)
     pm.register(Plugin())
-    pm.add_hookspecs(Spec())
+    pm.add_hookspecs(Spec)
 
     with warnings.catch_warnings(record=True) as warns:
         warnings.simplefilter("always")
@@ -114,13 +114,14 @@ def test_warning_on_call_vs_hookspec_arg_mismatch():
         # calling should trigger a warning
         pm.hook.myhook(arg1=1)
 
+        assert warns is not None
         assert len(warns) == 1
         warning = warns[-1]
         assert issubclass(warning.category, Warning)
         assert "Argument(s) ('arg2',)" in str(warning.message)
 
 
-def test_repr():
+def test_repr() -> None:
     class Plugin:
         @hookimpl
         def myhook(self):

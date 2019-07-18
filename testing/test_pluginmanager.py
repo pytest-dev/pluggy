@@ -2,12 +2,14 @@
 ``PluginManager`` unit and public API testing.
 """
 import pytest
+from typing import Any, List
 
 from pluggy import (
-    PluginValidationError,
     HookCallError,
     HookimplMarker,
     HookspecMarker,
+    PluginManager,
+    PluginValidationError,
 )
 from pluggy._manager import importlib_metadata
 
@@ -16,7 +18,7 @@ hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
 
 
-def test_plugin_double_register(pm):
+def test_plugin_double_register(pm: PluginManager) -> None:
     """Registering the same plugin more then once isn't allowed"""
     pm.register(42, name="abc")
     with pytest.raises(ValueError):
@@ -25,7 +27,7 @@ def test_plugin_double_register(pm):
         pm.register(42, name="def")
 
 
-def test_pm(pm):
+def test_pm(pm: PluginManager) -> None:
     """Basic registration with objects"""
 
     class A:
@@ -43,12 +45,12 @@ def test_pm(pm):
     assert pm.unregister(a1) == a1
     assert not pm.is_registered(a1)
 
-    out = pm.list_name_plugin()
-    assert len(out) == 1
-    assert out == [("hello", a2)]
+    out2 = pm.list_name_plugin()
+    assert len(out2) == 1
+    assert out2 == [("hello", a2)]
 
 
-def test_has_plugin(pm):
+def test_has_plugin(pm: PluginManager) -> None:
     class A:
         pass
 
@@ -58,7 +60,7 @@ def test_has_plugin(pm):
     assert pm.has_plugin("hello")
 
 
-def test_register_dynamic_attr(he_pm):
+def test_register_dynamic_attr(he_pm: PluginManager) -> None:
     class A:
         def __getattr__(self, name):
             if name[0] != "_":
@@ -70,7 +72,7 @@ def test_register_dynamic_attr(he_pm):
     assert not he_pm.get_hookcallers(a)
 
 
-def test_pm_name(pm):
+def test_pm_name(pm: PluginManager) -> None:
     class A:
         pass
 
@@ -78,23 +80,24 @@ def test_pm_name(pm):
     name = pm.register(a1, name="hello")
     assert name == "hello"
     pm.unregister(a1)
-    assert pm.get_plugin(a1) is None
+    assert pm.get_plugin("hello") is None
     assert not pm.is_registered(a1)
     assert not pm.get_plugins()
     name2 = pm.register(a1, name="hello")
     assert name2 == name
     pm.unregister(name="hello")
-    assert pm.get_plugin(a1) is None
+    assert pm.get_plugin("hello") is None
     assert not pm.is_registered(a1)
     assert not pm.get_plugins()
 
 
-def test_set_blocked(pm):
+def test_set_blocked(pm: PluginManager) -> None:
     class A:
         pass
 
     a1 = A()
     name = pm.register(a1)
+    assert name is not None
     assert pm.is_registered(a1)
     assert not pm.is_blocked(name)
     pm.set_blocked(name)
@@ -108,7 +111,7 @@ def test_set_blocked(pm):
     assert pm.is_blocked("somename")
 
 
-def test_register_mismatch_method(he_pm):
+def test_register_mismatch_method(he_pm: PluginManager) -> None:
     class hello:
         @hookimpl
         def he_method_notexists(self):
@@ -122,7 +125,7 @@ def test_register_mismatch_method(he_pm):
     assert excinfo.value.plugin is plugin
 
 
-def test_register_mismatch_arg(he_pm):
+def test_register_mismatch_arg(he_pm: PluginManager) -> None:
     class hello:
         @hookimpl
         def he_method1(self, qlwkje):
@@ -135,7 +138,7 @@ def test_register_mismatch_arg(he_pm):
     assert excinfo.value.plugin is plugin
 
 
-def test_register_hookwrapper_not_a_generator_function(he_pm):
+def test_register_hookwrapper_not_a_generator_function(he_pm: PluginManager) -> None:
     class hello:
         @hookimpl(hookwrapper=True)
         def he_method1(self):
@@ -148,7 +151,7 @@ def test_register_hookwrapper_not_a_generator_function(he_pm):
     assert excinfo.value.plugin is plugin
 
 
-def test_register(pm):
+def test_register(pm: PluginManager) -> None:
     class MyPlugin:
         pass
 
@@ -166,13 +169,14 @@ def test_register(pm):
     assert my not in pm.get_plugins()
 
 
-def test_register_unknown_hooks(pm):
+def test_register_unknown_hooks(pm: PluginManager) -> None:
     class Plugin1:
         @hookimpl
         def he_method1(self, arg):
             return arg + 1
 
     pname = pm.register(Plugin1())
+    assert pname is not None
 
     class Hooks:
         @hookspec
@@ -182,10 +186,12 @@ def test_register_unknown_hooks(pm):
     pm.add_hookspecs(Hooks)
     # assert not pm._unverified_hooks
     assert pm.hook.he_method1(arg=1) == [2]
-    assert len(pm.get_hookcallers(pm.get_plugin(pname))) == 1
+    hookcallers = pm.get_hookcallers(pm.get_plugin(pname))
+    assert hookcallers is not None
+    assert len(hookcallers) == 1
 
 
-def test_register_historic(pm):
+def test_register_historic(pm: PluginManager) -> None:
     class Hooks:
         @hookspec(historic=True)
         def he_method1(self, arg):
@@ -216,19 +222,18 @@ def test_register_historic(pm):
 
 
 @pytest.mark.parametrize("result_callback", [True, False])
-def test_with_result_memorized(pm, result_callback):
+def test_with_result_memorized(pm: PluginManager, result_callback: bool) -> None:
     """Verify that ``_HookCaller._maybe_apply_history()`
     correctly applies the ``result_callback`` function, when provided,
     to the result from calling each newly registered hook.
     """
     out = []
-    if result_callback:
-
-        def callback(res):
-            out.append(res)
-
-    else:
+    if not result_callback:
         callback = None
+    else:
+
+        def callback(res) -> None:
+            out.append(res)
 
     class Hooks:
         @hookspec(historic=True)
@@ -259,7 +264,7 @@ def test_with_result_memorized(pm, result_callback):
         assert out == []
 
 
-def test_with_callbacks_immediately_executed(pm):
+def test_with_callbacks_immediately_executed(pm: PluginManager) -> None:
     class Hooks:
         @hookspec(historic=True)
         def he_method1(self, arg):
@@ -293,7 +298,7 @@ def test_with_callbacks_immediately_executed(pm):
     assert out == [20, 10, 30]
 
 
-def test_register_historic_incompat_hookwrapper(pm):
+def test_register_historic_incompat_hookwrapper(pm: PluginManager) -> None:
     class Hooks:
         @hookspec(historic=True)
         def he_method1(self, arg):
@@ -312,7 +317,7 @@ def test_register_historic_incompat_hookwrapper(pm):
         pm.register(Plugin())
 
 
-def test_call_extra(pm):
+def test_call_extra(pm: PluginManager) -> None:
     class Hooks:
         @hookspec
         def he_method1(self, arg):
@@ -327,7 +332,7 @@ def test_call_extra(pm):
     assert out == [10]
 
 
-def test_call_with_too_few_args(pm):
+def test_call_with_too_few_args(pm: PluginManager) -> None:
     class Hooks:
         @hookspec
         def he_method1(self, arg):
@@ -346,7 +351,7 @@ def test_call_with_too_few_args(pm):
             pm.hook.he_method1()
 
 
-def test_subset_hook_caller(pm):
+def test_subset_hook_caller(pm: PluginManager) -> None:
     class Hooks:
         @hookspec
         def he_method1(self, arg):
@@ -396,7 +401,7 @@ def test_subset_hook_caller(pm):
     assert out == [10]
 
 
-def test_get_hookimpls(pm):
+def test_get_hookimpls(pm: PluginManager) -> None:
     class Hooks:
         @hookspec
         def he_method1(self, arg):
@@ -428,12 +433,15 @@ def test_get_hookimpls(pm):
     assert hook_plugins == [plugin1, plugin2]
 
 
-def test_add_hookspecs_nohooks(pm):
+def test_add_hookspecs_nohooks(pm: PluginManager) -> None:
+    class NoHooks:
+        pass
+
     with pytest.raises(ValueError):
-        pm.add_hookspecs(10)
+        pm.add_hookspecs(NoHooks)
 
 
-def test_load_setuptools_instantiation(monkeypatch, pm):
+def test_load_setuptools_instantiation(monkeypatch, pm: PluginManager) -> None:
     class EntryPoint:
         name = "myname"
         group = "hello"
@@ -457,19 +465,20 @@ def test_load_setuptools_instantiation(monkeypatch, pm):
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 1
     plugin = pm.get_plugin("myname")
+    assert plugin is not None
     assert plugin.x == 42
     ret = pm.list_plugin_distinfo()
     # poor man's `assert ret == [(plugin, mock.ANY)]`
     assert len(ret) == 1
     assert len(ret[0]) == 2
     assert ret[0][0] == plugin
-    assert ret[0][1]._dist == dist
+    assert ret[0][1]._dist == dist  # type: ignore[comparison-overlap]
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 0  # no plugin loaded by this call
 
 
-def test_add_tracefuncs(he_pm):
-    out = []
+def test_add_tracefuncs(he_pm: PluginManager) -> None:
+    out: List[Any] = []
 
     class api1:
         @hookimpl
@@ -507,7 +516,7 @@ def test_add_tracefuncs(he_pm):
     assert len(out) == 4 + 2
 
 
-def test_hook_tracing(he_pm):
+def test_hook_tracing(he_pm: PluginManager) -> None:
     saveindent = []
 
     class api1:
@@ -522,7 +531,7 @@ def test_hook_tracing(he_pm):
             raise ValueError()
 
     he_pm.register(api1())
-    out = []
+    out: List[Any] = []
     he_pm.trace.root.setwriter(out.append)
     undo = he_pm.enable_tracing()
     try:
