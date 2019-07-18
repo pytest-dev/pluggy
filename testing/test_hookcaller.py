@@ -1,6 +1,6 @@
 import pytest
 
-from pluggy import HookimplMarker, HookspecMarker
+from pluggy import PluginManager, HookimplMarker, HookspecMarker
 from pluggy.hooks import HookImpl
 
 hookspec = HookspecMarker("example")
@@ -155,6 +155,7 @@ def test_adding_wrappers_ordering_tryfirst(hc, addmeth):
 
 
 def test_hookspec(pm):
+    # type: (PluginManager) -> None
     class HookSpec(object):
         @hookspec()
         def he_myhook1(arg1):
@@ -169,8 +170,11 @@ def test_hookspec(pm):
             pass
 
     pm.add_hookspecs(HookSpec)
+    assert pm.hook.he_myhook1.spec is not None
     assert not pm.hook.he_myhook1.spec.opts["firstresult"]
+    assert pm.hook.he_myhook2.spec is not None
     assert pm.hook.he_myhook2.spec.opts["firstresult"]
+    assert pm.hook.he_myhook3.spec is not None
     assert not pm.hook.he_myhook3.spec.opts["firstresult"]
 
 
@@ -188,6 +192,7 @@ def test_hookimpl(name, val):
 
 
 def test_hookrelay_registry(pm):
+    # type: (PluginManager) -> None
     """Verify hook caller instances are registered by name onto the relay
     and can be likewise unregistered."""
 

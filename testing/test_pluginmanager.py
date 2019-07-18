@@ -18,12 +18,17 @@ if sys.version_info >= (3, 8):
 else:
     import importlib_metadata as metadata
 
+if False:  # TYPE_CHECKING
+    from typing import Any
+    from typing import List
+
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
 
 
 def test_plugin_double_register(pm):
+    # type: (PluginManager) -> None
     """Registering the same plugin more then once isn't allowed"""
     pm.register(42, name="abc")
     with pytest.raises(ValueError):
@@ -33,6 +38,7 @@ def test_plugin_double_register(pm):
 
 
 def test_pm(pm):
+    # type: (PluginManager) -> None
     """Basic registration with objects"""
 
     class A(object):
@@ -50,12 +56,13 @@ def test_pm(pm):
     assert pm.unregister(a1) == a1
     assert not pm.is_registered(a1)
 
-    out = pm.list_name_plugin()
-    assert len(out) == 1
-    assert out == [("hello", a2)]
+    out2 = pm.list_name_plugin()
+    assert len(out2) == 1
+    assert out2 == [("hello", a2)]
 
 
 def test_has_plugin(pm):
+    # type: (PluginManager) -> None
     class A(object):
         pass
 
@@ -66,6 +73,7 @@ def test_has_plugin(pm):
 
 
 def test_register_dynamic_attr(he_pm):
+    # type: (PluginManager) -> None
     class A(object):
         def __getattr__(self, name):
             if name[0] != "_":
@@ -78,6 +86,7 @@ def test_register_dynamic_attr(he_pm):
 
 
 def test_pm_name(pm):
+    # type: (PluginManager) -> None
     class A(object):
         pass
 
@@ -85,23 +94,25 @@ def test_pm_name(pm):
     name = pm.register(a1, name="hello")
     assert name == "hello"
     pm.unregister(a1)
-    assert pm.get_plugin(a1) is None
+    assert pm.get_plugin(a1) is None  # type: ignore
     assert not pm.is_registered(a1)
     assert not pm.get_plugins()
     name2 = pm.register(a1, name="hello")
     assert name2 == name
     pm.unregister(name="hello")
-    assert pm.get_plugin(a1) is None
+    assert pm.get_plugin(a1) is None  # type: ignore
     assert not pm.is_registered(a1)
     assert not pm.get_plugins()
 
 
 def test_set_blocked(pm):
+    # type: (PluginManager) -> None
     class A(object):
         pass
 
     a1 = A()
     name = pm.register(a1)
+    assert name is not None
     assert pm.is_registered(a1)
     assert not pm.is_blocked(name)
     pm.set_blocked(name)
@@ -116,6 +127,7 @@ def test_set_blocked(pm):
 
 
 def test_register_mismatch_method(he_pm):
+    # type: (PluginManager) -> None
     class hello(object):
         @hookimpl
         def he_method_notexists(self):
@@ -130,6 +142,7 @@ def test_register_mismatch_method(he_pm):
 
 
 def test_register_mismatch_arg(he_pm):
+    # type: (PluginManager) -> None
     class hello(object):
         @hookimpl
         def he_method1(self, qlwkje):
@@ -143,6 +156,7 @@ def test_register_mismatch_arg(he_pm):
 
 
 def test_register(pm):
+    # type: (PluginManager) -> None
     class MyPlugin(object):
         pass
 
@@ -161,12 +175,14 @@ def test_register(pm):
 
 
 def test_register_unknown_hooks(pm):
+    # type: (PluginManager) -> None
     class Plugin1(object):
         @hookimpl
         def he_method1(self, arg):
             return arg + 1
 
     pname = pm.register(Plugin1())
+    assert pname is not None
 
     class Hooks(object):
         @hookspec
@@ -176,10 +192,13 @@ def test_register_unknown_hooks(pm):
     pm.add_hookspecs(Hooks)
     # assert not pm._unverified_hooks
     assert pm.hook.he_method1(arg=1) == [2]
-    assert len(pm.get_hookcallers(pm.get_plugin(pname))) == 1
+    hookcallers = pm.get_hookcallers(pm.get_plugin(pname))
+    assert hookcallers is not None
+    assert len(hookcallers) == 1
 
 
 def test_register_historic(pm):
+    # type: (PluginManager) -> None
     class Hooks(object):
         @hookspec(historic=True)
         def he_method1(self, arg):
@@ -211,18 +230,18 @@ def test_register_historic(pm):
 
 @pytest.mark.parametrize("result_callback", [True, False])
 def test_with_result_memorized(pm, result_callback):
+    # type: (PluginManager, bool) -> None
     """Verify that ``_HookCaller._maybe_apply_history()`
     correctly applies the ``result_callback`` function, when provided,
     to the result from calling each newly registered hook.
     """
     out = []
-    if result_callback:
+    if not result_callback:
+        callback = None
+    else:
 
         def callback(res):
             out.append(res)
-
-    else:
-        callback = None
 
     class Hooks(object):
         @hookspec(historic=True)
@@ -254,6 +273,7 @@ def test_with_result_memorized(pm, result_callback):
 
 
 def test_with_callbacks_immediately_executed(pm):
+    # type: (PluginManager) -> None
     class Hooks(object):
         @hookspec(historic=True)
         def he_method1(self, arg):
@@ -288,6 +308,7 @@ def test_with_callbacks_immediately_executed(pm):
 
 
 def test_register_historic_incompat_hookwrapper(pm):
+    # type: (PluginManager) -> None
     class Hooks(object):
         @hookspec(historic=True)
         def he_method1(self, arg):
@@ -307,6 +328,7 @@ def test_register_historic_incompat_hookwrapper(pm):
 
 
 def test_call_extra(pm):
+    # type: (PluginManager) -> None
     class Hooks(object):
         @hookspec
         def he_method1(self, arg):
@@ -322,6 +344,7 @@ def test_call_extra(pm):
 
 
 def test_call_with_too_few_args(pm):
+    # type: (PluginManager) -> None
     class Hooks(object):
         @hookspec
         def he_method1(self, arg):
@@ -341,6 +364,7 @@ def test_call_with_too_few_args(pm):
 
 
 def test_subset_hook_caller(pm):
+    # type: (PluginManager) -> None
     class Hooks(object):
         @hookspec
         def he_method1(self, arg):
@@ -391,6 +415,7 @@ def test_subset_hook_caller(pm):
 
 
 def test_get_hookimpls(pm):
+    # type: (PluginManager) -> None
     class Hooks(object):
         @hookspec
         def he_method1(self, arg):
@@ -423,11 +448,16 @@ def test_get_hookimpls(pm):
 
 
 def test_add_hookspecs_nohooks(pm):
+    # type: (PluginManager) -> None
+    class NoHooks:
+        pass
+
     with pytest.raises(ValueError):
-        pm.add_hookspecs(10)
+        pm.add_hookspecs(NoHooks)
 
 
 def test_reject_prefixed_module(pm):
+    # type: (PluginManager) -> None
     """Verify that a module type attribute that contains the project
     prefix in its name (in this case `'example_*'` isn't collected
     when registering a module which imports it.
@@ -439,7 +469,7 @@ def example_hook():
     pass
 """
     exec(src, conftest.__dict__)
-    conftest.example_blah = types.ModuleType("example_blah")
+    conftest.example_blah = types.ModuleType("example_blah")  # type: ignore
     with pytest.deprecated_call():
         name = pm.register(conftest)
     assert name == "conftest"
@@ -488,7 +518,8 @@ def test_load_setuptools_instantiation(monkeypatch, pm):
 
 
 def test_add_tracefuncs(he_pm):
-    out = []
+    # type: (PluginManager) -> None
+    out = []  # type: List[Any]
 
     class api1(object):
         @hookimpl
@@ -527,6 +558,7 @@ def test_add_tracefuncs(he_pm):
 
 
 def test_hook_tracing(he_pm):
+    # type: (PluginManager) -> None
     saveindent = []
 
     class api1(object):
@@ -541,7 +573,7 @@ def test_hook_tracing(he_pm):
             raise ValueError()
 
     he_pm.register(api1())
-    out = []
+    out = []  # type: List[Any]
     he_pm.trace.root.setwriter(out.append)
     undo = he_pm.enable_tracing()
     try:

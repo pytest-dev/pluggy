@@ -4,6 +4,9 @@ from pluggy.manager import _formatdef
 import sys
 import pytest
 
+if False:  # TYPE_CHECKING
+    from typing import Dict
+
 
 def test_varnames():
     def f(x):
@@ -55,7 +58,7 @@ def test_varnames_class():
 )
 def test_varnames_keyword_only():
     # SyntaxError on Python 2, so we exec
-    ns = {}
+    ns = {}  # type: Dict[str, object]
     exec(
         "def f1(x, *, y): pass\n"
         "def f2(x, *, y=3): pass\n"

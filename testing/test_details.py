@@ -81,7 +81,7 @@ def test_plugin_getattr_raises_errors():
         pass
 
     module = Module()
-    module.x = DontTouchMe()
+    module.x = DontTouchMe()  # type: ignore
 
     pm = PluginManager(hookspec.project_name)
     # register() would raise an error
@@ -106,7 +106,7 @@ def test_warning_on_call_vs_hookspec_arg_mismatch():
 
     pm = PluginManager(hookspec.project_name)
     pm.register(Plugin())
-    pm.add_hookspecs(Spec())
+    pm.add_hookspecs(Spec)
 
     with warnings.catch_warnings(record=True) as warns:
         warnings.simplefilter("always")
@@ -114,6 +114,7 @@ def test_warning_on_call_vs_hookspec_arg_mismatch():
         # calling should trigger a warning
         pm.hook.myhook(arg1=1)
 
+        assert warns is not None
         assert len(warns) == 1
         warning = warns[-1]
         assert issubclass(warning.category, Warning)
@@ -123,7 +124,7 @@ def test_warning_on_call_vs_hookspec_arg_mismatch():
 def test_repr():
     class Plugin:
         @hookimpl
-        def myhook():
+        def myhook():  # type: ignore
             raise NotImplementedError()
 
     pm = PluginManager(hookspec.project_name)

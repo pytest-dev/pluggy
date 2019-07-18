@@ -1,5 +1,5 @@
 import pytest
-from pluggy import PluginValidationError, HookimplMarker, HookspecMarker
+from pluggy import PluginManager, PluginValidationError, HookimplMarker, HookspecMarker
 
 
 hookspec = HookspecMarker("example")
@@ -7,6 +7,7 @@ hookimpl = HookimplMarker("example")
 
 
 def test_argmismatch(pm):
+    # type: (PluginManager) -> None
     class Api(object):
         @hookspec
         def hello(self, arg):
@@ -26,6 +27,7 @@ def test_argmismatch(pm):
 
 
 def test_only_kwargs(pm):
+    # type: (PluginManager) -> None
     class Api(object):
         @hookspec
         def hello(self, arg):
@@ -40,6 +42,7 @@ def test_only_kwargs(pm):
 
 
 def test_opt_in_args(pm):
+    # type: (PluginManager) -> None
     """Verfiy that two hookimpls with mutex args can serve
     under the same spec.
     """
@@ -68,6 +71,7 @@ def test_opt_in_args(pm):
 
 
 def test_call_order(pm):
+    # type: (PluginManager) -> None
     class Api(object):
         @hookspec
         def hello(self, arg):
@@ -106,6 +110,7 @@ def test_call_order(pm):
 
 
 def test_firstresult_definition(pm):
+    # type: (PluginManager) -> None
     class Api(object):
         @hookspec(firstresult=True)
         def hello(self, arg):
@@ -144,6 +149,7 @@ def test_firstresult_definition(pm):
 
 
 def test_firstresult_force_result(pm):
+    # type: (PluginManager) -> None
     """Verify forcing a result in a wrapper.
     """
 
@@ -180,6 +186,7 @@ def test_firstresult_force_result(pm):
 
 
 def test_firstresult_returns_none(pm):
+    # type: (PluginManager) -> None
     """If None results are returned by underlying implementations ensure
     the multi-call loop returns a None value.
     """
@@ -202,6 +209,7 @@ def test_firstresult_returns_none(pm):
 
 
 def test_firstresult_no_plugin(pm):
+    # type: (PluginManager) -> None
     """If no implementations/plugins have been registered for a firstresult
     hook the multi-call loop should return a None value.
     """

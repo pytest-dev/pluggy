@@ -28,6 +28,7 @@ def test_implprefix_deprecated():
 
 
 def test_callhistoric_proc_deprecated(pm):
+    # type: (PluginManager) -> None
     """``proc`` kwarg to `PluginMananger.call_historic()` is now officially
     deprecated.
     """
@@ -38,14 +39,15 @@ def test_callhistoric_proc_deprecated(pm):
         def m(self, x):
             pass
 
+    pm.add_hookspecs(P1)
     p1 = P1()
-    pm.add_hookspecs(p1)
     pm.register(p1)
     with pytest.deprecated_call():
-        pm.hook.m.call_historic(kwargs=dict(x=10), proc=lambda res: res)
+        pm.hook.m.call_historic(kwargs=dict(x=10), proc=lambda res: None)
 
 
 def test_multicall_deprecated(pm):
+    # type: (PluginManager) -> None
     class P1(object):
         @hookimpl
         def m(self, __multicall__, x):
