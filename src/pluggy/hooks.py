@@ -161,7 +161,7 @@ def varnames(func):
         try:
             func = getattr(func, "__call__", func)
         except Exception:
-            return ()
+            return (), ()
 
     try:  # func MUST be a function or method here or we won't parse any args
         spec = _getargspec(func)
