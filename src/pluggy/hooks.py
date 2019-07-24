@@ -161,7 +161,7 @@ def varnames(func):
         try:
             func = getattr(func, "__call__", func)
         except Exception:
-            return ()
+            return (), ()
 
     try:  # func MUST be a function or method here or we won't parse any args
         spec = _getargspec(func)
@@ -171,9 +171,9 @@ def varnames(func):
     args, defaults = tuple(spec.args), spec.defaults
     if defaults:
         index = -len(defaults)
-        args, defaults = args[:index], tuple(args[index:])
+        args, kwargs = args[:index], tuple(args[index:])
     else:
-        defaults = ()
+        kwargs = ()
 
     # strip any implicit instance arg
     # pypy3 uses "obj" instead of "self" for default dunder methods
@@ -185,10 +185,10 @@ def varnames(func):
             args = args[1:]
 
     try:
-        cache["_varnames"] = args, defaults
+        cache["_varnames"] = args, kwargs
     except TypeError:
         pass
-    return args, defaults
+    return args, kwargs
 
 
 class _HookRelay(object):

@@ -777,7 +777,9 @@ using the :py:meth:`pluggy._HookCaller.call_historic()` method:
 
 
     # call with history; no results returned
-    pm.hook.myhook.call_historic(config=config, args=sys.argv, result_callback=callback)
+    pm.hook.myhook.call_historic(
+        kwargs={"config": config, "args": sys.argv}, result_callback=callback
+    )
 
     # ... more of our program ...
 
