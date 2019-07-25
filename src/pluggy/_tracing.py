@@ -1,7 +1,6 @@
 """
 Tracing utils
 """
-from .callers import _Result
 
 
 class TagTracer(object):
@@ -62,22 +61,3 @@ class TagTracerSub(object):
 
     def get(self, name):
         return self.__class__(self.root, self.tags + (name,))
-
-
-class _TracedHookExecution(object):
-    def __init__(self, pluginmanager, before, after):
-        self.pluginmanager = pluginmanager
-        self.before = before
-        self.after = after
-        self.oldcall = pluginmanager._inner_hookexec
-        assert not isinstance(self.oldcall, _TracedHookExecution)
-        self.pluginmanager._inner_hookexec = self
-
-    def __call__(self, hook, hook_impls, kwargs):
-        self.before(hook.name, hook_impls, kwargs)
-        outcome = _Result.from_call(lambda: self.oldcall(hook, hook_impls, kwargs))
-        self.after(outcome, hook.name, hook_impls, kwargs)
-        return outcome.get_result()
-
-    def undo(self):
-        self.pluginmanager._inner_hookexec = self.oldcall
