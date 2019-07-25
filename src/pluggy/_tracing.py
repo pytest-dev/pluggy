@@ -56,8 +56,5 @@ class TagTracerSub(object):
     def __call__(self, *args):
         self.root.processmessage(self.tags, args)
 
-    def setmyprocessor(self, processor):
-        self.root.setprocessor(self.tags, processor)
-
     def get(self, name):
         return self.__class__(self.root, self.tags + (name,))

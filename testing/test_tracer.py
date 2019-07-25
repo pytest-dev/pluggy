@@ -76,18 +76,3 @@ def test_setprocessor(rootlogger):
     log2("seen")
     tags, args = l2[0]
     assert args == ("seen",)
-
-
-def test_setmyprocessor(rootlogger):
-    log = rootlogger.get("1")
-    log2 = log.get("2")
-    out = []
-    log2.setmyprocessor(lambda *args: out.append(args))
-    log("not seen")
-    assert not out
-    log2(42)
-    assert len(out) == 1
-    tags, args = out[0]
-    assert "1" in tags
-    assert "2" in tags
-    assert args == (42,)
