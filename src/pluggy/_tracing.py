@@ -6,13 +6,13 @@ Tracing utils
 class TagTracer(object):
     def __init__(self):
         self._tag2proc = {}
-        self.writer = None
+        self._writer = None
         self.indent = 0
 
     def get(self, name):
         return TagTracerSub(self, (name,))
 
-    def format_message(self, tags, args):
+    def _format_message(self, tags, args):
         if isinstance(args[-1], dict):
             extra = args[-1]
             args = args[:-1]
@@ -28,17 +28,17 @@ class TagTracer(object):
             lines.append("%s    %s: %s\n" % (indent, name, value))
         return lines
 
-    def processmessage(self, tags, args):
-        if self.writer is not None and args:
-            lines = self.format_message(tags, args)
-            self.writer("".join(lines))
+    def _processmessage(self, tags, args):
+        if self._writer is not None and args:
+            lines = self._format_message(tags, args)
+            self._writer("".join(lines))
         try:
             self._tag2proc[tags](tags, args)
         except KeyError:
             pass
 
     def setwriter(self, writer):
-        self.writer = writer
+        self._writer = writer
 
     def setprocessor(self, tags, processor):
         if isinstance(tags, str):
@@ -54,7 +54,7 @@ class TagTracerSub(object):
         self.tags = tags
 
     def __call__(self, *args):
-        self.root.processmessage(self.tags, args)
+        self.root._processmessage(self.tags, args)
 
     def get(self, name):
         return self.__class__(self.root, self.tags + (name,))
