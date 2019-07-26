@@ -33,9 +33,11 @@ class TagTracer(object):
             lines = self._format_message(tags, args)
             self._writer("".join(lines))
         try:
-            self._tag2proc[tags](tags, args)
+            processor = self._tag2proc[tags]
         except KeyError:
             pass
+        else:
+            processor(tags, args)
 
     def setwriter(self, writer):
         self._writer = writer
