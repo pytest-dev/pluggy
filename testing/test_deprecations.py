@@ -2,7 +2,7 @@
 Deprecation warnings testing roundup.
 """
 import pytest
-from pluggy.callers import _Result
+from pluggy._result import _Result
 from pluggy import PluginManager, HookimplMarker, HookspecMarker
 
 hookspec = HookspecMarker("example")

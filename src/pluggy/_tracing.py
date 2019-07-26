@@ -1,7 +1,7 @@
 """
 Tracing utils
 """
-from .callers import _Result
+from ._result import _Result
 
 
 class TagTracer(object):

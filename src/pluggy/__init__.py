@@ -14,5 +14,4 @@ __all__ = [
 ]
 
 from .manager import PluginManager, PluginValidationError
-from .callers import HookCallError
-from .hooks import HookspecMarker, HookimplMarker
+from .hooks import HookspecMarker, HookimplMarker, HookCallError
