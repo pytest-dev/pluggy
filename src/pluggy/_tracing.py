@@ -5,7 +5,7 @@ Tracing utils
 
 class TagTracer(object):
     def __init__(self):
-        self._tag2proc = {}
+        self._tags2proc = {}
         self._writer = None
         self.indent = 0
 
@@ -33,7 +33,7 @@ class TagTracer(object):
             lines = self._format_message(tags, args)
             self._writer("".join(lines))
         try:
-            processor = self._tag2proc[tags]
+            processor = self._tags2proc[tags]
         except KeyError:
             pass
         else:
@@ -47,7 +47,7 @@ class TagTracer(object):
             tags = tuple(tags.split(":"))
         else:
             assert isinstance(tags, tuple)
-        self._tag2proc[tags] = processor
+        self._tags2proc[tags] = processor
 
 
 class TagTracerSub(object):
