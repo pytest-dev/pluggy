@@ -71,7 +71,7 @@ class PluginManager(object):
         self._plugin2hookcallers = {}
         self._plugin_distinfo = []
         self.trace = _tracing.TagTracer().get("pluginmanage")
-        self.hook = _HookRelay(self.trace.root.get("hook"))
+        self.hook = _HookRelay()
         if implprefix is not None:
             warnings.warn(
                 "Support for the `implprefix` arg is now deprecated and will "
@@ -343,7 +343,7 @@ class PluginManager(object):
 
     def enable_tracing(self):
         """ enable tracing of hook calls and return an undo function. """
-        hooktrace = self.hook._trace
+        hooktrace = self.trace.root.get("hook")
 
         def before(hook_name, methods, kwargs):
             hooktrace.root.indent += 1
