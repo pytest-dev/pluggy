@@ -26,12 +26,13 @@ class TagTracer(object):
 
         for name, value in extra.items():
             lines.append("%s    %s: %s\n" % (indent, name, value))
-        return lines
+
+        return "".join(lines)
 
     def _processmessage(self, tags, args):
         if self._writer is not None and args:
-            lines = self._format_message(tags, args)
-            self._writer("".join(lines))
+            message = self._format_message(tags, args)
+            self._writer(message)
         try:
             processor = self._tags2proc[tags]
         except KeyError:

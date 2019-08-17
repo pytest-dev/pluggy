@@ -52,10 +52,10 @@ def test_indent(rootlogger):
 def test_readable_output_dictargs(rootlogger):
 
     out = rootlogger._format_message(["test"], [1])
-    assert out == ["1 [test]\n"]
+    assert out == "1 [test]\n"
 
     out2 = rootlogger._format_message(["test"], ["test", {"a": 1}])
-    assert out2 == ["test [test]\n", "    a: 1\n"]
+    assert out2 == "test [test]\n    a: 1\n"
 
 
 def test_setprocessor(rootlogger):
