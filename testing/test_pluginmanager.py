@@ -2,7 +2,6 @@
 ``PluginManager`` unit and public API testing.
 """
 import pytest
-import sys
 import types
 
 from pluggy import (
@@ -12,11 +11,7 @@ from pluggy import (
     HookimplMarker,
     HookspecMarker,
 )
-
-if sys.version_info >= (3, 8):
-    from importlib import metadata
-else:
-    import importlib_metadata as metadata
+from pluggy.manager import importlib_metadata
 
 
 hookspec = HookspecMarker("example")
@@ -472,7 +467,7 @@ def test_load_setuptools_instantiation(monkeypatch, pm):
     def my_distributions():
         return (dist,)
 
-    monkeypatch.setattr(metadata, "distributions", my_distributions)
+    monkeypatch.setattr(importlib_metadata, "distributions", my_distributions)
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 1
     plugin = pm.get_plugin("myname")
