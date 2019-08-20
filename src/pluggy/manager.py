@@ -5,9 +5,9 @@ from .hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 import warnings
 
 if sys.version_info >= (3, 8):
-    from importlib import metadata
+    from importlib import metadata as importlib_metadata
 else:
-    import importlib_metadata as metadata
+    import importlib_metadata
 
 
 def _warn_for_function(warning, function):
@@ -283,7 +283,7 @@ class PluginManager(object):
         :return: return the number of loaded plugins by this call.
         """
         count = 0
-        for dist in metadata.distributions():
+        for dist in importlib_metadata.distributions():
             for ep in dist.entry_points:
                 if (
                     ep.group != group
