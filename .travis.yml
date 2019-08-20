@@ -17,21 +17,21 @@ jobs:
     - python: '3.6'
       env: TOXENV=docs
     - python: '2.7'
-      env: TOXENV=py27-pytestrelease-coverage
+      env: TOXENV=py27-coverage
     - python: '3.4'
-      env: TOXENV=py34-pytestrelease-coverage
+      env: TOXENV=py34-coverage
     - python: '3.5'
-      env: TOXENV=py35-pytestrelease-coverage
+      env: TOXENV=py35-coverage
     - python: '3.6'
-      env: TOXENV=py36-pytestrelease-coverage
+      env: TOXENV=py36-coverage
     - python: 'pypy2.7-6.0'
-      env: TOXENV=pypy-pytestrelease-coverage
+      env: TOXENV=pypy-coverage
     - python: 'pypy3.5-6.0'
-      env: TOXENV=pypy3-pytestrelease-coverage
+      env: TOXENV=pypy3-coverage
     - python: '3.7'
-      env: TOXENV=py37-pytestrelease-coverage
+      env: TOXENV=py37-coverage
     - python: '3.8-dev'
-      env: TOXENV=py38-pytestrelease-coverage
+      env: TOXENV=py38-coverage
     - python: '3.6'
       env: TOXENV=py36-pytestmaster-coverage
     - python: '3.6'
