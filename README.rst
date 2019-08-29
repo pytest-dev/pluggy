@@ -61,6 +61,14 @@ A definitive example
     print(results)
 
 
+Running this directly gets us::
+
+    $ python docs/examples/toy-example.py
+    inside Plugin_2.myhook()
+    inside Plugin_1.myhook()
+    [-1, 3]
+
+
 .. badges
 
 .. |pypi| image:: https://img.shields.io/pypi/v/pluggy.svg
