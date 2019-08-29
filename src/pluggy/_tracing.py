@@ -31,8 +31,7 @@ class TagTracer(object):
 
     def _processmessage(self, tags, args):
         if self._writer is not None and args:
-            message = self._format_message(tags, args)
-            self._writer(message)
+            self._writer(self._format_message(tags, args))
         try:
             processor = self._tags2proc[tags]
         except KeyError:
