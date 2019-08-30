@@ -1,6 +1,7 @@
 import inspect
 import sys
 from . import _tracing
+from .callers import _Result
 from .hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 import warnings
 
@@ -70,7 +71,7 @@ class PluginManager(object):
         self._plugin2hookcallers = {}
         self._plugin_distinfo = []
         self.trace = _tracing.TagTracer().get("pluginmanage")
-        self.hook = _HookRelay(self.trace.root.get("hook"))
+        self.hook = _HookRelay()
         if implprefix is not None:
             warnings.warn(
                 "Support for the `implprefix` arg is now deprecated and will "
@@ -325,11 +326,24 @@ class PluginManager(object):
         same arguments as ``before`` but also a :py:class:`_Result`` object
         which represents the result of the overall hook call.
         """
-        return _tracing._TracedHookExecution(self, before, after).undo
+        oldcall = self._inner_hookexec
+
+        def traced_hookexec(hook, hook_impls, kwargs):
+            before(hook.name, hook_impls, kwargs)
+            outcome = _Result.from_call(lambda: oldcall(hook, hook_impls, kwargs))
+            after(outcome, hook.name, hook_impls, kwargs)
+            return outcome.get_result()
+
+        self._inner_hookexec = traced_hookexec
+
+        def undo():
+            self._inner_hookexec = oldcall
+
+        return undo
 
     def enable_tracing(self):
         """ enable tracing of hook calls and return an undo function. """
-        hooktrace = self.hook._trace
+        hooktrace = self.trace.root.get("hook")
 
         def before(hook_name, methods, kwargs):
             hooktrace.root.indent += 1

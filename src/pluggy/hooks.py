@@ -197,9 +197,6 @@ class _HookRelay(object):
 
     """
 
-    def __init__(self, trace):
-        self._trace = trace
-
 
 class _HookCaller(object):
     def __init__(self, name, hook_execute, specmodule_or_class=None, spec_opts=None):
