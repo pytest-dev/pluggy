@@ -84,7 +84,7 @@ class HookimplMarker(object):
         in an error (by default it is an error if no matching spec is found).
 
         If tryfirst is True this hook implementation will run as early as possible
-        in the chain of N hook implementations for a specfication.
+        in the chain of N hook implementations for a specification.
 
         If trylast is True this hook implementation will run as late as possible
         in the chain of N hook implementations.
