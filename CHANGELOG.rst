@@ -4,6 +4,16 @@ Changelog
 
 .. towncrier release notes start
 
+pluggy 0.13.0 (2019-09-10)
+==========================
+
+Trivial/Internal Changes
+------------------------
+
+- `#222 <https://github.com/pytest-dev/pluggy/issues/222>`_: Replace ``importlib_metadata`` backport with ``importlib.metadata`` from the
+  standard library on Python 3.8+.
+
+
 pluggy 0.12.0 (2019-05-27)
 ==========================
 
