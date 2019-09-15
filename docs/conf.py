@@ -80,4 +80,10 @@ texinfo_documents = [
 ]
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {"https://docs.python.org/": None}
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "pytest": ("https://docs.pytest.org/en/latest", None),
+    "setuptools": ("https://setuptools.readthedocs.io/en/latest", None),
+    "tox": ("https://tox.readthedocs.io/en/latest", None),
+    "devpi": ("https://devpi.net/docs/devpi/devpi/stable/+doc/", None),
+}
