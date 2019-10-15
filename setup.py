@@ -37,7 +37,7 @@ def main():
         author_email="holger@merlinux.eu",
         url="https://github.com/pytest-dev/pluggy",
         python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
-        install_requires=['importlib-metadata>=0.12;python_version<"3.8"'],
+        install_requires=["importlib-metadata>=0.12", "python_version<3.8"],
         extras_require={"dev": ["pre-commit", "tox"]},
         classifiers=classifiers,
         packages=["pluggy"],
