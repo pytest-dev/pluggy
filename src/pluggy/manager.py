@@ -50,13 +50,13 @@ class DistFacade(object):
 
 
 class PluginManager(object):
-    """ Core :py:class:`.Pluginmanager` class which manages registration
+    """ Core :py:class:`.PluginManager` class which manages registration
     of plugin objects and 1:N hook calling.
 
     You can register new hooks by calling :py:meth:`add_hookspecs(module_or_class)
     <.PluginManager.add_hookspecs>`.
     You can register plugin objects (which contain hooks) by calling
-    :py:meth:`register(plugin) <.PluginManager.register>`.  The :py:class:`.Pluginmanager`
+    :py:meth:`register(plugin) <.PluginManager.register>`.  The :py:class:`.PluginManager`
     is initialized with a prefix that is searched for in the names of the dict
     of registered plugin objects.
 
