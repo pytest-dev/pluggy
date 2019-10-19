@@ -315,7 +315,7 @@ initial release
 
 .. contributors
 .. _@hpk42: https://github.com/hpk42
-.. _@tgoodlet: https://github.com/tgoodlet
+.. _@tgoodlet: https://github.com/goodboy
 .. _@MichalTHEDUDE: https://github.com/MichalTHEDUDE
 .. _@vodik: https://github.com/vodik
 .. _@RonnyPfannschmidt: https://github.com/RonnyPfannschmidt
