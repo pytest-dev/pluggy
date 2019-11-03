@@ -16,9 +16,9 @@ def _reraise(cls, val, tb):
     )
 
 
-def _raise_wrapfail(wrap_controller, msg):
+def _raise_wrapfail(wrap_controller, msg, exc_class=RuntimeError):
     co = wrap_controller.gi_code
-    raise RuntimeError(
+    raise exc_class(
         "wrap_controller at %r %s:%d %s"
         % (co.co_name, co.co_filename, co.co_firstlineno, msg)
     )
@@ -181,6 +181,8 @@ def _multicall(hook_impls, caller_kwargs, firstresult=False):
                         gen = hook_impl.function(*args)
                         next(gen)  # first yield
                         teardowns.append(gen)
+                    except TypeError as exc:
+                        _raise_wrapfail(gen, str(exc), TypeError)
                     except StopIteration:
                         _raise_wrapfail(gen, "did not yield")
                 else:
