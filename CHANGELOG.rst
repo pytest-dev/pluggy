@@ -4,6 +4,12 @@ Changelog
 
 .. towncrier release notes start
 
+pluggy 0.13.1 (2019-11-21)
+==========================
+
+No significant changes.
+
+
 pluggy 0.13.0 (2019-09-10)
 ==========================
 
