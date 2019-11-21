@@ -4,6 +4,15 @@ Changelog
 
 .. towncrier release notes start
 
+pluggy 0.13.1 (2019-11-21)
+==========================
+
+Trivial/Internal Changes
+------------------------
+
+- `#236 <https://github.com/pytest-dev/pluggy/pull/236>`_: Improved documentation, especially with regard to references.
+
+
 pluggy 0.13.0 (2019-09-10)
 ==========================
 
