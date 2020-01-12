@@ -186,7 +186,7 @@ def test_hookwrapper_exception(exc):
     assert out == ["m1 init", "m1 finish"]
 
 
-def test_hookwrapper_result():
+def test_hookwrapper_firstresult():
     out = []
 
     @hookimpl(hookwrapper=True)
@@ -200,10 +200,6 @@ def test_hookwrapper_result():
         out.append("m2")
         return 2
 
-    res = MC([m2, m1], {})
-    assert res == ["hookwrapper_result", 2]
-    assert out == ["m1 init", "m2", "m1 finish"]
-    out[:] = []
     res = MC([m2, m1], {}, firstresult=True)
     assert res == "hookwrapper_result"
     assert out == ["m1 init", "m1 finish"]
