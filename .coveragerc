@@ -12,3 +12,11 @@ source = pluggy/
   */lib/python*/site-packages/pluggy/
   */pypy*/site-packages/pluggy/
   *\Lib\site-packages\pluggy\
+
+[report]
+skip_covered = True
+show_missing = True
+exclude_lines =
+    \#\s*pragma: no cover
+    ^\s*raise NotImplementedError\b
+    ^\s*return NotImplemented\b
