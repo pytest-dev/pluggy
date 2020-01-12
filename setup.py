@@ -23,6 +23,11 @@ with open("README.rst", "rb") as fd:
 with open("CHANGELOG.rst", "rb") as fd:
     long_description += "\n\n" + fd.read().decode("utf-8")
 
+EXTRAS_REQUIRE = {
+    "dev": ["pre-commit", "tox"],
+    "testing": ["pytest"],
+}
+
 
 def main():
     setup(
@@ -38,7 +43,7 @@ def main():
         url="https://github.com/pytest-dev/pluggy",
         python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
         install_requires=['importlib-metadata>=0.12;python_version<"3.8"'],
-        extras_require={"dev": ["pre-commit", "tox"]},
+        extras_require=EXTRAS_REQUIRE,
         classifiers=classifiers,
         packages=["pluggy"],
         package_dir={"": "src"},
