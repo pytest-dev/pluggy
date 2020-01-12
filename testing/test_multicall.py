@@ -197,8 +197,7 @@ def test_hookwrapper_firstresult():
 
     @hookimpl
     def m2():
-        out.append("m2")
-        return 2
+        raise NotImplementedError()
 
     res = MC([m2, m1], {}, firstresult=True)
     assert res == "hookwrapper_result"
