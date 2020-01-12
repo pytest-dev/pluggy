@@ -142,7 +142,7 @@ def test_hookwrapper_order():
         out.append("m2 finish")
 
     res = MC([m2, m1], {})
-    assert res == []
+    assert res == [1, 2]
     assert out == ["m1 init", "m2 init", "m2 finish", "m1 finish"]
 
 
@@ -183,4 +183,27 @@ def test_hookwrapper_exception(exc):
 
     with pytest.raises(exc):
         MC([m2, m1], {})
+    assert out == ["m1 init", "m1 finish"]
+
+
+def test_hookwrapper_result():
+    out = []
+
+    @hookimpl(hookwrapper=True)
+    def m1():
+        out.append("m1 init")
+        yield "hookwrapper_result"
+        out.append("m1 finish")
+
+    @hookimpl
+    def m2():
+        out.append("m2")
+        return 2
+
+    res = MC([m2, m1], {})
+    assert res == ["hookwrapper_result", 2]
+    assert out == ["m1 init", "m2", "m1 finish"]
+    out[:] = []
+    res = MC([m2, m1], {}, firstresult=True)
+    assert res == "hookwrapper_result"
     assert out == ["m1 init", "m1 finish"]

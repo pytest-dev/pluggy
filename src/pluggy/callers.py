@@ -179,8 +179,12 @@ def _multicall(hook_impls, caller_kwargs, firstresult=False):
                 if hook_impl.hookwrapper:
                     try:
                         gen = hook_impl.function(*args)
-                        next(gen)  # first yield
+                        res = next(gen)  # first yield
                         teardowns.append(gen)
+                        if res is not None:
+                            results.append(res)
+                            if firstresult:
+                                break
                     except StopIteration:
                         _raise_wrapfail(gen, "did not yield")
                 else:
