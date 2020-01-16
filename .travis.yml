@@ -69,7 +69,7 @@ script:
 after_script:
   - |
     if [[ "${TOXENV%-coverage}" != "$TOXENV" ]]; then
-      bash <(curl -s https://codecov.io/bash) -Z -X gcov -X coveragepy -X search -X xcode -X gcovout -X fix -f coverage.xml -n $TOXENV
+      bash <(curl -s https://codecov.io/bash) -Z -X fix -f coverage.xml -n $TOXENV
     fi
 
 notifications:
