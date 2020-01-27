@@ -98,7 +98,7 @@ class HookimplMarker(object):
         hookwrapper calls).
 
         If ``specname`` is provided, it will be used instead of the function name when
-        matching the this hook implementation with a hook specification during registration.
+        matching this hook implementation to a hook specification during registration.
 
         """
 
