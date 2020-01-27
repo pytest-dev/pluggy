@@ -174,7 +174,9 @@ def test_hookspec(pm):
     assert not pm.hook.he_myhook3.spec.opts["firstresult"]
 
 
-@pytest.mark.parametrize("name", ["hookwrapper", "optionalhook", "tryfirst", "trylast"])
+@pytest.mark.parametrize(
+    "name", ["hookwrapper", "optionalhook", "tryfirst", "trylast", "specname"]
+)
 @pytest.mark.parametrize("val", [True, False])
 def test_hookimpl(name, val):
     @hookimpl(**{name: val})
@@ -213,3 +215,15 @@ def test_hookrelay_registry(pm):
     assert not hasattr(hook, "world")
     pm.unregister(plugin)
     assert hook.hello(arg=3) == []
+
+    # the `specname` argument overrides the function name when registering a hook caller
+    class Plugin2(object):
+        @hookimpl(specname="hello")
+        def foo(self, arg):
+            return arg + 1
+
+    plugin = Plugin2()
+    pm.register(plugin)
+    out = hook.hello(arg=3)
+    assert out == [4]
+    assert not hasattr(hook, "world")

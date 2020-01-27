@@ -73,6 +73,7 @@ class HookimplMarker(object):
         optionalhook=False,
         tryfirst=False,
         trylast=False,
+        specname=None,
     ):
 
         """ if passed a function, directly sets attributes on the function
@@ -96,6 +97,9 @@ class HookimplMarker(object):
         representing the exception or result outcome of the inner calls (including other
         hookwrapper calls).
 
+        If ``specname`` is provided, it will be used instead of the function name when
+        matching the this hook implementation with a hook specification during registration.
+
         """
 
         def setattr_hookimpl_opts(func):
@@ -107,6 +111,7 @@ class HookimplMarker(object):
                     optionalhook=optionalhook,
                     tryfirst=tryfirst,
                     trylast=trylast,
+                    specname=specname,
                 ),
             )
             return func
@@ -122,6 +127,7 @@ def normalize_hookimpl_opts(opts):
     opts.setdefault("trylast", False)
     opts.setdefault("hookwrapper", False)
     opts.setdefault("optionalhook", False)
+    opts.setdefault("specname", None)
 
 
 if hasattr(inspect, "getfullargspec"):

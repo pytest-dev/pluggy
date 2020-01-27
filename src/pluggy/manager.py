@@ -118,10 +118,11 @@ class PluginManager(object):
                 normalize_hookimpl_opts(hookimpl_opts)
                 method = getattr(plugin, name)
                 hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
-                hook = getattr(self.hook, name, None)
+                specname = hookimpl_opts.get('specname') or name
+                hook = getattr(self.hook, specname, None)
                 if hook is None:
-                    hook = _HookCaller(name, self._hookexec)
-                    setattr(self.hook, name, hook)
+                    hook = _HookCaller(specname, self._hookexec)
+                    setattr(self.hook, specname, hook)
                 elif hook.has_spec():
                     self._verify_hook(hook, hookimpl)
                     hook._maybe_apply_history(hookimpl)
