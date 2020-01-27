@@ -268,6 +268,35 @@ then the *hookimpl* should be marked with the ``"optionalhook"`` option:
 
         return config
 
+.. _specname:
+
+Hook implementation naming
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+During plugin :ref:`registration <registration>`, hook implementations are
+matched to a hook :ref:`specifications <specs>` in the *host* program with the
+same name as the function being decorated by ``@hookimpl`` (e.g.
+``setup_project`` in the example above).
+
+*new in version 0.13.2:*
+
+To override the default behavior, a *hookimpl* may also be matched to a
+*hookspec* in the ``host program`` with a non-matching name by using the
+``specname`` option.  Continuing the example above, the *hookimpl* function
+does not need to be named ``setup_project``:
+
+.. code-block:: python
+
+    @hookimpl(specname="setup_project")
+    def any_plugin_function(config, args):
+        """This hook is used to process the initial config
+        and possibly input arguments.
+        """
+        if args:
+            config.process_args(args)
+
+        return config
+
 Call time order
 ^^^^^^^^^^^^^^^
 By default hooks are :ref:`called <calling>` in LIFO registered order, however,
@@ -553,6 +582,7 @@ scans for *hook* functions :ref:`defined on a plugin <define>`.
 This allows for multiple plugin managers from multiple projects
 to define hooks alongside each other.
 
+.. _registration:
 
 Registration
 ------------
