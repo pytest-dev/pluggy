@@ -226,4 +226,3 @@ def test_hookrelay_registry(pm):
     pm.register(plugin)
     out = hook.hello(arg=3)
     assert out == [4]
-    assert not hasattr(hook, "world")
