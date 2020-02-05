@@ -241,7 +241,7 @@ def test_hookrelay_registration_by_specname(pm):
 
 
 def test_hookrelay_registration_by_specname_raises(pm):
-    """Verify using specname still raises the types of errors during registration as it 
+    """Verify using specname still raises the types of errors during registration as it
     would have without using specname."""
 
     class Api(object):
