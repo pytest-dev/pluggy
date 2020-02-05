@@ -1,6 +1,6 @@
 import pytest
 
-from pluggy import HookimplMarker, HookspecMarker
+from pluggy import HookimplMarker, HookspecMarker, PluginValidationError
 from pluggy.hooks import HookImpl
 
 hookspec = HookspecMarker("example")
@@ -238,3 +238,12 @@ def test_hookrelay_registration_by_specname(pm):
     pm.register(plugin)
     out = hook.hello(arg=3)
     assert out == [4]
+
+    class Plugin2(object):
+        @hookimpl(specname="hello")
+        def foo(self, arg, too, many, args):
+            return arg + 1
+
+    with pytest.raises(PluginValidationError):
+        plugin2 = Plugin2()
+        pm.register(plugin2)
