@@ -239,22 +239,34 @@ def test_hookrelay_registration_by_specname(pm):
     out = hook.hello(arg=3)
     assert out == [4]
 
+
+def test_hookrelay_registration_by_specname_raises(pm):
+    """Verify using specname still raises the types of errors during registration as it 
+    would have without using specname."""
+
+    class Api(object):
+        @hookspec
+        def hello(self, arg):
+            "api hook 1"
+
+    pm.add_hookspecs(Api)
+
     # make sure a bad signature still raises an error when using specname
-    class Plugin2(object):
+    class Plugin(object):
         @hookimpl(specname="hello")
         def foo(self, arg, too, many, args):
             return arg + 1
 
     with pytest.raises(PluginValidationError):
-        pm.register(Plugin2())
+        pm.register(Plugin())
 
     # make sure check_pending still fails if specname doesn't have a
     # corresponding spec.  EVEN if the function name matches one.
-    class Plugin3(object):
+    class Plugin2(object):
         @hookimpl(specname="bar")
         def hello(self, arg):
             return arg + 1
 
+    pm.register(Plugin2())
     with pytest.raises(PluginValidationError):
-        pm.register(Plugin3())
         pm.check_pending()
