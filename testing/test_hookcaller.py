@@ -187,21 +187,6 @@ def test_hookimpl(name, val):
         assert not hasattr(he_myhook1, name)
 
 
-def test_hookimpl_specname():
-    """Make sure functions decorated with specname get the appropriate tag"""
-
-    @hookimpl()
-    def he_myhook1(arg1):
-        pass
-
-    @hookimpl(specname="name")
-    def he_myhook2(arg1):
-        pass
-
-    assert he_myhook1.example_impl.get("specname") is None
-    assert he_myhook2.example_impl.get("specname") == "name"
-
-
 def test_hookrelay_registry(pm):
     """Verify hook caller instances are registered by name onto the relay
     and can be likewise unregistered."""
