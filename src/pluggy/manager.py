@@ -118,6 +118,7 @@ class PluginManager(object):
                 normalize_hookimpl_opts(hookimpl_opts)
                 method = getattr(plugin, name)
                 hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
+                name = hookimpl_opts.get("specname") or name
                 hook = getattr(self.hook, name, None)
                 if hook is None:
                     hook = _HookCaller(name, self._hookexec)

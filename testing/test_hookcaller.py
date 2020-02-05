@@ -1,6 +1,6 @@
 import pytest
 
-from pluggy import HookimplMarker, HookspecMarker
+from pluggy import HookimplMarker, HookspecMarker, PluginValidationError
 from pluggy.hooks import HookImpl
 
 hookspec = HookspecMarker("example")
@@ -213,3 +213,60 @@ def test_hookrelay_registry(pm):
     assert not hasattr(hook, "world")
     pm.unregister(plugin)
     assert hook.hello(arg=3) == []
+
+
+def test_hookrelay_registration_by_specname(pm):
+    """Verify hook caller instances may also be registered by specifying a
+    specname option to the hookimpl"""
+
+    class Api(object):
+        @hookspec
+        def hello(self, arg):
+            "api hook 1"
+
+    pm.add_hookspecs(Api)
+    hook = pm.hook
+    assert hasattr(hook, "hello")
+    assert len(pm.hook.hello.get_hookimpls()) == 0
+
+    class Plugin(object):
+        @hookimpl(specname="hello")
+        def foo(self, arg):
+            return arg + 1
+
+    plugin = Plugin()
+    pm.register(plugin)
+    out = hook.hello(arg=3)
+    assert out == [4]
+
+
+def test_hookrelay_registration_by_specname_raises(pm):
+    """Verify using specname still raises the types of errors during registration as it
+    would have without using specname."""
+
+    class Api(object):
+        @hookspec
+        def hello(self, arg):
+            "api hook 1"
+
+    pm.add_hookspecs(Api)
+
+    # make sure a bad signature still raises an error when using specname
+    class Plugin(object):
+        @hookimpl(specname="hello")
+        def foo(self, arg, too, many, args):
+            return arg + 1
+
+    with pytest.raises(PluginValidationError):
+        pm.register(Plugin())
+
+    # make sure check_pending still fails if specname doesn't have a
+    # corresponding spec.  EVEN if the function name matches one.
+    class Plugin2(object):
+        @hookimpl(specname="bar")
+        def hello(self, arg):
+            return arg + 1
+
+    pm.register(Plugin2())
+    with pytest.raises(PluginValidationError):
+        pm.check_pending()
