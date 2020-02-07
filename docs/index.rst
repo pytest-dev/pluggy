@@ -277,15 +277,16 @@ During plugin :ref:`registration <registration>`, pluggy attempts to match each
 hook implementation declared by the *plugin* to a hook
 :ref:`specification <specs>` in the *host* program with the **same name** as
 the function being decorated by ``@hookimpl`` (e.g. ``setup_project`` in the
-example above).  Note: there is *no* strict requirement that each *hookimpl* has
-a corresponding *hookspec* (see :ref:`enforcing spec validation <enforcing>`).
+example above).  Note: there is *no* strict requirement that each *hookimpl*
+has a corresponding *hookspec* (see
+:ref:`enforcing spec validation <enforcing>`).
 
 *new in version 0.13.2:*
 
 To override the default behavior, a *hookimpl* may also be matched to a
 *hookspec* in the *host* program with a non-matching function name by using
 the ``specname`` option.  Continuing the example above, the *hookimpl* function
-does not need to be named ``setup_project``, but if the argument 
+does not need to be named ``setup_project``, but if the argument
 ``specname="setup_project"`` is provided to the ``hookimpl`` decorator, it will
 be matched and checked against the ``setup_project`` hookspec:
 
