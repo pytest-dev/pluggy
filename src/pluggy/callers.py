@@ -29,9 +29,10 @@ class HookCallError(Exception):
 
 
 class _Result(object):
-    def __init__(self, result, excinfo):
+    def __init__(self, result, excinfo, hookimpls=None):
         self._result = result
         self._excinfo = excinfo
+        self._hookimpls = hookimpls
 
     @property
     def excinfo(self):
@@ -42,6 +43,10 @@ class _Result(object):
         """Get the result(s) for this hook call (DEPRECATED in favor of ``get_result()``)."""
         msg = "Use get_result() which forces correct exception handling"
         warnings.warn(DeprecationWarning(msg), stacklevel=2)
+        if self._hookimpls:
+            if isinstance(self._result, list):
+                return list(zip(self._result, self._hookimpls))
+            return (self._result, self._hookimpls)
         return self._result
 
     @classmethod
@@ -64,6 +69,7 @@ class _Result(object):
         """
         self._result = result
         self._excinfo = None
+        self._hookimpls = None
 
     def get_result(self):
         """Get the result(s) for this hook call.
@@ -73,6 +79,10 @@ class _Result(object):
         """
         __tracebackhide__ = True
         if self._excinfo is None:
+            if self._hookimpls:
+                if isinstance(self._result, list):
+                    return list(zip(self._result, self._hookimpls))
+                return (self._result, self._hookimpls)
             return self._result
         else:
             ex = self._excinfo
@@ -165,6 +175,7 @@ def _multicall(hook_impls, caller_kwargs, firstresult=False):
     """
     __tracebackhide__ = True
     results = []
+    impl_hits = []
     excinfo = None
     with_impl = caller_kwargs.pop("with_impl", False)
     try:  # run impl and wrapper setup functions in a loop
@@ -190,16 +201,22 @@ def _multicall(hook_impls, caller_kwargs, firstresult=False):
                 else:
                     res = hook_impl.function(*args)
                     if res is not None:
-                        results.append((res, hook_impl) if with_impl else res)
+                        results.append(res)
+                        if with_impl:
+                            impl_hits.append(hook_impl)
                         if firstresult:  # halt further impl calls
                             break
         except BaseException:
             excinfo = sys.exc_info()
     finally:
         if firstresult:  # first result hooks return a single value
-            outcome = _Result(results[0] if results else None, excinfo)
+            outcome = _Result(
+                results[0] if results else None,
+                excinfo,
+                impl_hits[0] if impl_hits else None,
+            )
         else:
-            outcome = _Result(results, excinfo)
+            outcome = _Result(results, excinfo, impl_hits)
 
         # run all wrapper post-yield blocks
         for gen in reversed(teardowns):
