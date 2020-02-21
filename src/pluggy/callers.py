@@ -159,10 +159,14 @@ def _multicall(hook_impls, caller_kwargs, firstresult=False):
     result(s).
 
     ``caller_kwargs`` comes from _HookCaller.__call__().
+    If ``caller_kwargs`` contains a key ``with_impl`` that evaluates to true,
+    results will be returned as 2-tuples of (result, hook_impl) instead of the
+    bare result.
     """
     __tracebackhide__ = True
     results = []
     excinfo = None
+    with_impl = caller_kwargs.pop("with_impl", False)
     try:  # run impl and wrapper setup functions in a loop
         teardowns = []
         try:
@@ -186,7 +190,7 @@ def _multicall(hook_impls, caller_kwargs, firstresult=False):
                 else:
                     res = hook_impl.function(*args)
                     if res is not None:
-                        results.append(res)
+                        results.append((res, hook_impl) if with_impl else res)
                         if firstresult:  # halt further impl calls
                             break
         except BaseException:
