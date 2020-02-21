@@ -214,6 +214,6 @@ def _multicall(hook_impls, caller_kwargs, firstresult=False):
 
         if with_impl:
             if firstresult:
-                return (outcome.get_result(), impl_hits[0])
+                return (outcome.get_result(), impl_hits[0] if impl_hits else None)
             return list(zip(outcome.get_result(), impl_hits))
         return outcome.get_result()
