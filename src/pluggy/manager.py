@@ -181,6 +181,10 @@ class PluginManager(object):
         """ return ``True`` if the given plugin name is blocked. """
         return name in self._name2plugin and self._name2plugin[name] is None
 
+    def is_blocked_ep(self, ep):
+        """ return ``True`` if the given entrypoint plugin is blocked. """
+        return self.is_blocked(ep.name)
+
     def add_hookspecs(self, module_or_class):
         """ add new hook specifications defined in the given ``module_or_class``.
         Functions are recognized if they have been decorated accordingly. """
@@ -294,7 +298,7 @@ class PluginManager(object):
                     or (name is not None and ep.name != name)
                     # already registered
                     or self.get_plugin(ep.name)
-                    or self.is_blocked(ep.name)
+                    or self.is_blocked_ep(ep)
                 ):
                     continue
                 plugin = ep.load()
