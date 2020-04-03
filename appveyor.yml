@@ -10,7 +10,6 @@ environment:
   - TOXENV: "py37"
   - TOXENV: "pypy"
   - TOXENV: "py36-pytestmaster"
-  - TOXENV: "py36-pytestfeatures"
 
 install:
   - echo Installed Pythons
