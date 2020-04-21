@@ -151,3 +151,79 @@ def test_hookwrapper_exception(exc: "Type[BaseException]") -> None:
     with pytest.raises(exc):
         MC([m2, m1], {})
     assert out == ["m1 init", "m1 finish"]
+
+
+def test_unwind_inner_wrapper_teardown_exc() -> None:
+    out = []
+
+    @hookimpl(hookwrapper=True)
+    def m1():
+        out.append("m1 init")
+        try:
+            outcome = yield 1
+            out.append("m1 teardown")
+            outcome.get_result()
+            out.append("m1 unreachable")
+        finally:
+            out.append("m1 cleanup")
+
+    @hookimpl(hookwrapper=True)
+    def m2():
+        out.append("m2 init")
+        yield 2
+        out.append("m2 raise")
+        raise ValueError()
+
+    with pytest.raises(ValueError):
+        try:
+            MC([m2, m1], {})
+        finally:
+            out.append("finally")
+
+    assert out == [
+        "m1 init",
+        "m2 init",
+        "m2 raise",
+        "m1 teardown",
+        "m1 cleanup",
+        "finally",
+    ]
+
+
+def test_suppress_inner_wrapper_teardown_exc() -> None:
+    out = []
+
+    @hookimpl(hookwrapper=True)
+    def m1():
+        out.append("m1 init")
+        outcome = yield 1
+        outcome.get_result()
+        out.append("m1 finish")
+
+    @hookimpl(hookwrapper=True)
+    def m2():
+        out.append("m2 init")
+        try:
+            outcome = yield 2
+            outcome.get_result()
+            out.append("m2 unreachable")
+        except ValueError:
+            outcome.force_result(22)
+            out.append("m2 suppress")
+
+    @hookimpl(hookwrapper=True)
+    def m3():
+        out.append("m3 init")
+        yield 3
+        out.append("m3 raise")
+        raise ValueError()
+
+    assert 22 == MC([m3, m2, m1], {})
+    assert out == [
+        "m1 init",
+        "m2 init",
+        "m3 init",
+        "m3 raise",
+        "m2 suppress",
+        "m1 finish",
+    ]
