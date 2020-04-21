@@ -72,8 +72,18 @@ def _multicall(
         for gen in reversed(teardowns):
             try:
                 gen.send(outcome)
+                # Following is unreachable for a well behaved hook wrapper.
+                # Try to force finalizers otherwise postponed till GC action.
+                # Note: close() may raise if generator handles GeneratorExit.
+                gen.close()
                 _raise_wrapfail(gen, "has second yield")
             except StopIteration:
+                # Regular code path: exited after single yield, close() is unnecessary.
                 pass
+            except BaseException:
+                # Any other exception: instead of yield, in response to close, extra yield.
+                cur_excinfo = sys.exc_info()
+                if cur_excinfo[0] is not None:  # silence type checker
+                    outcome._excinfo = cur_excinfo
 
         return outcome.get_result()
