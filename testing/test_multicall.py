@@ -123,15 +123,54 @@ def test_hookwrapper_not_yield() -> None:
 
 
 def test_hookwrapper_too_many_yield() -> None:
+    out = []
+
     @hookimpl(hookwrapper=True)
     def m1():
-        yield 1
-        yield 2
+        try:
+            yield 1
+            yield 2
+        finally:
+            out.append("cleanup")
 
     with pytest.raises(RuntimeError) as ex:
-        MC([m1], {})
+        try:
+            MC([m1], {})
+        finally:
+            out.append("finally")
     assert "m1" in str(ex.value)
     assert (__file__ + ":") in str(ex.value)
+    assert out == [
+        "cleanup",
+        "finally",
+    ]
+
+
+@pytest.mark.xfail
+def test_hookwrapper_blocked_generator_exit() -> None:
+    out = []
+
+    @hookimpl(hookwrapper=True)
+    def m1():
+        try:
+            yield 1
+            yield 2
+        except GeneratorExit:
+            yield 3
+        finally:
+            # I have no idea if it is possible to force cleanup in such cases.
+            out.append("unreachable cleanup")
+
+    with pytest.raises(RuntimeError) as ex:
+        try:
+            MC([m1], {})
+        finally:
+            out.append("finally")
+    assert "generator ignored GeneratorExit" in str(ex.value)
+    assert out == [
+        "unreachable cleanup",
+        "finally",
+    ]
 
 
 @pytest.mark.parametrize("exc", [ValueError, SystemExit])
