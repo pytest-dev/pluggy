@@ -4,7 +4,6 @@ Internal hook annotation, representation and calling machinery.
 import inspect
 import sys
 import warnings
-from .callers import _multicall
 
 
 class HookspecMarker(object):
@@ -212,7 +211,6 @@ class _HookCaller(object):
         self._hookexec = hook_execute
         self.argnames = None
         self.kwargnames = None
-        self.multicall = _multicall
         self.spec = None
         if specmodule_or_class is not None:
             assert spec_opts is not None
