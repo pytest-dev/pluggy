@@ -1,0 +1,2 @@
+Remove legacy ``__multicall__`` recursive hook calling system.
+The deprecation was announced in release ``0.5.0``.
