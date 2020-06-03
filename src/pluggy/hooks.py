@@ -352,5 +352,4 @@ class HookSpec(object):
         self.name = name
         self.argnames, self.kwargnames = varnames(function)
         self.opts = opts
-        self.argnames = ["__multicall__"] + list(self.argnames)
         self.warn_on_impl = opts.get("warn_on_impl")
