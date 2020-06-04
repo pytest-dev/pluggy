@@ -7,7 +7,7 @@ import sys
 from . import _Result, _raise_wrapfail, HookCallError
 
 
-cpdef _multicall(list hook_impls, dict caller_kwargs, bint firstresult=False):
+cpdef _c_multicall(list hook_impls, dict caller_kwargs, bint firstresult=False):
     """Execute a call into multiple python functions/methods and return the
     result(s).
 
