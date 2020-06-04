@@ -42,20 +42,20 @@ class sdist(_sdist):
         # Make sure the compiled Cython files in the distribution
         # are up-to-date
         from Cython.Build import cythonize
-        cythonize(["pluggy/callers/cythonized.pyx"])
+        cythonize(["src/pluggy/callers/cythonized.pyx"])
         _sdist.run(self)
 
 
 try:
     from Cython.Build import cythonize
     print("Building Cython extension(s)")
-    exts = cythonize(["pluggy/callers/cythonized.pyx"])
+    exts = cythonize(["src/pluggy/callers/cythonized.pyx"])
     cmdclass['sdist'] = sdist
 except ImportError:
     # When Cython is not installed build from C sources
     print("Building C extension(s)")
     exts = [Extension("pluggy.callers.cythonized",
-                      ["pluggy/callers/cythonized.c"])]
+                      ["src/pluggy/callers/cythonized.c"])]
 
 
 def main():
