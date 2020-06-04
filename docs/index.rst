@@ -327,7 +327,7 @@ will be executed *first* or *last* respectively in the hook call loop:
         return config
 
 
-    class SomeOtherPlugin(object):
+    class SomeOtherPlugin:
         """Some other plugin defining the same hook.
         """
 
@@ -693,7 +693,7 @@ assertion should not error:
     hookimpl = HookimplMarker("myproject")
 
 
-    class Plugin1(object):
+    class Plugin1:
         @hookimpl
         def myhook(self, args):
             """Default implementation.
@@ -701,7 +701,7 @@ assertion should not error:
             return 1
 
 
-    class Plugin2(object):
+    class Plugin2:
         @hookimpl
         def myhook(self, args):
             """Default implementation.
@@ -709,7 +709,7 @@ assertion should not error:
             return 2
 
 
-    class Plugin3(object):
+    class Plugin3:
         @hookimpl
         def myhook(self, args):
             """Default implementation.
@@ -751,19 +751,19 @@ hook invocation point:
     hookimpl = HookimplMarker("myproject")
 
 
-    class Plugin1(object):
+    class Plugin1:
         @hookimpl
         def myhook(self, args):
             return 1
 
 
-    class Plugin2(object):
+    class Plugin2:
         @hookimpl
         def myhook(self, args):
             raise RuntimeError
 
 
-    class Plugin3(object):
+    class Plugin3:
         @hookimpl
         def myhook(self, args):
             return 3

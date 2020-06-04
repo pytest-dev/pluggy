@@ -3,7 +3,7 @@ Tracing utils
 """
 
 
-class TagTracer(object):
+class TagTracer:
     def __init__(self):
         self._tags2proc = {}
         self._writer = None
@@ -50,7 +50,7 @@ class TagTracer(object):
         self._tags2proc[tags] = processor
 
 
-class TagTracerSub(object):
+class TagTracerSub:
     def __init__(self, root, tags):
         self.root = root
         self.tags = tags

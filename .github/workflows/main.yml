@@ -19,22 +19,18 @@ jobs:
       fail-fast: false
       matrix:
         name: [
-          "windows-py27",
           "windows-py35",
           "windows-py36",
           "windows-py37",
-          "windows-pypy2",
           "windows-pypy3",
 
           # Eventually should convert travis to Github Actions as well.
           # Commented stuff is in preparation for that.
-          # "ubuntu-py27",
           # "ubuntu-py35",
           # "ubuntu-py36",
           # "ubuntu-py36-pytestmaster",
           # "ubuntu-py37",
           # "ubuntu-py38",
-          # "ubuntu-pypy2",
           # "ubuntu-pypy3",
           "ubuntu-benchmark",
 
@@ -43,10 +39,6 @@ jobs:
         ]
 
         include:
-          - name: "windows-py27"
-            python: "2.7"
-            os: windows-latest
-            tox_env: "py27"
           - name: "windows-py35"
             python: "3.5"
             os: windows-latest
@@ -59,19 +51,10 @@ jobs:
             python: "3.7"
             os: windows-latest
             tox_env: "py37"
-          - name: "windows-pypy2"
-            python: "pypy2"
-            os: windows-latest
-            tox_env: "pypy"
           - name: "windows-pypy3"
             python: "pypy3"
             os: windows-latest
             tox_env: "pypy3"
-          # - name: "ubuntu-py27"
-          #   python: "2.7"
-          #   os: ubuntu-latest
-          #   tox_env: "py27"
-          #   use_coverage: true
           # - name: "ubuntu-py35"
           #   python: "3.5"
           #   os: ubuntu-latest
@@ -92,10 +75,6 @@ jobs:
           #   python: "3.8"
           #   os: ubuntu-latest
           #   tox_env: "py38"
-          # - name: "ubuntu-pypy2"
-          #   python: "pypy2"
-          #   os: ubuntu-latest
-          #   tox_env: "pypy"
           # - name: "ubuntu-pypy3"
           #   python: "pypy3"
           #   os: ubuntu-latest
