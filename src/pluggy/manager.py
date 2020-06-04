@@ -1,7 +1,7 @@
 import inspect
 import sys
 from . import _tracing
-from .callers import _Result
+from .callers import _Result, _multicall
 from .hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 import warnings
 
@@ -81,7 +81,7 @@ class PluginManager(object):
                 stacklevel=2,
             )
         self._implprefix = implprefix
-        self._inner_hookexec = lambda hook, methods, kwargs: hook.multicall(
+        self._inner_hookexec = lambda hook, methods, kwargs: _multicall(
             methods,
             kwargs,
             firstresult=hook.spec.opts.get("firstresult") if hook.spec else False,

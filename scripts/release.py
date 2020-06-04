@@ -13,7 +13,7 @@ def create_branch(version):
     """Create a fresh branch from upstream/master"""
     repo = Repo.init(".")
     if repo.is_dirty(untracked_files=True):
-        raise RuntimeError(f"Repository is dirty, please commit/stash your changes.")
+        raise RuntimeError("Repository is dirty, please commit/stash your changes.")
 
     branch_name = f"release-{version}"
     print(f"{Fore.CYAN}Create {branch_name} branch from upstream master")

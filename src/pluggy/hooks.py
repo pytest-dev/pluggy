@@ -4,7 +4,6 @@ Internal hook annotation, representation and calling machinery.
 import inspect
 import sys
 import warnings
-from .callers import _legacymulticall, _multicall
 
 
 class HookspecMarker(object):
@@ -212,7 +211,6 @@ class _HookCaller(object):
         self._hookexec = hook_execute
         self.argnames = None
         self.kwargnames = None
-        self.multicall = _multicall
         self.spec = None
         if specmodule_or_class is not None:
             assert spec_opts is not None
@@ -264,14 +262,6 @@ class _HookCaller(object):
                 i -= 1
             methods.insert(i + 1, hookimpl)
 
-        if "__multicall__" in hookimpl.argnames:
-            warnings.warn(
-                "Support for __multicall__ is now deprecated and will be"
-                "removed in an upcoming release.",
-                DeprecationWarning,
-            )
-            self.multicall = _legacymulticall
-
     def __repr__(self):
         return "<_HookCaller %r>" % (self.name,)
 
@@ -279,10 +269,9 @@ class _HookCaller(object):
         if args:
             raise TypeError("hook calling supports only keyword arguments")
         assert not self.is_historic()
+
         if self.spec and self.spec.argnames:
-            notincall = (
-                set(self.spec.argnames) - set(["__multicall__"]) - set(kwargs.keys())
-            )
+            notincall = set(self.spec.argnames) - set(kwargs.keys())
             if notincall:
                 warnings.warn(
                     "Argument(s) {} which are declared in the hookspec "
@@ -361,5 +350,4 @@ class HookSpec(object):
         self.name = name
         self.argnames, self.kwargnames = varnames(function)
         self.opts = opts
-        self.argnames = ["__multicall__"] + list(self.argnames)
         self.warn_on_impl = opts.get("warn_on_impl")
