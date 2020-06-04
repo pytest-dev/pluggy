@@ -1,10 +1,14 @@
 """
 Cynthonized hook call loop.
 
+This is currently maintained as a verbatim copy of
+``pluggy.callers._multicall()``.
+
 NOTE: In order to build this source you must have cython installed.
 """
 import sys
-from . import _Result, _raise_wrapfail, HookCallError
+
+from .._result import _Result, _raise_wrapfail, HookCallError
 
 
 cpdef _c_multicall(list hook_impls, dict caller_kwargs, bint firstresult=False):

@@ -3,7 +3,7 @@ Call loop machinery
 """
 import sys
 
-from ._result import HookCallError, _Result, _raise_wrapfail
+from .._result import HookCallError, _Result, _raise_wrapfail
 from .cythonized import _c_multicall
 
 __all__ = ['_multicall', '_c_multicall']
