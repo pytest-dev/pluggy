@@ -37,13 +37,6 @@ class _Result(object):
     def excinfo(self):
         return self._excinfo
 
-    @property
-    def result(self):
-        """Get the result(s) for this hook call (DEPRECATED in favor of ``get_result()``)."""
-        msg = "Use get_result() which forces correct exception handling"
-        warnings.warn(DeprecationWarning(msg), stacklevel=2)
-        return self._result
-
     @classmethod
     def from_call(cls, func):
         __tracebackhide__ = True
