@@ -36,10 +36,10 @@ jobs:
           # "ubuntu-py38",
           # "ubuntu-pypy2",
           # "ubuntu-pypy3",
-          # "ubuntu-benchmark",
+          "ubuntu-benchmark",
 
-          # "linting",
-          # "docs",
+          "linting",
+          "docs",
         ]
 
         include:
@@ -100,18 +100,18 @@ jobs:
           #   python: "pypy3"
           #   os: ubuntu-latest
           #   tox_env: "pypy3"
-          # - name: "ubuntu-benchmark"
-          #   python: "3.8"
-          #   os: ubuntu-latest
-          #   tox_env: "benchmark"
-          # - name: "linting"
-          #   python: "3.8"
-          #   os: ubuntu-latest
-          #   tox_env: "linting"
-          # - name: "docs"
-          #   python: "3.8"
-          #   os: ubuntu-latest
-          #   tox_env: "docs"
+          - name: "ubuntu-benchmark"
+            python: "3.8"
+            os: ubuntu-latest
+            tox_env: "benchmark"
+          - name: "linting"
+            python: "3.8"
+            os: ubuntu-latest
+            tox_env: "linting"
+          - name: "docs"
+            python: "3.8"
+            os: ubuntu-latest
+            tox_env: "docs"
 
     steps:
     - uses: actions/checkout@v2
