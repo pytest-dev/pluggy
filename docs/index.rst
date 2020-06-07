@@ -268,6 +268,40 @@ then the *hookimpl* should be marked with the ``"optionalhook"`` option:
 
         return config
 
+.. _specname:
+
+Hookspec name matching
+^^^^^^^^^^^^^^^^^^^^^^
+
+During plugin :ref:`registration <registration>`, pluggy attempts to match each
+hook implementation declared by the *plugin* to a hook
+:ref:`specification <specs>` in the *host* program with the **same name** as
+the function being decorated by ``@hookimpl`` (e.g. ``setup_project`` in the
+example above).  Note: there is *no* strict requirement that each *hookimpl*
+has a corresponding *hookspec* (see
+:ref:`enforcing spec validation <enforcing>`).
+
+*new in version 0.13.2:*
+
+To override the default behavior, a *hookimpl* may also be matched to a
+*hookspec* in the *host* program with a non-matching function name by using
+the ``specname`` option.  Continuing the example above, the *hookimpl* function
+does not need to be named ``setup_project``, but if the argument
+``specname="setup_project"`` is provided to the ``hookimpl`` decorator, it will
+be matched and checked against the ``setup_project`` hookspec:
+
+.. code-block:: python
+
+    @hookimpl(specname="setup_project")
+    def any_plugin_function(config, args):
+        """This hook is used to process the initial config
+        and possibly input arguments.
+        """
+        if args:
+            config.process_args(args)
+
+        return config
+
 Call time order
 ^^^^^^^^^^^^^^^
 By default hooks are :ref:`called <calling>` in LIFO registered order, however,
@@ -423,6 +457,8 @@ delayed hook validation.
     which defines ``hookspec`` decorated functions as in the case of
     ``pytest``'s `hookspec module`_
 
+.. _enforcing:
+
 Enforcing spec validation
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 By default there is no strict requirement that each *hookimpl* has
@@ -553,6 +589,7 @@ scans for *hook* functions :ref:`defined on a plugin <define>`.
 This allows for multiple plugin managers from multiple projects
 to define hooks alongside each other.
 
+.. _registration:
 
 Registration
 ------------
