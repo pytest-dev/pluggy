@@ -2,22 +2,10 @@
 Deprecation warnings testing roundup.
 """
 import pytest
-from pluggy import PluginManager, HookimplMarker, HookspecMarker
+from pluggy import HookimplMarker, HookspecMarker
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
-
-
-def test_implprefix_deprecated():
-    with pytest.deprecated_call():
-        pm = PluginManager("blah", implprefix="blah_")
-
-    class Plugin:
-        def blah_myhook(self, arg1):
-            return arg1
-
-    with pytest.deprecated_call():
-        pm.register(Plugin())
 
 
 def test_callhistoric_proc_deprecated(pm):

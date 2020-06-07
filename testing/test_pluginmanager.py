@@ -2,10 +2,8 @@
 ``PluginManager`` unit and public API testing.
 """
 import pytest
-import types
 
 from pluggy import (
-    PluginManager,
     PluginValidationError,
     HookCallError,
     HookimplMarker,
@@ -422,31 +420,6 @@ def test_add_hookspecs_nohooks(pm):
         pm.add_hookspecs(10)
 
 
-def test_reject_prefixed_module(pm):
-    """Verify that a module type attribute that contains the project
-    prefix in its name (in this case `'example_*'` isn't collected
-    when registering a module which imports it.
-    """
-    pm._implprefix = "example"
-    conftest = types.ModuleType("conftest")
-    src = """
-def example_hook():
-    pass
-"""
-    exec(src, conftest.__dict__)
-    conftest.example_blah = types.ModuleType("example_blah")
-    with pytest.deprecated_call():
-        name = pm.register(conftest)
-    assert name == "conftest"
-    assert getattr(pm.hook, "example_blah", None) is None
-    assert getattr(
-        pm.hook, "example_hook", None
-    )  # conftest.example_hook should be collected
-    with pytest.deprecated_call():
-        assert pm.parse_hookimpl_opts(conftest, "example_blah") is None
-        assert pm.parse_hookimpl_opts(conftest, "example_hook") == {}
-
-
 def test_load_setuptools_instantiation(monkeypatch, pm):
     class EntryPoint(object):
         name = "myname"
@@ -556,45 +529,3 @@ def test_hook_tracing(he_pm):
         assert saveindent[0] > indent
     finally:
         undo()
-
-
-def test_implprefix_warning(recwarn):
-    PluginManager(hookspec.project_name, "hello_")
-    w = recwarn.pop(DeprecationWarning)
-    assert "test_pluginmanager.py" in w.filename
-
-
-@pytest.mark.parametrize("include_hookspec", [True, False])
-def test_prefix_hookimpl(include_hookspec):
-    with pytest.deprecated_call():
-        pm = PluginManager(hookspec.project_name, "hello_")
-
-    if include_hookspec:
-
-        class HookSpec(object):
-            @hookspec
-            def hello_myhook(self, arg1):
-                """ add to arg1 """
-
-        pm.add_hookspecs(HookSpec)
-
-    class Plugin(object):
-        def hello_myhook(self, arg1):
-            return arg1 + 1
-
-    with pytest.deprecated_call():
-        pm.register(Plugin())
-        pm.register(Plugin())
-    results = pm.hook.hello_myhook(arg1=17)
-    assert results == [18, 18]
-
-
-def test_prefix_hookimpl_dontmatch_module():
-    with pytest.deprecated_call():
-        pm = PluginManager(hookspec.project_name, "hello_")
-
-    class BadPlugin(object):
-        hello_module = __import__("email")
-
-    pm.register(BadPlugin())
-    pm.check_pending()
