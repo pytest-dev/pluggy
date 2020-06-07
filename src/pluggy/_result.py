@@ -2,7 +2,6 @@
 Hook wrapper "result" utilities.
 """
 import sys
-import warnings
 
 _py3 = sys.version_info > (3, 0)
 

@@ -9,13 +9,6 @@ stages:
 
 jobs:
   include:
-    - python: '3.6'
-      env: TOXENV=linting
-      cache:
-        directories:
-          - $HOME/.cache/pre-commit
-    - python: '3.6'
-      env: TOXENV=docs
     - python: '2.7'
       env: TOXENV=py27-coverage
     - python: '3.5'
@@ -32,8 +25,6 @@ jobs:
       env: TOXENV=py38-coverage
     - python: '3.6'
       env: TOXENV=py36-pytestmaster-coverage
-    - python: '3.6'
-      env: TOXENV=benchmark
     - python: '3.7'
       env: TOXENV=py37-pytestmaster-coverage
 
