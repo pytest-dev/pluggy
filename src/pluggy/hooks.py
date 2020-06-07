@@ -280,24 +280,13 @@ class _HookCaller(object):
                 )
         return self._hookexec(self, self.get_hookimpls(), kwargs)
 
-    def call_historic(self, result_callback=None, kwargs=None, proc=None):
+    def call_historic(self, result_callback=None, kwargs=None):
         """Call the hook with given ``kwargs`` for all registered plugins and
         for all plugins which will be registered afterwards.
 
         If ``result_callback`` is not ``None`` it will be called for for each
         non-``None`` result obtained from a hook implementation.
-
-        .. note::
-            The ``proc`` argument is now deprecated.
         """
-        if proc is not None:
-            warnings.warn(
-                "Support for `proc` argument is now deprecated and will be"
-                "removed in an upcoming release.",
-                DeprecationWarning,
-            )
-            result_callback = proc
-
         self._call_history.append((kwargs or {}, result_callback))
         # historizing hooks don't return results
         res = self._hookexec(self, self.get_hookimpls(), kwargs)
