@@ -22,7 +22,7 @@ def test_keyword_args():
     def f(x):
         return x + 1
 
-    class A(object):
+    class A:
         @hookimpl
         def f(self, x, y):
             return x + y

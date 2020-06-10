@@ -3,17 +3,6 @@ Hook wrapper "result" utilities.
 """
 import sys
 
-_py3 = sys.version_info > (3, 0)
-
-
-if not _py3:
-    exec(
-        """
-def _reraise(cls, val, tb):
-    raise cls, val, tb
-"""
-    )
-
 
 def _raise_wrapfail(wrap_controller, msg):
     co = wrap_controller.gi_code
@@ -68,6 +57,4 @@ class _Result(object):
             return self._result
         else:
             ex = self._excinfo
-            if _py3:
-                raise ex[1].with_traceback(ex[2])
-            _reraise(*ex)  # noqa
+            raise ex[1].with_traceback(ex[2])

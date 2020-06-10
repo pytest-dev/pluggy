@@ -31,7 +31,7 @@ author = "Holger Krekel"
 
 release = metadata.version(project)
 # The short X.Y version.
-version = u".".join(release.split(".")[:2])
+version = ".".join(release.split(".")[:2])
 
 
 language = None

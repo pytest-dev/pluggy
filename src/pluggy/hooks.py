@@ -6,7 +6,7 @@ import sys
 import warnings
 
 
-class HookspecMarker(object):
+class HookspecMarker:
     """ Decorator helper class for marking functions as hook specifications.
 
     You can instantiate it with a project_name to get a decorator.
@@ -54,7 +54,7 @@ class HookspecMarker(object):
             return setattr_hookspec_opts
 
 
-class HookimplMarker(object):
+class HookimplMarker:
     """ Decorator helper class for marking functions as hook implementations.
 
     You can instantiate with a ``project_name`` to get a decorator.
@@ -129,19 +129,7 @@ def normalize_hookimpl_opts(opts):
     opts.setdefault("specname", None)
 
 
-if hasattr(inspect, "getfullargspec"):
-
-    def _getargspec(func):
-        return inspect.getfullargspec(func)
-
-
-else:
-
-    def _getargspec(func):
-        return inspect.getargspec(func)
-
-
-_PYPY3 = hasattr(sys, "pypy_version_info") and sys.version_info.major == 3
+_PYPY = hasattr(sys, "pypy_version_info")
 
 
 def varnames(func):
@@ -169,7 +157,7 @@ def varnames(func):
             return (), ()
 
     try:  # func MUST be a function or method here or we won't parse any args
-        spec = _getargspec(func)
+        spec = inspect.getfullargspec(func)
     except TypeError:
         return (), ()
 
@@ -182,7 +170,7 @@ def varnames(func):
 
     # strip any implicit instance arg
     # pypy3 uses "obj" instead of "self" for default dunder methods
-    implicit_names = ("self",) if not _PYPY3 else ("self", "obj")
+    implicit_names = ("self",) if not _PYPY else ("self", "obj")
     if args:
         if inspect.ismethod(func) or (
             "." in getattr(func, "__qualname__", ()) and args[0] in implicit_names
@@ -196,14 +184,14 @@ def varnames(func):
     return args, kwargs
 
 
-class _HookRelay(object):
+class _HookRelay:
     """ hook holder object for performing 1:N hook calls where N is the number
     of registered plugins.
 
     """
 
 
-class _HookCaller(object):
+class _HookCaller:
     def __init__(self, name, hook_execute, specmodule_or_class=None, spec_opts=None):
         self.name = name
         self._wrappers = []
@@ -319,7 +307,7 @@ class _HookCaller(object):
                     result_callback(res[0])
 
 
-class HookImpl(object):
+class HookImpl:
     def __init__(self, plugin, plugin_name, function, hook_impl_opts):
         self.function = function
         self.argnames, self.kwargnames = varnames(self.function)
@@ -332,7 +320,7 @@ class HookImpl(object):
         return "<HookImpl plugin_name=%r, plugin=%r>" % (self.plugin_name, self.plugin)
 
 
-class HookSpec(object):
+class HookSpec:
     def __init__(self, namespace, name, opts):
         self.namespace = namespace
         self.function = function = getattr(namespace, name)

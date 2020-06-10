@@ -18,7 +18,7 @@ A definitive example
     hookimpl = pluggy.HookimplMarker("myproject")
 
 
-    class MySpec(object):
+    class MySpec:
         """A hook specification namespace.
         """
 
@@ -28,7 +28,7 @@ A definitive example
             """
 
 
-    class Plugin_1(object):
+    class Plugin_1:
         """A hook implementation namespace.
         """
 
@@ -38,7 +38,7 @@ A definitive example
             return arg1 + arg2
 
 
-    class Plugin_2(object):
+    class Plugin_2:
         """A 2nd hook implementation namespace.
         """
 

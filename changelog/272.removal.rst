@@ -1,0 +1,2 @@
+Dropped support for Python 2.
+Continue to use pluggy 0.13.x for Python 2 support.

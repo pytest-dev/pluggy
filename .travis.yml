@@ -9,14 +9,10 @@ stages:
 
 jobs:
   include:
-    - python: '2.7'
-      env: TOXENV=py27-coverage
     - python: '3.5'
       env: TOXENV=py35-coverage
     - python: '3.6'
       env: TOXENV=py36-coverage
-    - python: 'pypy2.7-6.0'
-      env: TOXENV=pypy-coverage
     - python: 'pypy3.5-6.0'
       env: TOXENV=pypy3-coverage
     - python: '3.7'
