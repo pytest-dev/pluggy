@@ -3,6 +3,7 @@ requires = [
   "setuptools",
   "setuptools-scm",
   "wheel",
+  "Cython",
 ]
 
 [tool.towncrier]
