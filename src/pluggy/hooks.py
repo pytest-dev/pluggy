@@ -187,6 +187,7 @@ class _HookCaller:
         self._wrappers = []
         self._nonwrappers = []
         self._hookexec = hook_execute
+        self._call_history = None
         self.spec = None
         if specmodule_or_class is not None:
             assert spec_opts is not None
@@ -202,7 +203,7 @@ class _HookCaller:
             self._call_history = []
 
     def is_historic(self):
-        return hasattr(self, "_call_history")
+        return self._call_history is not None
 
     def _remove_plugin(self, plugin):
         def remove(wrappers):
