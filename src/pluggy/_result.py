@@ -16,7 +16,7 @@ class HookCallError(Exception):
     """ Hook was called wrongly. """
 
 
-class _Result(object):
+class _Result:
     def __init__(self, result, excinfo):
         self._result = result
         self._excinfo = excinfo
