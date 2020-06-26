@@ -361,4 +361,4 @@ class PluginManager:
 
 
 def _formatdef(func):
-    return "%s%s" % (func.__name__, str(inspect.signature(func)))
+    return "%s%s" % (func.__name__, inspect.signature(func))
