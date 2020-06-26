@@ -197,8 +197,6 @@ class _HookCaller:
         self._wrappers = []
         self._nonwrappers = []
         self._hookexec = hook_execute
-        self.argnames = None
-        self.kwargnames = None
         self.spec = None
         if specmodule_or_class is not None:
             assert spec_opts is not None
