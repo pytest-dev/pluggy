@@ -123,7 +123,7 @@ def test_warning_on_call_vs_hookspec_arg_mismatch():
 def test_repr():
     class Plugin:
         @hookimpl
-        def myhook():
+        def myhook(self):
             raise NotImplementedError()
 
     pm = PluginManager(hookspec.project_name)

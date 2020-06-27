@@ -139,12 +139,6 @@ def varnames(func):
     In case of a class, its ``__init__`` method is considered.
     For methods the ``self`` parameter is not included.
     """
-    cache = getattr(func, "__dict__", {})
-    try:
-        return cache["_varnames"]
-    except KeyError:
-        pass
-
     if inspect.isclass(func):
         try:
             func = func.__init__
@@ -177,10 +171,6 @@ def varnames(func):
         ):
             args = args[1:]
 
-    try:
-        cache["_varnames"] = args, kwargs
-    except TypeError:
-        pass
     return args, kwargs
 
 
@@ -197,8 +187,7 @@ class _HookCaller:
         self._wrappers = []
         self._nonwrappers = []
         self._hookexec = hook_execute
-        self.argnames = None
-        self.kwargnames = None
+        self._call_history = None
         self.spec = None
         if specmodule_or_class is not None:
             assert spec_opts is not None
@@ -214,7 +203,7 @@ class _HookCaller:
             self._call_history = []
 
     def is_historic(self):
-        return hasattr(self, "_call_history")
+        return self._call_history is not None
 
     def _remove_plugin(self, plugin):
         def remove(wrappers):
