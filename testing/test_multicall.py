@@ -14,7 +14,7 @@ def MC(methods, kwargs, firstresult=False):
     for method in methods:
         f = HookImpl(None, "<temp>", method, method.example_impl)
         hookfuncs.append(f)
-    return caller(hookfuncs, kwargs, firstresult=firstresult)
+    return caller("foo", hookfuncs, kwargs, firstresult)
 
 
 def test_keyword_args():

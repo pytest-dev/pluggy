@@ -259,7 +259,11 @@ class _HookCaller:
                     )
                     break
 
-        return self._hookexec(self, self.get_hookimpls(), kwargs)
+            firstresult = self.spec.opts.get("firstresult")
+        else:
+            firstresult = False
+
+        return self._hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
 
     def call_historic(self, result_callback=None, kwargs=None):
         """Call the hook with given ``kwargs`` for all registered plugins and
@@ -269,11 +273,11 @@ class _HookCaller:
         non-``None`` result obtained from a hook implementation.
         """
         self._call_history.append((kwargs or {}, result_callback))
-        # historizing hooks don't return results
-        res = self._hookexec(self, self.get_hookimpls(), kwargs)
+        # Historizing hooks don't return results.
+        # Remember firstresult isn't compatible with historic.
+        res = self._hookexec(self.name, self.get_hookimpls(), kwargs, False)
         if result_callback is None:
             return
-        # XXX: remember firstresult isn't compat with historic
         for x in res or []:
             result_callback(x)
 
@@ -295,7 +299,7 @@ class _HookCaller:
         """
         if self.is_historic():
             for kwargs, result_callback in self._call_history:
-                res = self._hookexec(self, [method], kwargs)
+                res = self._hookexec(self.name, [method], kwargs, False)
                 if res and result_callback is not None:
                     result_callback(res[0])
 
