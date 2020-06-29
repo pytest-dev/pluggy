@@ -247,14 +247,18 @@ class _HookCaller:
             raise TypeError("hook calling supports only keyword arguments")
         assert not self.is_historic()
 
-        if self.spec and self.spec.argnames:
-            notincall = set(self.spec.argnames) - kwargs.keys()
-            if notincall:
-                warnings.warn(
-                    "Argument(s) {} which are declared in the hookspec "
-                    "can not be found in this hook call".format(tuple(notincall)),
-                    stacklevel=2,
-                )
+        # This is written to avoid expensive operations when not needed.
+        if self.spec:
+            for argname in self.spec.argnames:
+                if argname not in kwargs:
+                    notincall = tuple(set(self.spec.argnames) - kwargs.keys())
+                    warnings.warn(
+                        "Argument(s) {} which are declared in the hookspec "
+                        "can not be found in this hook call".format(notincall),
+                        stacklevel=2,
+                    )
+                    break
+
         return self._hookexec(self, self.get_hookimpls(), kwargs)
 
     def call_historic(self, result_callback=None, kwargs=None):
