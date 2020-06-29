@@ -248,7 +248,7 @@ class _HookCaller:
         assert not self.is_historic()
 
         if self.spec and self.spec.argnames:
-            notincall = set(self.spec.argnames) - set(kwargs.keys())
+            notincall = set(self.spec.argnames) - kwargs.keys()
             if notincall:
                 warnings.warn(
                     "Argument(s) {} which are declared in the hookspec "
