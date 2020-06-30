@@ -402,9 +402,19 @@ the final result(s) returned back to the caller using the
 :py:meth:`~pluggy._callers._Result.force_result` or
 :py:meth:`~pluggy._callers._Result.get_result` methods.
 
+If a wrapper is intended for setup and tear down of other stuff,
+do not forget to surround ``yield`` and ``outcome.get_result()``
+with ``try`` and ``finally`` exactly as it is recommended for
+:py:func:`@contextlib.contextmanager <python:contextlib.contextmanager>`.
+``outcome.get_result()`` could raise an exception if some other hook failed.
+For future compatibility it is better to assume that ``yield`` could
+throw as well.
+
 .. note::
     Hook wrappers can **not** return results (as per generator function
     semantics); they can only modify them using the ``_Result`` API.
+    However an exception following ``yield`` implicitly replaces result
+    for the outer wrappers if there are any of them.
 
 Also see the :ref:`pytest:hookwrapper` section in the ``pytest`` docs.
 
