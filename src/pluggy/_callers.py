@@ -39,15 +39,17 @@ def _multicall(
                             )
 
                 if hook_impl.hookwrapper:
+                    # If this cast is not valid, a type error is raised below,
+                    # which is the desired response.
+                    res = hook_impl.function(*args)
+                    gen = cast(Generator[None, _Result[object], None], res)
+
                     try:
-                        # If this cast is not valid, a type error is raised below,
-                        # which is the desired response.
-                        res = hook_impl.function(*args)
-                        gen = cast(Generator[None, _Result[object], None], res)
                         next(gen)  # first yield
-                        teardowns.append(gen)
                     except StopIteration:
                         _raise_wrapfail(gen, "did not yield")
+
+                    teardowns.append(gen)
                 else:
                     res = hook_impl.function(*args)
                     if res is not None:
