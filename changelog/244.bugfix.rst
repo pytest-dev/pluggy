@@ -1,0 +1,6 @@
+Exceptions raised by hook wrappers in the post-yield part propagate
+to outer wrappers boxed into ``_Result`` container.
+Previously no other teardown code was run in other hooks after such exception.
+
+* Use ``try-yield-finally`` pattern in hook wrappers intended for setup and teardown.
+* Raise an exception to convert hook result into failure.
