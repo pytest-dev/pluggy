@@ -135,6 +135,19 @@ def test_register_mismatch_arg(he_pm):
     assert excinfo.value.plugin is plugin
 
 
+def test_register_hookwrapper_not_a_generator_function(he_pm):
+    class hello:
+        @hookimpl(hookwrapper=True)
+        def he_method1(self):
+            pass  # pragma: no cover
+
+    plugin = hello()
+
+    with pytest.raises(PluginValidationError, match="generator function") as excinfo:
+        he_pm.register(plugin)
+    assert excinfo.value.plugin is plugin
+
+
 def test_register(pm):
     class MyPlugin:
         pass
