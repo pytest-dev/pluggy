@@ -23,6 +23,26 @@ jobs:
       env: TOXENV=py36-pytestmaster-coverage
     - python: '3.7'
       env: TOXENV=py37-pytestmaster-coverage
+    # PPC64LE
+    - arch: ppc64le
+      python: '3.5'
+      env: TOXENV=py35-coverage
+    - arch: ppc64le
+      python: '3.6'
+      env: TOXENV=py36-coverage
+    - arch: ppc64le
+      python: '3.7'
+      env: TOXENV=py37-coverage
+    - arch: ppc64le
+      python: '3.8'
+      env: TOXENV=py38-coverage
+    - arch: ppc64le
+      python: '3.6'
+      env: TOXENV=py36-pytestmaster-coverage
+    - arch: ppc64le
+      python: '3.7'
+      env: TOXENV=py37-pytestmaster-coverage
+      
 
     - stage: deploy
       python: '3.6'
@@ -39,6 +59,9 @@ jobs:
         on:
           tags: true
           repo: pytest-dev/pluggy
+
+before_install:
+  if [[ "${TRAVIS_CPU_ARCH}" == "ppc64le" ]]; then sudo chown -Rvf $USER:$GROUP ~/.cache/pip/wheels; fi
 
 install:
   - pip install -U pip
