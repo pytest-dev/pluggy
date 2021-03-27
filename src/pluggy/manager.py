@@ -263,7 +263,7 @@ class PluginManager:
         :return: return the number of loaded plugins by this call.
         """
         count = 0
-        for dist in importlib_metadata.distributions():
+        for dist in list(importlib_metadata.distributions()):
             for ep in dist.entry_points:
                 if (
                     ep.group != group
