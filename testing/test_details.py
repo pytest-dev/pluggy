@@ -21,7 +21,7 @@ def test_parse_hookimpl_override():
 
         @hookimpl(hookwrapper=True, tryfirst=True)
         def x1meth2(self):
-            pass
+            yield  # pragma: no cover
 
     class Spec:
         @hookspec

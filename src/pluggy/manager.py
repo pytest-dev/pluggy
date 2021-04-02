@@ -221,8 +221,10 @@ class PluginManager:
                 "Plugin %r\nhook %r\nhistoric incompatible to hookwrapper"
                 % (hookimpl.plugin_name, hook.name),
             )
+
         if hook.spec.warn_on_impl:
             _warn_for_function(hook.spec.warn_on_impl, hookimpl.function)
+
         # positional arg checking
         notinspec = set(hookimpl.argnames) - set(hook.spec.argnames)
         if notinspec:
@@ -237,6 +239,14 @@ class PluginManager:
                     _formatdef(hookimpl.function),
                     notinspec,
                 ),
+            )
+
+        if hookimpl.hookwrapper and not inspect.isgeneratorfunction(hookimpl.function):
+            raise PluginValidationError(
+                hookimpl.plugin,
+                "Plugin %r for hook %r\nhookimpl definition: %s\n"
+                "Declared as hookwrapper=True but function is not a generator function"
+                % (hookimpl.plugin_name, hook.name, _formatdef(hookimpl.function)),
             )
 
     def check_pending(self):
