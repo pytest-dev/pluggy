@@ -25,7 +25,7 @@ programs/libraries in Python like
 `method overriding <https://en.wikipedia.org/wiki/Method_overriding>`_
 (e.g. Jinja2) or
 `monkey patching <https://en.wikipedia.org/wiki/Monkey_patch>`_ (e.g. gevent
-or for :std:doc:`writing tests <pytest:monkeypatch>`).
+or for :std:doc:`writing tests <pytest:how-to/monkeypatch>`).
 These strategies become problematic though when several parties want to
 participate in the modification of the same program. Therefore ``pluggy``
 does not rely on these mechanisms to enable a more structured approach and
@@ -611,7 +611,7 @@ registered by passing its name to the
 Loading ``setuptools`` entry points
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 You can automatically load plugins registered through
-:ref:`setuptools entry points <setuptools:entry points>`
+:ref:`setuptools entry points <setuptools:entry_points>`
 with the :py:meth:`~pluggy.PluginManager.load_setuptools_entrypoints()`
 method.
 
