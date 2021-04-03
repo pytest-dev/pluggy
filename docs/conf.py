@@ -47,7 +47,6 @@ html_theme_options = {
     "github_button": "true",
     "github_banner": "true",
     "github_type": "star",
-    "travis_button": "true",
     "badge_branch": "master",
     "page_width": "1080px",
     "fixed_sidebar": "false",
