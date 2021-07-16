@@ -240,7 +240,12 @@ class _HookCaller:
             methods.insert(i + 1, hookimpl)
 
     def __repr__(self):
-        return "<_HookCaller %r>" % (self.name,)
+        return "<_HookCaller %r, _wrappers=%r elems, _nonwrappers=%r elems, spec=%r>" % (
+            self.name,
+            len(self._wrappers),
+            len(self._nonwrappers),
+            self.spec
+        )
 
     def __call__(self, *args, **kwargs):
         if args:
@@ -325,3 +330,11 @@ class HookSpec:
         self.argnames, self.kwargnames = varnames(function)
         self.opts = opts
         self.warn_on_impl = opts.get("warn_on_impl")
+
+    def __repr__(self):
+        return "<HookSpec %r, argnames=%r, kwargnames=%r, warn_on_impl=%r>" % (
+            self.name,
+            self.argnames,
+            self.kwargnames,
+            self.warn_on_impl
+        )
