@@ -214,7 +214,7 @@ class _HookCaller:
 
         if remove(self._wrappers) is None:
             if remove(self._nonwrappers) is None:
-                raise ValueError("plugin %r not found" % (plugin,))
+                raise ValueError(f"plugin {plugin!r} not found")
 
     def get_hookimpls(self):
         # Order is important for _hookexec
@@ -240,7 +240,7 @@ class _HookCaller:
             methods.insert(i + 1, hookimpl)
 
     def __repr__(self):
-        return "<_HookCaller %r>" % (self.name,)
+        return f"<_HookCaller {self.name!r}>"
 
     def __call__(self, *args, **kwargs):
         if args:
@@ -314,7 +314,7 @@ class HookImpl:
         self.__dict__.update(hook_impl_opts)
 
     def __repr__(self):
-        return "<HookImpl plugin_name=%r, plugin=%r>" % (self.plugin_name, self.plugin)
+        return f"<HookImpl plugin_name={self.plugin_name!r}, plugin={self.plugin!r}>"
 
 
 class HookSpec:
