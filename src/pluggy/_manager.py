@@ -1,9 +1,10 @@
 import inspect
 import sys
-from . import _tracing
-from .callers import _Result, _multicall
-from .hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 import warnings
+
+from . import _tracing
+from ._callers import _Result, _multicall
+from ._hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 
 if sys.version_info >= (3, 8):
     from importlib import metadata as importlib_metadata
@@ -312,7 +313,7 @@ class PluginManager:
         of HookImpl instances and the keyword arguments for the hook call.
 
         ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
-        same arguments as ``before`` but also a :py:class:`pluggy.callers._Result` object
+        same arguments as ``before`` but also a :py:class:`pluggy._callers._Result` object
         which represents the result of the overall hook call.
         """
         oldcall = self._inner_hookexec

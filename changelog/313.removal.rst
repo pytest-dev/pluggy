@@ -1,0 +1,2 @@
+The internal ``pluggy.callers``, ``pluggy.manager`` and ``pluggy.hooks`` are now explicitly marked private by a ``_`` prefix (e.g. ``pluggy._callers``).
+Only API exported by the top-level ``pluggy`` module is considered public.
