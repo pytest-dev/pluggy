@@ -13,7 +13,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Programming Language :: Python :: 3 :: Only",
-] + [("Programming Language :: Python :: %s" % x) for x in "3 3.5 3.6 3.7 3.8".split()]
+] + [("Programming Language :: Python :: %s" % x) for x in "3 3.6 3.7 3.8".split()]
 
 with open("README.rst", "rb") as fd:
     long_description = fd.read().decode("utf-8")
@@ -39,7 +39,7 @@ def main():
         author="Holger Krekel",
         author_email="holger@merlinux.eu",
         url="https://github.com/pytest-dev/pluggy",
-        python_requires=">=3.5",
+        python_requires=">=3.6",
         install_requires=['importlib-metadata>=0.12;python_version<"3.8"'],
         extras_require=EXTRAS_REQUIRE,
         classifiers=classifiers,
