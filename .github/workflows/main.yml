@@ -20,13 +20,14 @@ jobs:
       matrix:
         name: [
           "windows-py36",
-          "windows-py37",
+          "windows-py39",
           "windows-pypy3",
 
           "ubuntu-py36",
           "ubuntu-py36-pytestmain",
           "ubuntu-py37",
           "ubuntu-py38",
+          "ubuntu-py39",
           "ubuntu-pypy3",
           "ubuntu-benchmark",
 
@@ -39,10 +40,10 @@ jobs:
             python: "3.6"
             os: windows-latest
             tox_env: "py36"
-          - name: "windows-py37"
-            python: "3.7"
+          - name: "windows-py39"
+            python: "3.9"
             os: windows-latest
-            tox_env: "py37"
+            tox_env: "py39"
           - name: "windows-pypy3"
             python: "pypy3"
             os: windows-latest
@@ -66,6 +67,11 @@ jobs:
             python: "3.8"
             os: ubuntu-latest
             tox_env: "py38"
+            use_coverage: true
+          - name: "ubuntu-py39"
+            python: "3.9"
+            os: ubuntu-latest
+            tox_env: "py39"
             use_coverage: true
           - name: "ubuntu-pypy3"
             python: "pypy3"
