@@ -9,7 +9,7 @@ from pluggy import (
     HookimplMarker,
     HookspecMarker,
 )
-from pluggy.manager import importlib_metadata
+from pluggy._manager import importlib_metadata
 
 
 hookspec = HookspecMarker("example")

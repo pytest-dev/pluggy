@@ -1,5 +1,5 @@
-from pluggy.hooks import varnames
-from pluggy.manager import _formatdef
+from pluggy._hooks import varnames
+from pluggy._manager import _formatdef
 
 
 def test_varnames():
