@@ -25,7 +25,7 @@ def _multicall(hook_name, hook_impls, caller_kwargs, firstresult):
                     for argname in hook_impl.argnames:
                         if argname not in caller_kwargs:
                             raise HookCallError(
-                                "hook call must provide argument %r" % (argname,)
+                                f"hook call must provide argument {argname!r}"
                             )
 
                 if hook_impl.hookwrapper:
