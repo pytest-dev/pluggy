@@ -940,7 +940,7 @@ Table of contents
 .. _hookwrapper:
     http://doc.pytest.org/en/latest/writing_plugins.html#hookwrapper-executing-around-other-hooks
 .. _hook function ordering:
-    http://doc.pytest.org/en/latest/writing_plugins.html#hook-function-ordering-call-example
+    https://doc.pytest.org/en/latest/how-to/writing_hook_functions.html#hook-function-ordering-call-example
 .. _request-response pattern:
     https://en.wikipedia.org/wiki/Request%E2%80%93response
 .. _publish-subscribe:
