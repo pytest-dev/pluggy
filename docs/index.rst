@@ -349,7 +349,7 @@ will be executed *first* or *last* respectively in the hook call loop:
     # load a plugin defined on a class
     pm.register(SomeOtherPlugin())
 
-For another example see the `hook function ordering`_ section of the
+For another example see the :ref:`pytest:plugin-hookorder` section of the
 ``pytest`` docs.
 
 .. note::
@@ -405,7 +405,7 @@ the final result(s) returned back to the caller using the
     Hook wrappers can **not** return results (as per generator function
     semantics); they can only modify them using the ``_Result`` API.
 
-Also see the `hookwrapper`_ section in the ``pytest`` docs.
+Also see the :ref:`pytest:hookwrapper` section in the ``pytest`` docs.
 
 .. _specs:
 
@@ -523,7 +523,7 @@ then ``None``.
 
 This can be useful for optimizing a call loop for which you are only
 interested in a single core *hookimpl*. An example is the
-`pytest_cmdline_main`_ central routine of ``pytest``.
+:func:`~_pytest.hookspec.pytest_cmdline_main` central routine of ``pytest``.
 Note that all ``hookwrappers`` are still invoked with the first result.
 
 Also see the :ref:`pytest:firstresult` section in the ``pytest`` docs.
@@ -933,14 +933,8 @@ Table of contents
 
 
 .. hyperlinks
-.. _pytest_cmdline_main:
-    https://docs.pytest.org/en/latest/_modules/_pytest/hookspec.html#pytest_cmdline_main
 .. _hookspec module:
     https://docs.pytest.org/en/latest/_modules/_pytest/hookspec.html
-.. _hookwrapper:
-    http://doc.pytest.org/en/latest/writing_plugins.html#hookwrapper-executing-around-other-hooks
-.. _hook function ordering:
-    https://doc.pytest.org/en/latest/how-to/writing_hook_functions.html#hook-function-ordering-call-example
 .. _request-response pattern:
     https://en.wikipedia.org/wiki/Request%E2%80%93response
 .. _publish-subscribe:
