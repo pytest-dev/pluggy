@@ -349,7 +349,7 @@ class PluginManager:
         return self.add_hookcall_monitoring(before, after)
 
     def subset_hook_caller(self, name, remove_plugins):
-        """ Return a new :py:class:`.hooks._HookCaller` instance for the named method
+        """ Return a new :py:class:`._hooks._HookCaller` instance for the named method
         which manages calls to all registered plugins except the
         ones from remove_plugins. """
         orig = getattr(self.hook, name)
