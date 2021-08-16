@@ -1,9 +1,10 @@
 import inspect
 import sys
 import warnings
+from typing import Optional, List, Union
 
 from . import _tracing
-from ._callers import _Result, _multicall
+from ._callers import Result, _multicall
 from ._hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 
 if sys.version_info >= (3, 8):
@@ -36,17 +37,17 @@ class PluginValidationError(Exception):
 class DistFacade:
     """Emulate a pkg_resources Distribution"""
 
-    def __init__(self, dist):
+    def __init__(self, dist: importlib_metadata.Distribution):
         self._dist = dist
 
     @property
-    def project_name(self):
-        return self.metadata["name"]
+    def project_name(self) -> str:
+        return self._dist.metadata["name"]
 
-    def __getattr__(self, attr, default=None):
+    def __getattr__(self, attr, default=None) -> Optional[Union[object, list, dict]]:
         return getattr(self._dist, attr, default)
 
-    def __dir__(self):
+    def __dir__(self) -> List[str]:
         return sorted(dir(self._dist) + ["_dist", "project_name"])
 
 
@@ -74,10 +75,12 @@ class PluginManager:
         self.hook = _HookRelay()
         self._inner_hookexec = _multicall
 
-    def _hookexec(self, hook_name, methods, kwargs, firstresult):
+    def _hookexec(self, hook_name, wrappers, non_wrappers, kwargs, firstresult):
         # called from all hookcaller instances.
         # enable_tracing will set its own wrapping function at self._inner_hookexec
-        return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+        return self._inner_hookexec(
+            hook_name, wrappers, non_wrappers, kwargs, firstresult
+        )
 
     def register(self, plugin, name=None):
         """Register a plugin and return its canonical name or ``None`` if the name
@@ -102,7 +105,7 @@ class PluginManager:
         for name in dir(plugin):
             hookimpl_opts = self.parse_hookimpl_opts(plugin, name)
             if hookimpl_opts is not None:
-                normalize_hookimpl_opts(hookimpl_opts)
+                hookimpl_opts = normalize_hookimpl_opts(hookimpl_opts)
                 method = getattr(plugin, name)
                 hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
                 name = hookimpl_opts.get("specname") or name
@@ -313,15 +316,16 @@ class PluginManager:
         of HookImpl instances and the keyword arguments for the hook call.
 
         ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
-        same arguments as ``before`` but also a :py:class:`pluggy._callers._Result` object
+        same arguments as ``before`` but also a :py:class:`pluggy._callers.Result` object
         which represents the result of the overall hook call.
         """
         oldcall = self._inner_hookexec
 
-        def traced_hookexec(hook_name, hook_impls, kwargs, firstresult):
+        def traced_hookexec(hook_name, wrappers, non_wrappers, kwargs, firstresult):
+            hook_impls = wrappers + non_wrappers
             before(hook_name, hook_impls, kwargs)
-            outcome = _Result.from_call(
-                lambda: oldcall(hook_name, hook_impls, kwargs, firstresult)
+            outcome = Result.from_call(
+                lambda: oldcall(hook_name, wrappers, non_wrappers, kwargs, firstresult)
             )
             after(outcome, hook_name, hook_impls, kwargs)
             return outcome.get_result()

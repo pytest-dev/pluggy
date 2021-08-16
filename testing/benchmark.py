@@ -34,13 +34,17 @@ def wrappers(request):
 def test_hook_and_wrappers_speed(benchmark, hooks, wrappers):
     def setup():
         hook_name = "foo"
-        hook_impls = []
-        for method in hooks + wrappers:
+        wrapping = []
+        nonwrappers = []
+        for method in hooks:
             f = HookImpl(None, "<temp>", method, method.example_impl)
-            hook_impls.append(f)
+            nonwrappers.append(f)
+        for method in wrappers:
+            f = HookImpl(None, "<temp>", method, method.example_impl)
+            wrapping.append(f)
         caller_kwargs = {"arg1": 1, "arg2": 2, "arg3": 3}
         firstresult = False
-        return (hook_name, hook_impls, caller_kwargs, firstresult), {}
+        return (hook_name, wrapping, nonwrappers, caller_kwargs, firstresult), {}
 
     benchmark.pedantic(_multicall, setup=setup)
 

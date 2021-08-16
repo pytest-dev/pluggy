@@ -11,10 +11,15 @@ hookimpl = HookimplMarker("example")
 def MC(methods, kwargs, firstresult=False):
     caller = _multicall
     hookfuncs = []
+    hookwrappers = []
+
     for method in methods:
         f = HookImpl(None, "<temp>", method, method.example_impl)
-        hookfuncs.append(f)
-    return caller("foo", hookfuncs, kwargs, firstresult)
+        if f.hookwrapper:
+            hookwrappers.append(f)
+        else:
+            hookfuncs.append(f)
+    return caller("foo", hookwrappers, hookfuncs, kwargs, firstresult)
 
 
 def test_keyword_args():

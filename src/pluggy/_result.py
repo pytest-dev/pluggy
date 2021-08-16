@@ -1,7 +1,8 @@
 """
 Hook wrapper "result" utilities.
 """
-import sys
+from types import TracebackType
+from typing import final, Optional, Callable, Tuple, Type
 
 
 def _raise_wrapfail(wrap_controller, msg):
@@ -12,31 +13,33 @@ def _raise_wrapfail(wrap_controller, msg):
     )
 
 
-class HookCallError(Exception):
-    """Hook was called wrongly."""
+@final
+class Result:
+    _result: Optional[object]
+    _exc: Optional[BaseException]
 
-
-class _Result:
-    def __init__(self, result, excinfo):
+    def __init__(self, result: Optional[object], excinfo: Optional[BaseException]):
         self._result = result
-        self._excinfo = excinfo
+        self._exc = excinfo
 
     @property
-    def excinfo(self):
-        return self._excinfo
+    def excinfo(
+        self,
+    ) -> Optional[Tuple[Type[BaseException], BaseException, Optional[TracebackType]]]:
+        e = self._exc
+        if e is None:
+            return None
+        return type(e), e, e.__traceback__
 
-    @classmethod
-    def from_call(cls, func):
+    @staticmethod
+    def from_call(func: Callable[[], object]) -> "Result":
         __tracebackhide__ = True
-        result = excinfo = None
         try:
-            result = func()
-        except BaseException:
-            excinfo = sys.exc_info()
+            return Result(func(), None)
+        except BaseException as e:
+            return Result(None, e)
 
-        return cls(result, excinfo)
-
-    def force_result(self, result):
+    def force_result(self, result: object):
         """Force the result(s) to ``result``.
 
         If the hook was marked as a ``firstresult`` a single value should
@@ -44,17 +47,17 @@ class _Result:
         found during invocation will be deleted.
         """
         self._result = result
-        self._excinfo = None
+        self._exc = None
 
-    def get_result(self):
+    def get_result(self) -> object:
         """Get the result(s) for this hook call.
 
         If the hook was marked as a ``firstresult`` only a single value
         will be returned otherwise a list of results.
         """
         __tracebackhide__ = True
-        if self._excinfo is None:
+        if self._exc is None:
             return self._result
         else:
-            ex = self._excinfo
-            raise ex[1].with_traceback(ex[2])
+            ex = self._exc
+            raise ex.with_traceback(ex.__traceback__)

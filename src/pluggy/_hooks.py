@@ -4,6 +4,10 @@ Internal hook annotation, representation and calling machinery.
 import inspect
 import sys
 import warnings
+from operator import itemgetter
+
+from ._result import _raise_wrapfail
+from ._exceptions import HookCallError
 
 
 class HookspecMarker:
@@ -121,12 +125,17 @@ class HookimplMarker:
             return setattr_hookimpl_opts(function)
 
 
+DEFAULTS = {
+    "tryfirst": False,
+    "trylast": False,
+    "hookwrapper": False,
+    "optionalhook": False,
+    "specname": None,
+}
+
+
 def normalize_hookimpl_opts(opts):
-    opts.setdefault("tryfirst", False)
-    opts.setdefault("trylast", False)
-    opts.setdefault("hookwrapper", False)
-    opts.setdefault("optionalhook", False)
-    opts.setdefault("specname", None)
+    return {**DEFAULTS, **opts}
 
 
 _PYPY = hasattr(sys, "pypy_version_info")
@@ -262,7 +271,9 @@ class _HookCaller:
         else:
             firstresult = False
 
-        return self._hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
+        return self._hookexec(
+            self.name, self._wrappers, self._nonwrappers, kwargs, firstresult
+        )
 
     def call_historic(self, result_callback=None, kwargs=None):
         """Call the hook with given ``kwargs`` for all registered plugins and
@@ -274,7 +285,9 @@ class _HookCaller:
         self._call_history.append((kwargs or {}, result_callback))
         # Historizing hooks don't return results.
         # Remember firstresult isn't compatible with historic.
-        res = self._hookexec(self.name, self.get_hookimpls(), kwargs, False)
+        res = self._hookexec(
+            self.name, self._wrappers, self._nonwrappers, kwargs, False
+        )
         if result_callback is None:
             return
         for x in res or []:
@@ -295,24 +308,74 @@ class _HookCaller:
 
     def _maybe_apply_history(self, method):
         """Apply call history to a new hookimpl if it is marked as historic."""
+        wrappers = [method] if method.hookwrapper else []
+        nonwrappers = [] if wrappers else [method]
         if self.is_historic():
+
             for kwargs, result_callback in self._call_history:
-                res = self._hookexec(self.name, [method], kwargs, False)
+                res = self._hookexec(self.name, wrappers, nonwrappers, kwargs, False)
                 if res and result_callback is not None:
                     result_callback(res[0])
 
 
 class HookImpl:
+    __slots__ = (
+        "function",
+        "argnames",
+        "kwargnames",
+        "plugin",
+        "opts",
+        "plugin_name",
+        "_getter",
+    )
+
     def __init__(self, plugin, plugin_name, function, hook_impl_opts):
         self.function = function
         self.argnames, self.kwargnames = varnames(self.function)
         self.plugin = plugin
         self.opts = hook_impl_opts
         self.plugin_name = plugin_name
-        self.__dict__.update(hook_impl_opts)
+        if not self.argnames:
+            self._getter = lambda x: ()
+        elif len(self.argnames) == 1:
+            self._getter = lambda args, name=self.argnames[0]: (args[name],)
+        else:
+            self._getter = itemgetter(*self.argnames)
+
+    def __getattr__(self, name):
+        try:
+            return self.opts[name]
+        except LookupError:
+            raise AttributeError(name, type(self))
 
     def __repr__(self):
         return f"<HookImpl plugin_name={self.plugin_name!r}, plugin={self.plugin!r}>"
+
+    def __call__(self, caller_kwargs):
+        try:
+            args = self._getter(caller_kwargs)
+        except KeyError:
+            for argname in self.argnames:
+                if argname not in caller_kwargs:
+                    raise HookCallError(f"hook call must provide argument {argname!r}")
+        if self.hookwrapper:
+            # EVIL :)
+            try:
+                gen = self.function(*args)
+                next(gen)  # first yield
+            except StopIteration:
+                _raise_wrapfail(gen, "did not yield")
+
+            def _cleanup(outcome, gen_=gen):
+                try:
+                    gen_.send(outcome)
+                    _raise_wrapfail(gen, "has second yield")
+                except StopIteration:
+                    pass
+
+            return _cleanup
+        else:
+            return self.function(*args)
 
 
 class HookSpec:
