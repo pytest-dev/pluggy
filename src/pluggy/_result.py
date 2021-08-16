@@ -13,7 +13,7 @@ def _raise_wrapfail(wrap_controller, msg):
 
 
 class HookCallError(Exception):
-    """ Hook was called wrongly. """
+    """Hook was called wrongly."""
 
 
 class _Result:
