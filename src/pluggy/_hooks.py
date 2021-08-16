@@ -7,7 +7,7 @@ import warnings
 
 
 class HookspecMarker:
-    """ Decorator helper class for marking functions as hook specifications.
+    """Decorator helper class for marking functions as hook specifications.
 
     You can instantiate it with a project_name to get a decorator.
     Calling :py:meth:`.PluginManager.add_hookspecs` later will discover all marked functions
@@ -20,7 +20,7 @@ class HookspecMarker:
     def __call__(
         self, function=None, firstresult=False, historic=False, warn_on_impl=None
     ):
-        """ if passed a function, directly sets attributes on the function
+        """if passed a function, directly sets attributes on the function
         which will make it discoverable to :py:meth:`.PluginManager.add_hookspecs`.
         If passed no function, returns a decorator which can be applied to a function
         later using the attributes supplied.
@@ -55,7 +55,7 @@ class HookspecMarker:
 
 
 class HookimplMarker:
-    """ Decorator helper class for marking functions as hook implementations.
+    """Decorator helper class for marking functions as hook implementations.
 
     You can instantiate with a ``project_name`` to get a decorator.
     Calling :py:meth:`.PluginManager.register` later will discover all marked functions
@@ -75,7 +75,7 @@ class HookimplMarker:
         specname=None,
     ):
 
-        """ if passed a function, directly sets attributes on the function
+        """if passed a function, directly sets attributes on the function
         which will make it discoverable to :py:meth:`.PluginManager.register`.
         If passed no function, returns a decorator which can be applied to a
         function later using the attributes supplied.
@@ -175,7 +175,7 @@ def varnames(func):
 
 
 class _HookRelay:
-    """ hook holder object for performing 1:N hook calls where N is the number
+    """hook holder object for performing 1:N hook calls where N is the number
     of registered plugins.
 
     """
@@ -221,8 +221,7 @@ class _HookCaller:
         return self._nonwrappers + self._wrappers
 
     def _add_hookimpl(self, hookimpl):
-        """Add an implementation to the callback chain.
-        """
+        """Add an implementation to the callback chain."""
         if hookimpl.hookwrapper:
             methods = self._wrappers
         else:
@@ -282,8 +281,8 @@ class _HookCaller:
             result_callback(x)
 
     def call_extra(self, methods, kwargs):
-        """ Call the hook with some additional temporarily participating
-        methods using the specified ``kwargs`` as call parameters. """
+        """Call the hook with some additional temporarily participating
+        methods using the specified ``kwargs`` as call parameters."""
         old = list(self._nonwrappers), list(self._wrappers)
         for method in methods:
             opts = dict(hookwrapper=False, trylast=False, tryfirst=False)
@@ -295,8 +294,7 @@ class _HookCaller:
             self._nonwrappers, self._wrappers = old
 
     def _maybe_apply_history(self, method):
-        """Apply call history to a new hookimpl if it is marked as historic.
-        """
+        """Apply call history to a new hookimpl if it is marked as historic."""
         if self.is_historic():
             for kwargs, result_callback in self._call_history:
                 res = self._hookexec(self.name, [method], kwargs, False)

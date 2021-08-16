@@ -319,8 +319,7 @@ will be executed *first* or *last* respectively in the hook call loop:
 
     @hookimpl(trylast=True)
     def setup_project(config, args):
-        """Default implementation.
-        """
+        """Default implementation."""
         if args:
             config.process_args(args)
 
@@ -328,8 +327,7 @@ will be executed *first* or *last* respectively in the hook call loop:
 
 
     class SomeOtherPlugin:
-        """Some other plugin defining the same hook.
-        """
+        """Some other plugin defining the same hook."""
 
         @hookimpl(tryfirst=True)
         def setup_project(self, config, args):
@@ -696,24 +694,21 @@ assertion should not error:
     class Plugin1:
         @hookimpl
         def myhook(self, args):
-            """Default implementation.
-            """
+            """Default implementation."""
             return 1
 
 
     class Plugin2:
         @hookimpl
         def myhook(self, args):
-            """Default implementation.
-            """
+            """Default implementation."""
             return 2
 
 
     class Plugin3:
         @hookimpl
         def myhook(self, args):
-            """Default implementation.
-            """
+            """Default implementation."""
             return 3
 
 

@@ -19,18 +19,15 @@ A definitive example
 
 
     class MySpec:
-        """A hook specification namespace.
-        """
+        """A hook specification namespace."""
 
         @hookspec
         def myhook(self, arg1, arg2):
-            """My special little hook that you can customize.
-            """
+            """My special little hook that you can customize."""
 
 
     class Plugin_1:
-        """A hook implementation namespace.
-        """
+        """A hook implementation namespace."""
 
         @hookimpl
         def myhook(self, arg1, arg2):
@@ -39,8 +36,7 @@ A definitive example
 
 
     class Plugin_2:
-        """A 2nd hook implementation namespace.
-        """
+        """A 2nd hook implementation namespace."""
 
         @hookimpl
         def myhook(self, arg1, arg2):

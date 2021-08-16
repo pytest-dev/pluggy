@@ -144,8 +144,7 @@ def test_firstresult_definition(pm):
 
 
 def test_firstresult_force_result(pm):
-    """Verify forcing a result in a wrapper.
-    """
+    """Verify forcing a result in a wrapper."""
 
     class Api:
         @hookspec(firstresult=True)
