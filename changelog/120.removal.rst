@@ -1,0 +1,3 @@
+Remove the deprecated ``proc`` argument to ``call_historic``.
+Use ``result_callback`` instead, which has the same behavior.
+The deprecation was announced in release ``0.7.0``.

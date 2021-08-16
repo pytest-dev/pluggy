@@ -6,7 +6,7 @@ import sys
 import warnings
 
 
-class HookspecMarker(object):
+class HookspecMarker:
     """ Decorator helper class for marking functions as hook specifications.
 
     You can instantiate it with a project_name to get a decorator.
@@ -54,7 +54,7 @@ class HookspecMarker(object):
             return setattr_hookspec_opts
 
 
-class HookimplMarker(object):
+class HookimplMarker:
     """ Decorator helper class for marking functions as hook implementations.
 
     You can instantiate with a ``project_name`` to get a decorator.
@@ -129,19 +129,7 @@ def normalize_hookimpl_opts(opts):
     opts.setdefault("specname", None)
 
 
-if hasattr(inspect, "getfullargspec"):
-
-    def _getargspec(func):
-        return inspect.getfullargspec(func)
-
-
-else:
-
-    def _getargspec(func):
-        return inspect.getargspec(func)
-
-
-_PYPY3 = hasattr(sys, "pypy_version_info") and sys.version_info.major == 3
+_PYPY = hasattr(sys, "pypy_version_info")
 
 
 def varnames(func):
@@ -151,12 +139,6 @@ def varnames(func):
     In case of a class, its ``__init__`` method is considered.
     For methods the ``self`` parameter is not included.
     """
-    cache = getattr(func, "__dict__", {})
-    try:
-        return cache["_varnames"]
-    except KeyError:
-        pass
-
     if inspect.isclass(func):
         try:
             func = func.__init__
@@ -169,7 +151,7 @@ def varnames(func):
             return (), ()
 
     try:  # func MUST be a function or method here or we won't parse any args
-        spec = _getargspec(func)
+        spec = inspect.getfullargspec(func)
     except TypeError:
         return (), ()
 
@@ -182,35 +164,30 @@ def varnames(func):
 
     # strip any implicit instance arg
     # pypy3 uses "obj" instead of "self" for default dunder methods
-    implicit_names = ("self",) if not _PYPY3 else ("self", "obj")
+    implicit_names = ("self",) if not _PYPY else ("self", "obj")
     if args:
         if inspect.ismethod(func) or (
             "." in getattr(func, "__qualname__", ()) and args[0] in implicit_names
         ):
             args = args[1:]
 
-    try:
-        cache["_varnames"] = args, kwargs
-    except TypeError:
-        pass
     return args, kwargs
 
 
-class _HookRelay(object):
+class _HookRelay:
     """ hook holder object for performing 1:N hook calls where N is the number
     of registered plugins.
 
     """
 
 
-class _HookCaller(object):
+class _HookCaller:
     def __init__(self, name, hook_execute, specmodule_or_class=None, spec_opts=None):
         self.name = name
         self._wrappers = []
         self._nonwrappers = []
         self._hookexec = hook_execute
-        self.argnames = None
-        self.kwargnames = None
+        self._call_history = None
         self.spec = None
         if specmodule_or_class is not None:
             assert spec_opts is not None
@@ -226,7 +203,7 @@ class _HookCaller(object):
             self._call_history = []
 
     def is_historic(self):
-        return hasattr(self, "_call_history")
+        return self._call_history is not None
 
     def _remove_plugin(self, plugin):
         def remove(wrappers):
@@ -237,7 +214,7 @@ class _HookCaller(object):
 
         if remove(self._wrappers) is None:
             if remove(self._nonwrappers) is None:
-                raise ValueError("plugin %r not found" % (plugin,))
+                raise ValueError(f"plugin {plugin!r} not found")
 
     def get_hookimpls(self):
         # Order is important for _hookexec
@@ -263,47 +240,44 @@ class _HookCaller(object):
             methods.insert(i + 1, hookimpl)
 
     def __repr__(self):
-        return "<_HookCaller %r>" % (self.name,)
+        return f"<_HookCaller {self.name!r}>"
 
     def __call__(self, *args, **kwargs):
         if args:
             raise TypeError("hook calling supports only keyword arguments")
         assert not self.is_historic()
 
-        if self.spec and self.spec.argnames:
-            notincall = set(self.spec.argnames) - set(kwargs.keys())
-            if notincall:
-                warnings.warn(
-                    "Argument(s) {} which are declared in the hookspec "
-                    "can not be found in this hook call".format(tuple(notincall)),
-                    stacklevel=2,
-                )
-        return self._hookexec(self, self.get_hookimpls(), kwargs)
+        # This is written to avoid expensive operations when not needed.
+        if self.spec:
+            for argname in self.spec.argnames:
+                if argname not in kwargs:
+                    notincall = tuple(set(self.spec.argnames) - kwargs.keys())
+                    warnings.warn(
+                        "Argument(s) {} which are declared in the hookspec "
+                        "can not be found in this hook call".format(notincall),
+                        stacklevel=2,
+                    )
+                    break
 
-    def call_historic(self, result_callback=None, kwargs=None, proc=None):
+            firstresult = self.spec.opts.get("firstresult")
+        else:
+            firstresult = False
+
+        return self._hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
+
+    def call_historic(self, result_callback=None, kwargs=None):
         """Call the hook with given ``kwargs`` for all registered plugins and
         for all plugins which will be registered afterwards.
 
         If ``result_callback`` is not ``None`` it will be called for for each
         non-``None`` result obtained from a hook implementation.
-
-        .. note::
-            The ``proc`` argument is now deprecated.
         """
-        if proc is not None:
-            warnings.warn(
-                "Support for `proc` argument is now deprecated and will be"
-                "removed in an upcoming release.",
-                DeprecationWarning,
-            )
-            result_callback = proc
-
         self._call_history.append((kwargs or {}, result_callback))
-        # historizing hooks don't return results
-        res = self._hookexec(self, self.get_hookimpls(), kwargs)
+        # Historizing hooks don't return results.
+        # Remember firstresult isn't compatible with historic.
+        res = self._hookexec(self.name, self.get_hookimpls(), kwargs, False)
         if result_callback is None:
             return
-        # XXX: remember firstresult isn't compat with historic
         for x in res or []:
             result_callback(x)
 
@@ -325,12 +299,12 @@ class _HookCaller(object):
         """
         if self.is_historic():
             for kwargs, result_callback in self._call_history:
-                res = self._hookexec(self, [method], kwargs)
+                res = self._hookexec(self.name, [method], kwargs, False)
                 if res and result_callback is not None:
                     result_callback(res[0])
 
 
-class HookImpl(object):
+class HookImpl:
     def __init__(self, plugin, plugin_name, function, hook_impl_opts):
         self.function = function
         self.argnames, self.kwargnames = varnames(self.function)
@@ -340,10 +314,10 @@ class HookImpl(object):
         self.__dict__.update(hook_impl_opts)
 
     def __repr__(self):
-        return "<HookImpl plugin_name=%r, plugin=%r>" % (self.plugin_name, self.plugin)
+        return f"<HookImpl plugin_name={self.plugin_name!r}, plugin={self.plugin!r}>"
 
 
-class HookSpec(object):
+class HookSpec:
     def __init__(self, namespace, name, opts):
         self.namespace = namespace
         self.function = function = getattr(namespace, name)

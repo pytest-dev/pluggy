@@ -3,19 +3,12 @@ Benchmarking and performance tests.
 """
 import pytest
 from pluggy import HookspecMarker, HookimplMarker
-from pluggy.hooks import HookImpl
-from pluggy.callers import _multicall
+from pluggy._hooks import HookImpl
+from pluggy._callers import _multicall
+
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
-
-
-def MC(methods, kwargs, firstresult=False):
-    hookfuncs = []
-    for method in methods:
-        f = HookImpl(None, "<temp>", method, method.example_impl)
-        hookfuncs.append(f)
-    return _multicall(hookfuncs, kwargs, firstresult=firstresult)
 
 
 @hookimpl
@@ -38,9 +31,15 @@ def wrappers(request):
     return [wrapper for i in range(request.param)]
 
 
-def inner_exec(methods):
-    return MC(methods, {"arg1": 1, "arg2": 2, "arg3": 3})
-
-
 def test_hook_and_wrappers_speed(benchmark, hooks, wrappers):
-    benchmark(inner_exec, hooks + wrappers)
+    def setup():
+        hook_name = "foo"
+        hook_impls = []
+        for method in hooks + wrappers:
+            f = HookImpl(None, "<temp>", method, method.example_impl)
+            hook_impls.append(f)
+        caller_kwargs = {"arg1": 1, "arg2": 2, "arg3": 3}
+        firstresult = False
+        return (hook_name, hook_impls, caller_kwargs, firstresult), {}
+
+    benchmark.pedantic(_multicall, setup=setup)

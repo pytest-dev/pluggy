@@ -1,9 +1,10 @@
 import inspect
 import sys
-from . import _tracing
-from .callers import _Result, _multicall
-from .hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 import warnings
+
+from . import _tracing
+from ._callers import _Result, _multicall
+from ._hooks import HookImpl, _HookRelay, _HookCaller, normalize_hookimpl_opts
 
 if sys.version_info >= (3, 8):
     from importlib import metadata as importlib_metadata
@@ -32,7 +33,7 @@ class PluginValidationError(Exception):
         super(Exception, self).__init__(message)
 
 
-class DistFacade(object):
+class DistFacade:
     """Emulate a pkg_resources Distribution"""
 
     def __init__(self, dist):
@@ -49,7 +50,7 @@ class DistFacade(object):
         return sorted(dir(self._dist) + ["_dist", "project_name"])
 
 
-class PluginManager(object):
+class PluginManager:
     """ Core :py:class:`.PluginManager` class which manages registration
     of plugin objects and 1:N hook calling.
 
@@ -71,16 +72,12 @@ class PluginManager(object):
         self._plugin_distinfo = []
         self.trace = _tracing.TagTracer().get("pluginmanage")
         self.hook = _HookRelay()
-        self._inner_hookexec = lambda hook, methods, kwargs: _multicall(
-            methods,
-            kwargs,
-            firstresult=hook.spec.opts.get("firstresult") if hook.spec else False,
-        )
+        self._inner_hookexec = _multicall
 
-    def _hookexec(self, hook, methods, kwargs):
+    def _hookexec(self, hook_name, methods, kwargs, firstresult):
         # called from all hookcaller instances.
         # enable_tracing will set its own wrapping function at self._inner_hookexec
-        return self._inner_hookexec(hook, methods, kwargs)
+        return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
 
     def register(self, plugin, name=None):
         """ Register a plugin and return its canonical name or ``None`` if the name
@@ -181,7 +178,7 @@ class PluginManager(object):
 
         if not names:
             raise ValueError(
-                "did not find any %r hooks in %r" % (self.project_name, module_or_class)
+                f"did not find any {self.project_name!r} hooks in {module_or_class!r}"
             )
 
     def parse_hookspec_opts(self, module_or_class, name):
@@ -225,8 +222,10 @@ class PluginManager(object):
                 "Plugin %r\nhook %r\nhistoric incompatible to hookwrapper"
                 % (hookimpl.plugin_name, hook.name),
             )
+
         if hook.spec.warn_on_impl:
             _warn_for_function(hook.spec.warn_on_impl, hookimpl.function)
+
         # positional arg checking
         notinspec = set(hookimpl.argnames) - set(hook.spec.argnames)
         if notinspec:
@@ -241,6 +240,14 @@ class PluginManager(object):
                     _formatdef(hookimpl.function),
                     notinspec,
                 ),
+            )
+
+        if hookimpl.hookwrapper and not inspect.isgeneratorfunction(hookimpl.function):
+            raise PluginValidationError(
+                hookimpl.plugin,
+                "Plugin %r for hook %r\nhookimpl definition: %s\n"
+                "Declared as hookwrapper=True but function is not a generator function"
+                % (hookimpl.plugin_name, hook.name, _formatdef(hookimpl.function)),
             )
 
     def check_pending(self):
@@ -267,7 +274,7 @@ class PluginManager(object):
         :return: return the number of loaded plugins by this call.
         """
         count = 0
-        for dist in importlib_metadata.distributions():
+        for dist in list(importlib_metadata.distributions()):
             for ep in dist.entry_points:
                 if (
                     ep.group != group
@@ -306,15 +313,17 @@ class PluginManager(object):
         of HookImpl instances and the keyword arguments for the hook call.
 
         ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
-        same arguments as ``before`` but also a :py:class:`pluggy.callers._Result` object
+        same arguments as ``before`` but also a :py:class:`pluggy._callers._Result` object
         which represents the result of the overall hook call.
         """
         oldcall = self._inner_hookexec
 
-        def traced_hookexec(hook, hook_impls, kwargs):
-            before(hook.name, hook_impls, kwargs)
-            outcome = _Result.from_call(lambda: oldcall(hook, hook_impls, kwargs))
-            after(outcome, hook.name, hook_impls, kwargs)
+        def traced_hookexec(hook_name, hook_impls, kwargs, firstresult):
+            before(hook_name, hook_impls, kwargs)
+            outcome = _Result.from_call(
+                lambda: oldcall(hook_name, hook_impls, kwargs, firstresult)
+            )
+            after(outcome, hook_name, hook_impls, kwargs)
             return outcome.get_result()
 
         self._inner_hookexec = traced_hookexec
@@ -340,7 +349,7 @@ class PluginManager(object):
         return self.add_hookcall_monitoring(before, after)
 
     def subset_hook_caller(self, name, remove_plugins):
-        """ Return a new :py:class:`.hooks._HookCaller` instance for the named method
+        """ Return a new :py:class:`._hooks._HookCaller` instance for the named method
         which manages calls to all registered plugins except the
         ones from remove_plugins. """
         orig = getattr(self.hook, name)
@@ -360,16 +369,5 @@ class PluginManager(object):
         return orig
 
 
-if hasattr(inspect, "signature"):
-
-    def _formatdef(func):
-        return "%s%s" % (func.__name__, str(inspect.signature(func)))
-
-
-else:
-
-    def _formatdef(func):
-        return "%s%s" % (
-            func.__name__,
-            inspect.formatargspec(*inspect.getargspec(func)),
-        )
+def _formatdef(func):
+    return f"{func.__name__}{inspect.signature(func)}"

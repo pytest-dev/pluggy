@@ -6,7 +6,7 @@ import sys
 from ._result import HookCallError, _Result, _raise_wrapfail
 
 
-def _multicall(hook_impls, caller_kwargs, firstresult=False):
+def _multicall(hook_name, hook_impls, caller_kwargs, firstresult):
     """Execute a call into multiple python functions/methods and return the
     result(s).
 

@@ -2,7 +2,7 @@
 pluggy - A minimalist production ready plugin system
 ====================================================
 
-|pypi| |conda-forge| |versions| |travis| |appveyor| |gitter| |black| |codecov|
+|pypi| |conda-forge| |versions| |github-actions| |gitter| |black| |codecov|
 
 This is the core framework used by the `pytest`_, `tox`_, and `devpi`_ projects.
 
@@ -18,7 +18,7 @@ A definitive example
     hookimpl = pluggy.HookimplMarker("myproject")
 
 
-    class MySpec(object):
+    class MySpec:
         """A hook specification namespace.
         """
 
@@ -28,7 +28,7 @@ A definitive example
             """
 
 
-    class Plugin_1(object):
+    class Plugin_1:
         """A hook implementation namespace.
         """
 
@@ -38,7 +38,7 @@ A definitive example
             return arg1 + arg2
 
 
-    class Plugin_2(object):
+    class Plugin_2:
         """A 2nd hook implementation namespace.
         """
 
@@ -77,11 +77,8 @@ Running this directly gets us::
 .. |versions| image:: https://img.shields.io/pypi/pyversions/pluggy.svg
     :target: https://pypi.org/pypi/pluggy
 
-.. |travis| image:: https://img.shields.io/travis/pytest-dev/pluggy/master.svg
-    :target: https://travis-ci.org/pytest-dev/pluggy
-
-.. |appveyor| image:: https://img.shields.io/appveyor/ci/pytestbot/pluggy/master.svg
-    :target: https://ci.appveyor.com/project/pytestbot/pluggy
+.. |github-actions| image:: https://github.com/pytest-dev/pluggy/workflows/main/badge.svg
+    :target: https://github.com/pytest-dev/pluggy/actions
 
 .. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/pluggy.svg
     :target: https://anaconda.org/conda-forge/pytest

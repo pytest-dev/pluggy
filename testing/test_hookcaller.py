@@ -1,7 +1,7 @@
 import pytest
 
 from pluggy import HookimplMarker, HookspecMarker, PluginValidationError
-from pluggy.hooks import HookImpl
+from pluggy._hooks import HookImpl
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
@@ -9,7 +9,7 @@ hookimpl = HookimplMarker("example")
 
 @pytest.fixture
 def hc(pm):
-    class Hooks(object):
+    class Hooks:
         @hookspec
         def he_method1(self, arg):
             pass
@@ -155,7 +155,7 @@ def test_adding_wrappers_ordering_tryfirst(hc, addmeth):
 
 
 def test_hookspec(pm):
-    class HookSpec(object):
+    class HookSpec:
         @hookspec()
         def he_myhook1(arg1):
             pass
@@ -191,7 +191,7 @@ def test_hookrelay_registry(pm):
     """Verify hook caller instances are registered by name onto the relay
     and can be likewise unregistered."""
 
-    class Api(object):
+    class Api:
         @hookspec
         def hello(self, arg):
             "api hook 1"
@@ -201,7 +201,7 @@ def test_hookrelay_registry(pm):
     assert hasattr(hook, "hello")
     assert repr(hook.hello).find("hello") != -1
 
-    class Plugin(object):
+    class Plugin:
         @hookimpl
         def hello(self, arg):
             return arg + 1
@@ -219,7 +219,7 @@ def test_hookrelay_registration_by_specname(pm):
     """Verify hook caller instances may also be registered by specifying a
     specname option to the hookimpl"""
 
-    class Api(object):
+    class Api:
         @hookspec
         def hello(self, arg):
             "api hook 1"
@@ -229,7 +229,7 @@ def test_hookrelay_registration_by_specname(pm):
     assert hasattr(hook, "hello")
     assert len(pm.hook.hello.get_hookimpls()) == 0
 
-    class Plugin(object):
+    class Plugin:
         @hookimpl(specname="hello")
         def foo(self, arg):
             return arg + 1
@@ -244,7 +244,7 @@ def test_hookrelay_registration_by_specname_raises(pm):
     """Verify using specname still raises the types of errors during registration as it
     would have without using specname."""
 
-    class Api(object):
+    class Api:
         @hookspec
         def hello(self, arg):
             "api hook 1"
@@ -252,7 +252,7 @@ def test_hookrelay_registration_by_specname_raises(pm):
     pm.add_hookspecs(Api)
 
     # make sure a bad signature still raises an error when using specname
-    class Plugin(object):
+    class Plugin:
         @hookimpl(specname="hello")
         def foo(self, arg, too, many, args):
             return arg + 1
@@ -262,7 +262,7 @@ def test_hookrelay_registration_by_specname_raises(pm):
 
     # make sure check_pending still fails if specname doesn't have a
     # corresponding spec.  EVEN if the function name matches one.
-    class Plugin2(object):
+    class Plugin2:
         @hookimpl(specname="bar")
         def hello(self, arg):
             return arg + 1
