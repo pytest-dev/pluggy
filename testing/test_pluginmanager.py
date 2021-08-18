@@ -78,13 +78,14 @@ def test_pm_name(pm):
     name = pm.register(a1, name="hello")
     assert name == "hello"
     pm.unregister(a1)
-    assert pm.get_plugin(a1) is None
+    assert pm.get_name(a1) is None
+    assert pm.get_plugin(name) is None
     assert not pm.is_registered(a1)
     assert not pm.get_plugins()
     name2 = pm.register(a1, name="hello")
     assert name2 == name
     pm.unregister(name="hello")
-    assert pm.get_plugin(a1) is None
+    assert pm.get_plugin("hello") is None
     assert not pm.is_registered(a1)
     assert not pm.get_plugins()
 

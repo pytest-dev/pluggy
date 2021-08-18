@@ -45,7 +45,7 @@ class _Result:
     def from_call(cls, func: HookFunction) -> "_Result":
         __tracebackhide__ = True
         result = None
-        excinfo: EXCINFO = None, None, None
+        excinfo = None, None, None  # type: EXCINFO
         try:
             result = func()
         except BaseException:

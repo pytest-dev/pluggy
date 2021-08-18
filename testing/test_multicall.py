@@ -60,7 +60,7 @@ def test_call_none_is_no_result():
 
     res = MC([m1, m2], {}, firstresult=True)
     assert res == 1
-    res = MC([m1, m2], {}, {})
+    res = MC([m1, m2], {}, firstresult=False)
     assert res == [1]
 
 

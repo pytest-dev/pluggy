@@ -13,6 +13,7 @@ __all__ = [
     "HookimplMarker",
 ]
 
-from ._manager import PluginManager, PluginValidationError
+from ._errors import PluginValidationError
+from ._manager import PluginManager
 from ._callers import HookCallError
 from ._hooks import HookspecMarker, HookimplMarker

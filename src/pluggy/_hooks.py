@@ -14,19 +14,15 @@ from typing import (
     cast,
 )
 from types import FunctionType
-from typing_extensions import Literal, TypedDict
+
+from pluggy._typing import HookSpecMarkerData, HookImplMarkerSpec
+from typing_extensions import Literal
 from ._inspect import varnames
 from ._result import HookFunction, SomeResult
 from ._callers import HookArgs, HookResultCallback
 
 if TYPE_CHECKING:
     from ._manager import HookExecCallable
-
-
-class HookSpecMarkerData(TypedDict):
-    firstresult: bool
-    historic: bool
-    warn_on_impl: Optional[Warning]
 
 
 class HookspecMarker:
@@ -89,10 +85,13 @@ class HookspecMarker:
             setattr(
                 func,
                 self.project_name + "_spec",
-                HookSpecMarkerData(
-                    firstresult=firstresult,
-                    historic=historic,
-                    warn_on_impl=warn_on_impl,
+                cast(
+                    HookSpecMarkerData,
+                    dict(
+                        firstresult=firstresult,
+                        historic=historic,
+                        warn_on_impl=warn_on_impl,
+                    ),
                 ),
             )
             return func
@@ -101,14 +100,6 @@ class HookspecMarker:
             return setattr_hookspec_opts(function)
         else:
             return setattr_hookspec_opts
-
-
-class HookImplMarkerSpec(TypedDict):
-    hookwrapper: bool
-    optionalhook: bool
-    tryfirst: bool
-    trylast: bool
-    specname: Optional[str]
 
 
 class HookimplMarker:
@@ -190,13 +181,24 @@ def normalize_hookimpl_opts(
     opts.setdefault("specname", None)
 
 
-class _HookRelay:
+class _HookRelay(dict):
     """hook holder object for performing 1:N hook calls where N is the number
     of registered plugins.
 
     """
 
-    __dict__: Dict[str, "_HookCaller"]
+    def __setattr__(self, name: str, value: "_HookCaller"):
+        self[name] = value
+
+    def __getattr__(self, name: str) -> "_HookCaller":
+        val = self.get(name)
+        if val is None:
+            raise AttributeError(name)
+        else:
+            return val
+
+    def __repr__(self) -> str:
+        return f"<HookRelay {sorted(self.keys())}"
 
 
 class _HookCaller:

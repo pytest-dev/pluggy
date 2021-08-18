@@ -2,18 +2,21 @@ import inspect
 import sys
 import warnings
 from collections import defaultdict
+
+from pluggy import PluginValidationError
+from pluggy._entrypoints import DistFacade
+
 from . import _tracing
-from ._callers import _Result, _multicall, HookImpls, HookArgs
+from ._callers import _Result, _multicall, HookImpls, HookArgs, HookExecCallable
 from ._hooks import (
     HookImpl,
     _HookRelay,
     _HookCaller,
     normalize_hookimpl_opts,
-    HookImplMarkerSpec,
-    HookSpecMarkerData,
 )
-from ._result import HookFunction, SomeResult
-from typing import List, Dict, Callable, cast, Optional, Tuple, Set, Union
+from pluggy._typing import HookSpecMarkerData, HookImplMarkerSpec
+from ._result import HookFunction
+from typing import List, Dict, Callable, cast, Optional, Tuple, Set
 
 if sys.version_info >= (3, 8):
     from importlib import metadata as importlib_metadata
@@ -28,45 +31,6 @@ def _warn_for_function(warning: Warning, function: HookFunction) -> None:
         lineno=function.__code__.co_firstlineno,
         filename=function.__code__.co_filename,
     )
-
-
-class PluginValidationError(Exception):
-    """plugin failed validation.
-
-    :param object plugin: the plugin which failed validation,
-        may be a module or an arbitrary object.
-    """
-
-    plugin: object
-
-    def __init__(self, plugin: object, message: str):
-        self.plugin = plugin
-        super(Exception, self).__init__(message)
-
-
-class DistFacade:
-    """Emulate a pkg_resources Distribution"""
-
-    def __init__(self, dist: importlib_metadata.Distribution):
-        self._dist = dist
-
-    @property
-    def project_name(self) -> str:
-        return cast(str, self._dist.metadata["name"])
-
-    def __getattr__(
-        self, attr: str, default: Optional[object] = None
-    ) -> Optional[object]:
-        return cast(Optional[object], getattr(self._dist, attr, default))
-
-    def __dir__(self) -> List[str]:
-        return sorted(dir(self._dist) + ["_dist", "project_name"])
-
-
-HookExecCallable = Callable[
-    [str, List["HookImpl"], Dict[str, object], bool],
-    Union[SomeResult, List[SomeResult]],
-]
 
 
 class PluginManager:
@@ -297,15 +261,15 @@ class PluginManager:
         if hookimpl.hookwrapper and not inspect.isgeneratorfunction(hookimpl.function):
             raise PluginValidationError(
                 hookimpl.plugin,
-                "Plugin %r for hook %r\nhookimpl definition: %s\n"
-                "Declared as hookwrapper=True but function is not a generator function"
-                % (hookimpl.plugin_name, hook.name, _formatdef(hookimpl.function)),
+                f"Plugin {hookimpl.plugin_name} for hook {hook.name}\n"
+                f"hookimpl definition: {_formatdef(hookimpl.function)}\n"
+                "Declared as hookwrapper=True but function is not a generator function",
             )
 
     def check_pending(self) -> None:
         """Verify that all hooks which have not been verified against
         a hook specification are optional, otherwise raise :py:class:`.PluginValidationError`."""
-        for name in self.hook.__dict__:
+        for name in self.hook:
             if name[0] != "_":
                 hook: _HookCaller = getattr(self.hook, name)
                 if not hook.has_spec():
