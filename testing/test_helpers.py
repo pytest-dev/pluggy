@@ -1,4 +1,4 @@
-from pluggy._hooks import varnames
+from pluggy._inspect import varnames
 from pluggy._manager import _formatdef
 
 

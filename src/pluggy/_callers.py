@@ -3,10 +3,51 @@ Call loop machinery
 """
 import sys
 
-from ._result import HookCallError, _Result, _raise_wrapfail
+from ._result import (
+    HookCallError,
+    _Result,
+    WrapResult,
+    _raise_wrapfail,
+    EXCINFO,
+    SomeResult,
+)
+from typing import List, TYPE_CHECKING, Dict, cast, overload, Union, Callable
+from typing_extensions import Literal
+
+if TYPE_CHECKING:
+    from ._hooks import HookImpl
+
+HookImpls = List["HookImpl"]
+HookArgs = Dict[str, object]
+HookResultCallback = Callable[[SomeResult], SomeResult]
 
 
-def _multicall(hook_name, hook_impls, caller_kwargs, firstresult):
+@overload
+def _multicall(
+    hook_name: str,
+    hook_impls: HookImpls,
+    caller_kwargs: HookArgs,
+    firstresult: Literal[False],
+) -> List[SomeResult]:
+    pass
+
+
+@overload
+def _multicall(
+    hook_name: str,
+    hook_impls: HookImpls,
+    caller_kwargs: HookArgs,
+    firstresult: Literal[True],
+) -> SomeResult:
+    pass
+
+
+def _multicall(
+    hook_name: str,
+    hook_impls: HookImpls,
+    caller_kwargs: HookArgs,
+    firstresult: bool,
+) -> Union[List[SomeResult], SomeResult]:
     """Execute a call into multiple python functions/methods and return the
     result(s).
 
@@ -14,9 +55,9 @@ def _multicall(hook_name, hook_impls, caller_kwargs, firstresult):
     """
     __tracebackhide__ = True
     results = []
-    excinfo = None
+    excinfo: EXCINFO = None, None, None
     try:  # run impl and wrapper setup functions in a loop
-        teardowns = []
+        teardowns: List[WrapResult] = []
         try:
             for hook_impl in reversed(hook_impls):
                 try:
@@ -30,7 +71,7 @@ def _multicall(hook_name, hook_impls, caller_kwargs, firstresult):
 
                 if hook_impl.hookwrapper:
                     try:
-                        gen = hook_impl.function(*args)
+                        gen = cast(WrapResult, hook_impl.function(*args))
                         next(gen)  # first yield
                         teardowns.append(gen)
                     except StopIteration:
