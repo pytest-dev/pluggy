@@ -373,7 +373,7 @@ class PluginManager:
         same arguments as ``before`` but also a :py:class:`pluggy._callers._Result` object
         which represents the result of the overall hook call.
         """
-        oldcall: HookExecCallable = self._self_inner_hookexec  # type: ignore
+        oldcall: HookExecCallable = self._inner_hookexec  # type: ignore
 
         def traced_hookexec(
             hook_name: str,

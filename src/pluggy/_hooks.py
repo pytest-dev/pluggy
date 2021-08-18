@@ -213,7 +213,7 @@ class _HookCaller:
     def __init__(
         self,
         name: str,
-        hook_execute: HookExecCallable,
+        hook_execute: "HookExecCallable",
         specmodule_or_class: Optional[object] = None,
         spec_opts: Optional[HookSpecMarkerData] = None,
     ):
