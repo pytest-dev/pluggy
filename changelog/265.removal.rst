@@ -1,3 +1,0 @@
-Remove the ``_Result.result`` property. Use ``_Result.get_result()`` instead.
-Note that unlike ``result``, ``get_result()`` raises the exception if the hook raised.
-The deprecation was announced in release ``0.6.0``.

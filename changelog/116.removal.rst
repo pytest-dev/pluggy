@@ -1,3 +1,0 @@
-Remove deprecated ``implprefix`` support.
-Decorate hook implementations using an instance of HookimplMarker instead.
-The deprecation was announced in release ``0.7.0``.
