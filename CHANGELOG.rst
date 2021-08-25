@@ -5,6 +5,8 @@ Changelog
 .. towncrier release notes start
 
 pluggy 1.0.0 (2021-08-25)
+=========================
+
 Deprecations and Removals
 -------------------------
 
