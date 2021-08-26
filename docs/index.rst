@@ -224,6 +224,8 @@ which has been appropriately marked.
 *hookimpls* are loaded from a plugin using the
 :py:meth:`~pluggy.PluginManager.register()` method:
 
+*hookimpls* must be hashable.
+
 .. code-block:: python
 
     import sys
