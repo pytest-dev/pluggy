@@ -79,6 +79,10 @@ Features
 
 - `#309 <https://github.com/pytest-dev/pluggy/issues/309>`_: Add official support for Python 3.9.
 
+- `#251 <https://github.com/pytest-dev/pluggy/issues/251>`_: Add ``specname`` option to ``@hookimpl``. If ``specname`` is provided, it will be used
+  instead of the function name when matching this hook implementation to a hook specification during registration (allowing a plugin to register
+  a hook implementation that was not named the same thing as the corresponding ``@hookspec``).
+
 
 pluggy 0.13.1 (2019-11-21)
 ==========================
