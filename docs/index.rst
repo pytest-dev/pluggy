@@ -283,7 +283,7 @@ example above).  Note: there is *no* strict requirement that each *hookimpl*
 has a corresponding *hookspec* (see
 :ref:`enforcing spec validation <enforcing>`).
 
-*new in version 0.13.2:*
+*new in version 1.0.0:*
 
 To override the default behavior, a *hookimpl* may also be matched to a
 *hookspec* in the *host* program with a non-matching function name by using
