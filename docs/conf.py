@@ -84,4 +84,5 @@ intersphinx_mapping = {
     "setuptools": ("https://setuptools.readthedocs.io/en/latest", None),
     "tox": ("https://tox.readthedocs.io/en/latest", None),
     "devpi": ("https://devpi.net/docs/devpi/devpi/stable/+doc/", None),
+    "kedro": ("https://kedro.readthedocs.io/en/latest/", None)
 }
