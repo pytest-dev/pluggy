@@ -948,7 +948,7 @@ Table of contents
 .. _Python interpreters:
     https://github.com/pytest-dev/pluggy/blob/master/tox.ini#L2
 .. _500+ plugins:
-    http://plugincompat.herokuapp.com/
+    https://docs.pytest.org/en/latest/reference/plugin_list.html
 .. _pre-commit:
     https://pre-commit.com/
 
