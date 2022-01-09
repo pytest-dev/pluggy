@@ -75,7 +75,7 @@ def test_plugin_getattr_raises_errors():
 
     class DontTouchMe:
         def __getattr__(self, x):
-            raise Exception("cant touch me")
+            raise Exception("can't touch me")
 
     class Module:
         pass
