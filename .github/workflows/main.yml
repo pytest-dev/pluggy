@@ -24,7 +24,7 @@ jobs:
           "windows-pypy3",
 
           "ubuntu-py36",
-          "ubuntu-py36-pytestmain",
+          "ubuntu-py37-pytestmain",
           "ubuntu-py37",
           "ubuntu-py38",
           "ubuntu-py39",
@@ -54,10 +54,10 @@ jobs:
             os: ubuntu-latest
             tox_env: "py36"
             use_coverage: true
-          - name: "ubuntu-py36-pytestmain"
-            python: "3.6"
+          - name: "ubuntu-py37-pytestmain"
+            python: "3.7"
             os: ubuntu-latest
-            tox_env: "py36-pytestmain"
+            tox_env: "py37-pytestmain"
             use_coverage: true
           - name: "ubuntu-py37"
             python: "3.7"
