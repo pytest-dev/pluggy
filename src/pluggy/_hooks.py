@@ -69,7 +69,7 @@ class HookspecMarker:
         historic: bool = False,
         warn_on_impl: Optional[Warning] = None,
     ) -> _F:
-        pass
+        ...
 
     @overload  # noqa: F811
     def __call__(  # noqa: F811
@@ -79,7 +79,7 @@ class HookspecMarker:
         historic: bool = ...,
         warn_on_impl: Optional[Warning] = ...,
     ) -> Callable[[_F], _F]:
-        pass
+        ...
 
     def __call__(  # noqa: F811
         self,
@@ -140,7 +140,7 @@ class HookimplMarker:
         trylast: bool = ...,
         specname: Optional[str] = ...,
     ) -> _F:
-        pass
+        ...
 
     @overload  # noqa: F811
     def __call__(  # noqa: F811
@@ -152,7 +152,7 @@ class HookimplMarker:
         trylast: bool = ...,
         specname: Optional[str] = ...,
     ) -> Callable[[_F], _F]:
-        pass
+        ...
 
     def __call__(  # noqa: F811
         self,
@@ -270,7 +270,7 @@ class _HookRelay:
     if TYPE_CHECKING:
 
         def __getattr__(self, name: str) -> "_HookCaller":
-            pass
+            ...
 
 
 class _HookCaller:
