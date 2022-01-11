@@ -49,6 +49,7 @@ template = "changelog/_template.rst"
 [tool.mypy]
 mypy_path = "src"
 check_untyped_defs = true
+# Hopefully we can set this someday!
 # disallow_any_expr = true
 disallow_any_generics = true
 disallow_any_unimported = true
