@@ -70,22 +70,22 @@ def test_call_hook(benchmark, plugins, wrappers, nesting):
             yield
 
     class Plugin:
-        def __init__(self, num):
+        def __init__(self, num: int) -> None:
             self.num = num
 
-        def __repr__(self):
+        def __repr__(self) -> str:
             return f"<Plugin {self.num}>"
 
         @hookimpl
-        def fun(self, hooks, nesting: int):
+        def fun(self, hooks, nesting: int) -> None:
             if nesting:
                 hooks.fun(hooks=hooks, nesting=nesting - 1)
 
     class PluginWrap:
-        def __init__(self, num):
+        def __init__(self, num: int) -> None:
             self.num = num
 
-        def __repr__(self):
+        def __repr__(self) -> str:
             return f"<PluginWrap {self.num}>"
 
         @hookimpl(hookwrapper=True)
