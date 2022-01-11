@@ -278,7 +278,7 @@ class _HookCaller:
         self,
         name: str,
         hook_execute: _HookExec,
-        specmodule_or_class: Optional[_Namespace] = None,
+        spec_argnames: Optional[Tuple[str, ...]] = None,
         spec_opts: Optional["_HookSpecOpts"] = None,
     ) -> None:
         self.name = name
@@ -288,13 +288,11 @@ class _HookCaller:
         self._call_history: Optional[
             List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
         ] = None
-        self.spec: Optional[HookSpec] = None
-        if specmodule_or_class is not None:
-            assert spec_opts is not None
-            self.set_specification(specmodule_or_class, spec_opts)
+        self.spec_argnames = spec_argnames
+        self.spec_opts = spec_opts
 
     def has_spec(self) -> bool:
-        return self.spec is not None
+        return self.spec_opts is not None
 
     def set_specification(
         self,
@@ -302,9 +300,19 @@ class _HookCaller:
         spec_opts: "_HookSpecOpts",
     ) -> None:
         assert not self.has_spec()
-        self.spec = HookSpec(specmodule_or_class, self.name, spec_opts)
+
+        spec_function: Callable[..., object] = getattr(specmodule_or_class, self.name)
+        self.spec_argnames, spec_kwargnames = varnames(spec_function)
+        self.spec_opts = spec_opts
+
         if spec_opts.get("historic"):
             self._call_history = []
+
+    @property
+    def warn_on_impl(self) -> Optional[Warning]:
+        if self.spec_opts is None:
+            return None
+        return self.spec_opts.get("warn_on_impl")
 
     def is_historic(self) -> bool:
         return self._call_history is not None
@@ -352,10 +360,11 @@ class _HookCaller:
         assert not self.is_historic()
 
         # This is written to avoid expensive operations when not needed.
-        if self.spec:
-            for argname in self.spec.argnames:
+        if self.spec_opts is not None:
+            assert self.spec_argnames is not None
+            for argname in self.spec_argnames:
                 if argname not in kwargs:
-                    notincall = tuple(set(self.spec.argnames) - kwargs.keys())
+                    notincall = tuple(set(self.spec_argnames) - kwargs.keys())
                     warnings.warn(
                         "Argument(s) {} which are declared in the hookspec "
                         "can not be found in this hook call".format(notincall),
@@ -363,7 +372,7 @@ class _HookCaller:
                     )
                     break
 
-            firstresult = self.spec.opts.get("firstresult", False)
+            firstresult = self.spec_opts.get("firstresult", False)
         else:
             firstresult = False
 
@@ -445,13 +454,3 @@ class HookImpl:
 
     def __repr__(self) -> str:
         return f"<HookImpl plugin_name={self.plugin_name!r}, plugin={self.plugin!r}>"
-
-
-class HookSpec:
-    def __init__(self, namespace: _Namespace, name: str, opts: "_HookSpecOpts") -> None:
-        self.namespace = namespace
-        self.function: Callable[..., object] = getattr(namespace, name)
-        self.name = name
-        self.argnames, self.kwargnames = varnames(self.function)
-        self.opts = opts
-        self.warn_on_impl = opts.get("warn_on_impl")

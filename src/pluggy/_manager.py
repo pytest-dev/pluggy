@@ -22,8 +22,8 @@ from . import _tracing
 from ._result import _Result
 from ._callers import _multicall
 from ._hooks import (
+    HookspecMarker,
     HookImpl,
-    HookSpec,
     _HookCaller,
     _HookImplFunction,
     _HookRelay,
@@ -216,7 +216,8 @@ class PluginManager:
             if spec_opts is not None:
                 hc: Optional[_HookCaller] = getattr(self.hook, name, None)
                 if hc is None:
-                    hc = _HookCaller(name, self._hookexec, module_or_class, spec_opts)
+                    hc = _HookCaller(name, self._hookexec)
+                    hc.set_specification(module_or_class, spec_opts)
                     setattr(self.hook, name, hc)
                 else:
                     # plugins registered this hook without knowing the spec
@@ -233,7 +234,7 @@ class PluginManager:
     def parse_hookspec_opts(
         self, module_or_class: _Namespace, name: str
     ) -> Optional["_HookSpecOpts"]:
-        method: HookSpec = getattr(module_or_class, name)
+        method: HookspecMarker = getattr(module_or_class, name)
         opts: Optional[_HookSpecOpts] = getattr(
             method, self.project_name + "_spec", None
         )
@@ -279,12 +280,12 @@ class PluginManager:
                 % (hookimpl.plugin_name, hook.name),
             )
 
-        assert hook.spec is not None
-        if hook.spec.warn_on_impl:
-            _warn_for_function(hook.spec.warn_on_impl, hookimpl.function)
+        if hook.warn_on_impl:
+            _warn_for_function(hook.warn_on_impl, hookimpl.function)
 
         # positional arg checking
-        notinspec = set(hookimpl.argnames) - set(hook.spec.argnames)
+        assert hook.spec_argnames is not None
+        notinspec = set(hookimpl.argnames) - set(hook.spec_argnames)
         if notinspec:
             raise PluginValidationError(
                 hookimpl.plugin,
@@ -430,9 +431,8 @@ class PluginManager:
         orig: _HookCaller = getattr(self.hook, name)
         plugins_to_remove = [plug for plug in remove_plugins if hasattr(plug, name)]
         if plugins_to_remove:
-            assert orig.spec is not None
             hc = _HookCaller(
-                orig.name, orig._hookexec, orig.spec.namespace, orig.spec.opts
+                orig.name, orig._hookexec, orig.spec_argnames, orig.spec_opts
             )
             for hookimpl in orig.get_hookimpls():
                 plugin = hookimpl.plugin

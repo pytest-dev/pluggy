@@ -182,12 +182,12 @@ def test_hookspec(pm: PluginManager) -> None:
             pass
 
     pm.add_hookspecs(HookSpec)
-    assert pm.hook.he_myhook1.spec is not None
-    assert not pm.hook.he_myhook1.spec.opts["firstresult"]
-    assert pm.hook.he_myhook2.spec is not None
-    assert pm.hook.he_myhook2.spec.opts["firstresult"]
-    assert pm.hook.he_myhook3.spec is not None
-    assert not pm.hook.he_myhook3.spec.opts["firstresult"]
+    assert pm.hook.he_myhook1.spec_opts is not None
+    assert not pm.hook.he_myhook1.spec_opts["firstresult"]
+    assert pm.hook.he_myhook2.spec_opts is not None
+    assert pm.hook.he_myhook2.spec_opts["firstresult"]
+    assert pm.hook.he_myhook3.spec_opts is not None
+    assert not pm.hook.he_myhook3.spec_opts["firstresult"]
 
 
 @pytest.mark.parametrize("name", ["hookwrapper", "optionalhook", "tryfirst", "trylast"])
