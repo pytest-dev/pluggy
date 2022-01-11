@@ -213,3 +213,19 @@ def test_firstresult_no_plugin(pm: PluginManager) -> None:
     pm.add_hookspecs(Api)
     res = pm.hook.hello(arg=3)
     assert res is None
+
+
+def test_no_hookspec(pm: PluginManager) -> None:
+    """A hook with hookimpls can still be called even if no hookspec
+    was registered for it (and call_pending wasn't called to check
+    against it).
+    """
+
+    class Plugin:
+        @hookimpl
+        def hello(self, arg):
+            return "Plugin.hello"
+
+    pm.register(Plugin())
+
+    assert pm.hook.hello(arg=10, extra=20) == ["Plugin.hello"]
