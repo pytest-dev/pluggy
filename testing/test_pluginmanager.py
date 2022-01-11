@@ -153,20 +153,25 @@ def test_register_hookwrapper_not_a_generator_function(he_pm: PluginManager) -> 
 
 def test_register(pm: PluginManager) -> None:
     class MyPlugin:
-        pass
+        @hookimpl
+        def he_method1(self):
+            ...
 
     my = MyPlugin()
     pm.register(my)
-    assert my in pm.get_plugins()
+    assert pm.get_plugins() == {my}
     my2 = MyPlugin()
     pm.register(my2)
-    assert {my, my2}.issubset(pm.get_plugins())
+    assert pm.get_plugins() == {my, my2}
 
     assert pm.is_registered(my)
     assert pm.is_registered(my2)
     pm.unregister(my)
     assert not pm.is_registered(my)
-    assert my not in pm.get_plugins()
+    assert pm.get_plugins() == {my2}
+
+    with pytest.raises(AssertionError, match=r"not registered"):
+        pm.unregister(my)
 
 
 def test_register_unknown_hooks(pm: PluginManager) -> None:
@@ -466,6 +471,58 @@ def test_get_hookimpls(pm: PluginManager) -> None:
     hookimpls = pm.hook.he_method1.get_hookimpls()
     hook_plugins = [item.plugin for item in hookimpls]
     assert hook_plugins == [plugin1, plugin2]
+
+
+def test_get_hookcallers(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec
+        def he_method1(self):
+            ...
+
+        @hookspec
+        def he_method2(self):
+            ...
+
+    pm.add_hookspecs(Hooks)
+
+    class Plugin1:
+        @hookimpl
+        def he_method1(self):
+            ...
+
+        @hookimpl
+        def he_method2(self):
+            ...
+
+    class Plugin2:
+        @hookimpl
+        def he_method1(self):
+            ...
+
+    class Plugin3:
+        @hookimpl
+        def he_method2(self):
+            ...
+
+    plugin1 = Plugin1()
+    pm.register(plugin1)
+    plugin2 = Plugin2()
+    pm.register(plugin2)
+    plugin3 = Plugin3()
+    pm.register(plugin3)
+
+    hookcallers1 = pm.get_hookcallers(plugin1)
+    assert hookcallers1 is not None
+    assert len(hookcallers1) == 2
+    hookcallers2 = pm.get_hookcallers(plugin2)
+    assert hookcallers2 is not None
+    assert len(hookcallers2) == 1
+    hookcallers3 = pm.get_hookcallers(plugin3)
+    assert hookcallers3 is not None
+    assert len(hookcallers3) == 1
+    assert hookcallers1 == hookcallers2 + hookcallers3
+
+    assert pm.get_hookcallers(object()) is None
 
 
 def test_add_hookspecs_nohooks(pm: PluginManager) -> None:
