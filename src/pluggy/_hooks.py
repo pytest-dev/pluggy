@@ -407,22 +407,24 @@ class _HookCaller:
             not self.is_historic()
         ), "Cannot directly call a historic hook - use call_historic instead."
         self._verify_all_args_are_provided(kwargs)
-        old = list(self._nonwrappers), list(self._wrappers)
+        opts: "_HookImplOpts" = {
+            "hookwrapper": False,
+            "optionalhook": False,
+            "trylast": False,
+            "tryfirst": False,
+            "specname": None,
+        }
+        hookimpls = self.get_hookimpls()
         for method in methods:
-            opts: "_HookImplOpts" = {
-                "hookwrapper": False,
-                "optionalhook": False,
-                "trylast": False,
-                "tryfirst": False,
-                "specname": None,
-            }
             hookimpl = HookImpl(None, "<temp>", method, opts)
-            self._add_hookimpl(hookimpl)
+            # Find last non-tryfirst nonwrapper method.
+            i = len(hookimpls) - 1
+            until = len(self._nonwrappers)
+            while i >= until and hookimpls[i].tryfirst:
+                i -= 1
+            hookimpls.insert(i + 1, hookimpl)
         firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
-        try:
-            return self._hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
-        finally:
-            self._nonwrappers, self._wrappers = old
+        return self._hookexec(self.name, hookimpls, kwargs, firstresult)
 
     def _maybe_apply_history(self, method: "HookImpl") -> None:
         """Apply call history to a new hookimpl if it is marked as historic."""
