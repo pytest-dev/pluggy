@@ -403,6 +403,10 @@ class _HookCaller:
     ) -> Any:
         """Call the hook with some additional temporarily participating
         methods using the specified ``kwargs`` as call parameters."""
+        assert (
+            not self.is_historic()
+        ), "Cannot directly call a historic hook - use call_historic instead."
+        self._verify_all_args_are_provided(kwargs)
         old = list(self._nonwrappers), list(self._wrappers)
         for method in methods:
             opts: "_HookImplOpts" = {
@@ -414,8 +418,9 @@ class _HookCaller:
             }
             hookimpl = HookImpl(None, "<temp>", method, opts)
             self._add_hookimpl(hookimpl)
+        firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
         try:
-            return self(**kwargs)
+            return self._hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
         finally:
             self._nonwrappers, self._wrappers = old
 
