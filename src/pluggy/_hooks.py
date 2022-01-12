@@ -24,6 +24,7 @@ from ._result import _Result
 
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
+    from typing_extensions import Final
 
 
 _T = TypeVar("_T")
@@ -61,7 +62,7 @@ class HookspecMarker:
     __slots__ = ("project_name",)
 
     def __init__(self, project_name: str) -> None:
-        self.project_name = project_name
+        self.project_name: "Final" = project_name
 
     @overload
     def __call__(
@@ -132,7 +133,7 @@ class HookimplMarker:
     __slots__ = ("project_name",)
 
     def __init__(self, project_name: str) -> None:
-        self.project_name = project_name
+        self.project_name: "Final" = project_name
 
     @overload
     def __call__(
@@ -277,6 +278,9 @@ class _HookRelay:
             ...
 
 
+_CallHistory = List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
+
+
 class _HookCaller:
     __slots__ = (
         "name",
@@ -294,13 +298,11 @@ class _HookCaller:
         specmodule_or_class: Optional[_Namespace] = None,
         spec_opts: Optional["_HookSpecOpts"] = None,
     ) -> None:
-        self.name = name
-        self._hookexec = hook_execute
-        self._wrappers: List[HookImpl] = []
-        self._nonwrappers: List[HookImpl] = []
-        self._call_history: Optional[
-            List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
-        ] = None
+        self.name: "Final" = name
+        self._hookexec: "Final" = hook_execute
+        self._wrappers: "Final[List[HookImpl]]" = []
+        self._nonwrappers: "Final[List[HookImpl]]" = []
+        self._call_history: Optional[_CallHistory] = None
         self.spec: Optional[HookSpec] = None
         if specmodule_or_class is not None:
             assert spec_opts is not None
@@ -472,7 +474,7 @@ class HookImpl:
         function: _HookImplFunction[object],
         hook_impl_opts: "_HookImplOpts",
     ) -> None:
-        self.function = function
+        self.function: "Final" = function
         self.argnames, self.kwargnames = varnames(self.function)
         self.plugin = plugin
         self.opts = hook_impl_opts

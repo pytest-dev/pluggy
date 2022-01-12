@@ -38,6 +38,8 @@ else:
     import importlib_metadata
 
 if TYPE_CHECKING:
+    from typing_extensions import Final
+
     from ._hooks import _HookImplOpts, _HookSpecOpts
 
 _BeforeTrace = Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]
@@ -110,12 +112,12 @@ class PluginManager:
     )
 
     def __init__(self, project_name: str) -> None:
-        self.project_name = project_name
-        self._name2plugin: Dict[str, _Plugin] = {}
-        self._plugin2hookcallers: Dict[_Plugin, List[_HookCaller]] = {}
-        self._plugin_distinfo: List[Tuple[_Plugin, DistFacade]] = []
-        self.trace = _tracing.TagTracer().get("pluginmanage")
-        self.hook = _HookRelay()
+        self.project_name: "Final" = project_name
+        self._name2plugin: "Final[Dict[str, _Plugin]]" = {}
+        self._plugin2hookcallers: "Final[Dict[_Plugin, List[_HookCaller]]]" = {}
+        self._plugin_distinfo: "Final[List[Tuple[_Plugin, DistFacade]]]" = []
+        self.trace: "Final" = _tracing.TagTracer().get("pluginmanage")
+        self.hook: "Final" = _HookRelay()
         self._inner_hookexec = _multicall
 
     def _hookexec(
