@@ -346,27 +346,32 @@ class _HookCaller:
     def __repr__(self) -> str:
         return f"<_HookCaller {self.name!r}>"
 
-    def __call__(self, *args: object, **kwargs: object) -> Any:
-        if args:
-            raise TypeError("hook calling supports only keyword arguments")
-        assert not self.is_historic()
-
+    def _verify_all_args_are_provided(self, kwargs: Mapping[str, object]) -> None:
         # This is written to avoid expensive operations when not needed.
         if self.spec:
             for argname in self.spec.argnames:
                 if argname not in kwargs:
-                    notincall = tuple(set(self.spec.argnames) - kwargs.keys())
+                    notincall = ", ".join(
+                        repr(argname)
+                        for argname in self.spec.argnames
+                        # Avoid self.spec.argnames - kwargs.keys() - doesn't preserve order.
+                        if argname not in kwargs.keys()
+                    )
                     warnings.warn(
                         "Argument(s) {} which are declared in the hookspec "
-                        "can not be found in this hook call".format(notincall),
+                        "cannot be found in this hook call".format(notincall),
                         stacklevel=2,
                     )
                     break
 
-            firstresult = self.spec.opts.get("firstresult", False)
-        else:
-            firstresult = False
-
+    def __call__(self, *args: object, **kwargs: object) -> Any:
+        if args:
+            raise TypeError("hook calling supports only keyword arguments")
+        assert (
+            not self.is_historic()
+        ), "Cannot directly call a historic hook - use call_historic instead."
+        self._verify_all_args_are_provided(kwargs)
+        firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
         return self._hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
 
     def call_historic(
@@ -382,6 +387,7 @@ class _HookCaller:
         """
         assert self._call_history is not None
         kwargs = kwargs or {}
+        self._verify_all_args_are_provided(kwargs)
         self._call_history.append((kwargs, result_callback))
         # Historizing hooks don't return results.
         # Remember firstresult isn't compatible with historic.
