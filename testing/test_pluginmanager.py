@@ -221,6 +221,39 @@ def test_register_historic(pm: PluginManager) -> None:
     assert out == [1, 10, 120, 12]
 
 
+def test_historic_with_subset_hook_caller(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec(historic=True)
+        def he_method1(self, arg):
+            ...
+
+    pm.add_hookspecs(Hooks)
+
+    out = []
+
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg):
+            out.append(arg)
+
+    plugin = Plugin()
+    pm.register(plugin)
+
+    class Plugin2:
+        @hookimpl
+        def he_method1(self, arg):
+            out.append(arg * 10)
+
+    shc = pm.subset_hook_caller("he_method1", remove_plugins=[plugin])
+    shc.call_historic(kwargs=dict(arg=1))
+
+    pm.register(Plugin2())
+    assert out == [10]
+
+    pm.register(Plugin())
+    assert out == [10, 1]
+
+
 @pytest.mark.parametrize("result_callback", [True, False])
 def test_with_result_memorized(pm: PluginManager, result_callback: bool) -> None:
     """Verify that ``_HookCaller._maybe_apply_history()`
@@ -399,6 +432,8 @@ def test_subset_hook_caller(pm: PluginManager) -> None:
 
     pm.hook.he_method1(arg=1)
     assert out == [10]
+
+    assert repr(hc) == "<_SubsetHookCaller 'he_method1'>"
 
 
 def test_get_hookimpls(pm: PluginManager) -> None:

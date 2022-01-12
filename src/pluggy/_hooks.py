@@ -6,6 +6,7 @@ import sys
 import warnings
 from types import ModuleType
 from typing import (
+    AbstractSet,
     Any,
     Callable,
     Generator,
@@ -448,6 +449,53 @@ class _HookCaller:
                     # XXX: remember firstresult isn't compat with historic
                     assert isinstance(res, list)
                     result_callback(res[0])
+
+
+class _SubsetHookCaller(_HookCaller):
+    """A proxy to another HookCaller which manages calls to all registered
+    plugins except the ones from remove_plugins."""
+
+    # This class is unusual: in inhertits from `_HookCaller` so all of
+    # the *code* runs in the class, but it delegates all underlying *data*
+    # to the original HookCaller.
+    # `subset_hook_caller` used to be implemented by creating a full-fledged
+    # HookCaller, copying all hookimpls from the original. This had problems
+    # with memory leaks (#346) and historic calls (#347), which make a proxy
+    # approach better.
+    # An alternative implementation is to use a `_getattr__`/`__getattribute__`
+    # proxy, however that adds more overhead and is more tricky to implement.
+
+    __slots__ = (
+        "_orig",
+        "_remove_plugins",
+        "name",
+        "_hookexec",
+    )
+
+    def __init__(self, orig: _HookCaller, remove_plugins: AbstractSet[_Plugin]) -> None:
+        self._orig = orig
+        self._remove_plugins = remove_plugins
+        self.name = orig.name  # type: ignore[misc]
+        self._hookexec = orig._hookexec  # type: ignore[misc]
+
+    @property  # type: ignore[misc]
+    def _hookimpls(self) -> List["HookImpl"]:  # type: ignore[override]
+        return [
+            impl
+            for impl in self._orig._hookimpls
+            if impl.plugin not in self._remove_plugins
+        ]
+
+    @property
+    def spec(self) -> Optional["HookSpec"]:  # type: ignore[override]
+        return self._orig.spec
+
+    @property
+    def _call_history(self) -> Optional[_CallHistory]:  # type: ignore[override]
+        return self._orig._call_history
+
+    def __repr__(self) -> str:
+        return f"<_SubsetHookCaller {self.name!r}>"
 
 
 class HookImpl:
