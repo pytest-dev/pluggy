@@ -58,6 +58,8 @@ class HookspecMarker:
     if the :py:class:`.PluginManager` uses the same project_name.
     """
 
+    __slots__ = ("project_name",)
+
     def __init__(self, project_name: str) -> None:
         self.project_name = project_name
 
@@ -126,6 +128,8 @@ class HookimplMarker:
     Calling :py:meth:`.PluginManager.register` later will discover all marked functions
     if the :py:class:`.PluginManager` uses the same project_name.
     """
+
+    __slots__ = ("project_name",)
 
     def __init__(self, project_name: str) -> None:
         self.project_name = project_name
@@ -263,9 +267,9 @@ def varnames(func: object) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
 
 class _HookRelay:
     """hook holder object for performing 1:N hook calls where N is the number
-    of registered plugins.
+    of registered plugins."""
 
-    """
+    __slots__ = ("__dict__",)
 
     if TYPE_CHECKING:
 
@@ -274,6 +278,15 @@ class _HookRelay:
 
 
 class _HookCaller:
+    __slots__ = (
+        "name",
+        "spec",
+        "_hookexec",
+        "_wrappers",
+        "_nonwrappers",
+        "_call_history",
+    )
+
     def __init__(
         self,
         name: str,
@@ -282,9 +295,9 @@ class _HookCaller:
         spec_opts: Optional["_HookSpecOpts"] = None,
     ) -> None:
         self.name = name
+        self._hookexec = hook_execute
         self._wrappers: List[HookImpl] = []
         self._nonwrappers: List[HookImpl] = []
-        self._hookexec = hook_execute
         self._call_history: Optional[
             List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
         ] = None
@@ -439,6 +452,19 @@ class _HookCaller:
 
 
 class HookImpl:
+    __slots__ = (
+        "function",
+        "argnames",
+        "kwargnames",
+        "plugin",
+        "opts",
+        "plugin_name",
+        "hookwrapper",
+        "optionalhook",
+        "tryfirst",
+        "trylast",
+    )
+
     def __init__(
         self,
         plugin: _Plugin,
@@ -461,6 +487,16 @@ class HookImpl:
 
 
 class HookSpec:
+    __slots__ = (
+        "namespace",
+        "function",
+        "name",
+        "argnames",
+        "kwargnames",
+        "opts",
+        "warn_on_impl",
+    )
+
     def __init__(self, namespace: _Namespace, name: str, opts: "_HookSpecOpts") -> None:
         self.namespace = namespace
         self.function: Callable[..., object] = getattr(namespace, name)

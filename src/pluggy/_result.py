@@ -38,6 +38,8 @@ class HookCallError(Exception):
 
 
 class _Result(Generic[_T]):
+    __slots__ = ("_result", "_excinfo")
+
     def __init__(self, result: Optional[_T], excinfo: Optional[_ExcInfo]) -> None:
         self._result = result
         self._excinfo = excinfo
