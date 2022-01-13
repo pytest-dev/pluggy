@@ -24,6 +24,7 @@ from ._result import _Result
 
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
+    from typing_extensions import Final
 
 
 _T = TypeVar("_T")
@@ -58,8 +59,10 @@ class HookspecMarker:
     if the :py:class:`.PluginManager` uses the same project_name.
     """
 
+    __slots__ = ("project_name",)
+
     def __init__(self, project_name: str) -> None:
-        self.project_name = project_name
+        self.project_name: "Final" = project_name
 
     @overload
     def __call__(
@@ -127,8 +130,10 @@ class HookimplMarker:
     if the :py:class:`.PluginManager` uses the same project_name.
     """
 
+    __slots__ = ("project_name",)
+
     def __init__(self, project_name: str) -> None:
-        self.project_name = project_name
+        self.project_name: "Final" = project_name
 
     @overload
     def __call__(
@@ -263,9 +268,9 @@ def varnames(func: object) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
 
 class _HookRelay:
     """hook holder object for performing 1:N hook calls where N is the number
-    of registered plugins.
+    of registered plugins."""
 
-    """
+    __slots__ = ("__dict__",)
 
     if TYPE_CHECKING:
 
@@ -273,7 +278,19 @@ class _HookRelay:
             ...
 
 
+_CallHistory = List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
+
+
 class _HookCaller:
+    __slots__ = (
+        "name",
+        "spec",
+        "_hookexec",
+        "_wrappers",
+        "_nonwrappers",
+        "_call_history",
+    )
+
     def __init__(
         self,
         name: str,
@@ -281,13 +298,11 @@ class _HookCaller:
         specmodule_or_class: Optional[_Namespace] = None,
         spec_opts: Optional["_HookSpecOpts"] = None,
     ) -> None:
-        self.name = name
-        self._wrappers: List[HookImpl] = []
-        self._nonwrappers: List[HookImpl] = []
-        self._hookexec = hook_execute
-        self._call_history: Optional[
-            List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
-        ] = None
+        self.name: "Final" = name
+        self._hookexec: "Final" = hook_execute
+        self._wrappers: "Final[List[HookImpl]]" = []
+        self._nonwrappers: "Final[List[HookImpl]]" = []
+        self._call_history: Optional[_CallHistory] = None
         self.spec: Optional[HookSpec] = None
         if specmodule_or_class is not None:
             assert spec_opts is not None
@@ -346,27 +361,32 @@ class _HookCaller:
     def __repr__(self) -> str:
         return f"<_HookCaller {self.name!r}>"
 
-    def __call__(self, *args: object, **kwargs: object) -> Any:
-        if args:
-            raise TypeError("hook calling supports only keyword arguments")
-        assert not self.is_historic()
-
+    def _verify_all_args_are_provided(self, kwargs: Mapping[str, object]) -> None:
         # This is written to avoid expensive operations when not needed.
         if self.spec:
             for argname in self.spec.argnames:
                 if argname not in kwargs:
-                    notincall = tuple(set(self.spec.argnames) - kwargs.keys())
+                    notincall = ", ".join(
+                        repr(argname)
+                        for argname in self.spec.argnames
+                        # Avoid self.spec.argnames - kwargs.keys() - doesn't preserve order.
+                        if argname not in kwargs.keys()
+                    )
                     warnings.warn(
                         "Argument(s) {} which are declared in the hookspec "
-                        "can not be found in this hook call".format(notincall),
+                        "cannot be found in this hook call".format(notincall),
                         stacklevel=2,
                     )
                     break
 
-            firstresult = self.spec.opts.get("firstresult", False)
-        else:
-            firstresult = False
-
+    def __call__(self, *args: object, **kwargs: object) -> Any:
+        if args:
+            raise TypeError("hook calling supports only keyword arguments")
+        assert (
+            not self.is_historic()
+        ), "Cannot directly call a historic hook - use call_historic instead."
+        self._verify_all_args_are_provided(kwargs)
+        firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
         return self._hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
 
     def call_historic(
@@ -382,6 +402,7 @@ class _HookCaller:
         """
         assert self._call_history is not None
         kwargs = kwargs or {}
+        self._verify_all_args_are_provided(kwargs)
         self._call_history.append((kwargs, result_callback))
         # Historizing hooks don't return results.
         # Remember firstresult isn't compatible with historic.
@@ -397,21 +418,28 @@ class _HookCaller:
     ) -> Any:
         """Call the hook with some additional temporarily participating
         methods using the specified ``kwargs`` as call parameters."""
-        old = list(self._nonwrappers), list(self._wrappers)
+        assert (
+            not self.is_historic()
+        ), "Cannot directly call a historic hook - use call_historic instead."
+        self._verify_all_args_are_provided(kwargs)
+        opts: "_HookImplOpts" = {
+            "hookwrapper": False,
+            "optionalhook": False,
+            "trylast": False,
+            "tryfirst": False,
+            "specname": None,
+        }
+        hookimpls = self.get_hookimpls()
         for method in methods:
-            opts: "_HookImplOpts" = {
-                "hookwrapper": False,
-                "optionalhook": False,
-                "trylast": False,
-                "tryfirst": False,
-                "specname": None,
-            }
             hookimpl = HookImpl(None, "<temp>", method, opts)
-            self._add_hookimpl(hookimpl)
-        try:
-            return self(**kwargs)
-        finally:
-            self._nonwrappers, self._wrappers = old
+            # Find last non-tryfirst nonwrapper method.
+            i = len(hookimpls) - 1
+            until = len(self._nonwrappers)
+            while i >= until and hookimpls[i].tryfirst:
+                i -= 1
+            hookimpls.insert(i + 1, hookimpl)
+        firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
+        return self._hookexec(self.name, hookimpls, kwargs, firstresult)
 
     def _maybe_apply_history(self, method: "HookImpl") -> None:
         """Apply call history to a new hookimpl if it is marked as historic."""
@@ -426,6 +454,19 @@ class _HookCaller:
 
 
 class HookImpl:
+    __slots__ = (
+        "function",
+        "argnames",
+        "kwargnames",
+        "plugin",
+        "opts",
+        "plugin_name",
+        "hookwrapper",
+        "optionalhook",
+        "tryfirst",
+        "trylast",
+    )
+
     def __init__(
         self,
         plugin: _Plugin,
@@ -433,7 +474,7 @@ class HookImpl:
         function: _HookImplFunction[object],
         hook_impl_opts: "_HookImplOpts",
     ) -> None:
-        self.function = function
+        self.function: "Final" = function
         self.argnames, self.kwargnames = varnames(self.function)
         self.plugin = plugin
         self.opts = hook_impl_opts
@@ -448,6 +489,16 @@ class HookImpl:
 
 
 class HookSpec:
+    __slots__ = (
+        "namespace",
+        "function",
+        "name",
+        "argnames",
+        "kwargnames",
+        "opts",
+        "warn_on_impl",
+    )
+
     def __init__(self, namespace: _Namespace, name: str, opts: "_HookSpecOpts") -> None:
         self.namespace = namespace
         self.function: Callable[..., object] = getattr(namespace, name)

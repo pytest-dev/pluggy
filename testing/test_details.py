@@ -1,4 +1,3 @@
-import warnings
 import pytest
 from pluggy import PluginManager, HookimplMarker, HookspecMarker
 
@@ -89,36 +88,33 @@ def test_plugin_getattr_raises_errors() -> None:
     assert pm.get_plugin("donttouch") is module
 
 
-def test_warning_on_call_vs_hookspec_arg_mismatch() -> None:
-    """Verify that is a hook is called with less arguments then defined in the
-    spec that a warning is emitted.
-    """
+def test_not_all_arguments_are_provided_issues_a_warning(pm: PluginManager) -> None:
+    """Calling a hook without providing all arguments specified in
+    the hook spec issues a warning."""
 
     class Spec:
         @hookspec
-        def myhook(self, arg1, arg2):
+        def hello(self, arg1, arg2):
             pass
 
-    class Plugin:
-        @hookimpl
-        def myhook(self, arg1):
+        @hookspec(historic=True)
+        def herstory(self, arg1, arg2):
             pass
 
-    pm = PluginManager(hookspec.project_name)
-    pm.register(Plugin())
     pm.add_hookspecs(Spec)
 
-    with warnings.catch_warnings(record=True) as warns:
-        warnings.simplefilter("always")
+    with pytest.warns(UserWarning, match=r"'arg1', 'arg2'.*cannot be found.*$"):
+        pm.hook.hello()
+    with pytest.warns(UserWarning, match=r"'arg2'.*cannot be found.*$"):
+        pm.hook.hello(arg1=1)
+    with pytest.warns(UserWarning, match=r"'arg1'.*cannot be found.*$"):
+        pm.hook.hello(arg2=2)
 
-        # calling should trigger a warning
-        pm.hook.myhook(arg1=1)
+    with pytest.warns(UserWarning, match=r"'arg1', 'arg2'.*cannot be found.*$"):
+        pm.hook.hello.call_extra([], kwargs=dict())
 
-        assert warns is not None
-        assert len(warns) == 1
-        warning = warns[-1]
-        assert issubclass(warning.category, Warning)
-        assert "Argument(s) ('arg2',)" in str(warning.message)
+    with pytest.warns(UserWarning, match=r"'arg1', 'arg2'.*cannot be found.*$"):
+        pm.hook.herstory.call_historic(kwargs=dict())
 
 
 def test_repr() -> None:
