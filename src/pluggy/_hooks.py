@@ -286,8 +286,7 @@ class _HookCaller:
         "name",
         "spec",
         "_hookexec",
-        "_wrappers",
-        "_nonwrappers",
+        "_hookimpls",
         "_call_history",
     )
 
@@ -300,8 +299,7 @@ class _HookCaller:
     ) -> None:
         self.name: "Final" = name
         self._hookexec: "Final" = hook_execute
-        self._wrappers: "Final[List[HookImpl]]" = []
-        self._nonwrappers: "Final[List[HookImpl]]" = []
+        self._hookimpls: "Final[List[HookImpl]]" = []
         self._call_history: Optional[_CallHistory] = None
         self.spec: Optional[HookSpec] = None
         if specmodule_or_class is not None:
@@ -325,38 +323,38 @@ class _HookCaller:
         return self._call_history is not None
 
     def _remove_plugin(self, plugin: _Plugin) -> None:
-        def remove(wrappers: List[HookImpl]) -> Optional[bool]:
-            for i, method in enumerate(wrappers):
-                if method.plugin == plugin:
-                    del wrappers[i]
-                    return True
-            return None
-
-        if remove(self._wrappers) is None:
-            if remove(self._nonwrappers) is None:
-                raise ValueError(f"plugin {plugin!r} not found")
+        for i, method in enumerate(self._hookimpls):
+            if method.plugin == plugin:
+                del self._hookimpls[i]
+                return
+        raise ValueError(f"plugin {plugin!r} not found")
 
     def get_hookimpls(self) -> List["HookImpl"]:
-        # Order is important for _hookexec
-        return self._nonwrappers + self._wrappers
+        return self._hookimpls.copy()
 
     def _add_hookimpl(self, hookimpl: "HookImpl") -> None:
         """Add an implementation to the callback chain."""
-        if hookimpl.hookwrapper:
-            methods = self._wrappers
+        for i, method in enumerate(self._hookimpls):
+            if method.hookwrapper:
+                splitpoint = i
+                break
         else:
-            methods = self._nonwrappers
+            splitpoint = len(self._hookimpls)
+        if hookimpl.hookwrapper:
+            start, end = splitpoint, len(self._hookimpls)
+        else:
+            start, end = 0, splitpoint
 
         if hookimpl.trylast:
-            methods.insert(0, hookimpl)
+            self._hookimpls.insert(start, hookimpl)
         elif hookimpl.tryfirst:
-            methods.append(hookimpl)
+            self._hookimpls.insert(end, hookimpl)
         else:
             # find last non-tryfirst method
-            i = len(methods) - 1
-            while i >= 0 and methods[i].tryfirst:
+            i = end - 1
+            while i >= start and self._hookimpls[i].tryfirst:
                 i -= 1
-            methods.insert(i + 1, hookimpl)
+            self._hookimpls.insert(i + 1, hookimpl)
 
     def __repr__(self) -> str:
         return f"<_HookCaller {self.name!r}>"
@@ -387,7 +385,7 @@ class _HookCaller:
         ), "Cannot directly call a historic hook - use call_historic instead."
         self._verify_all_args_are_provided(kwargs)
         firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
-        return self._hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
+        return self._hookexec(self.name, self._hookimpls, kwargs, firstresult)
 
     def call_historic(
         self,
@@ -406,7 +404,7 @@ class _HookCaller:
         self._call_history.append((kwargs, result_callback))
         # Historizing hooks don't return results.
         # Remember firstresult isn't compatible with historic.
-        res = self._hookexec(self.name, self.get_hookimpls(), kwargs, False)
+        res = self._hookexec(self.name, self._hookimpls, kwargs, False)
         if result_callback is None:
             return
         if isinstance(res, list):
@@ -429,13 +427,12 @@ class _HookCaller:
             "tryfirst": False,
             "specname": None,
         }
-        hookimpls = self.get_hookimpls()
+        hookimpls = self._hookimpls.copy()
         for method in methods:
             hookimpl = HookImpl(None, "<temp>", method, opts)
             # Find last non-tryfirst nonwrapper method.
             i = len(hookimpls) - 1
-            until = len(self._nonwrappers)
-            while i >= until and hookimpls[i].tryfirst:
+            while i >= 0 and hookimpls[i].tryfirst and not hookimpls[i].hookwrapper:
                 i -= 1
             hookimpls.insert(i + 1, hookimpl)
         firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
