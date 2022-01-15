@@ -1,12 +1,11 @@
 :orphan:
 
-Api Reference
+API Reference
 =============
 
 .. automodule:: pluggy
     :members:
     :undoc-members:
-    :show-inheritance:
 
 .. autoclass:: pluggy._callers._Result
 .. automethod:: pluggy._callers._Result.get_result

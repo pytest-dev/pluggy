@@ -58,15 +58,14 @@ def _warn_for_function(warning: Warning, function: Callable[..., object]) -> Non
 
 
 class PluginValidationError(Exception):
-    """plugin failed validation.
+    """Plugin failed validation.
 
-    :param object plugin: the plugin which failed validation,
-        may be a module or an arbitrary object.
+    :param plugin: The plugin which failed validation.
     """
 
     def __init__(self, plugin: _Plugin, message: str) -> None:
+        super().__init__(message)
         self.plugin = plugin
-        super(Exception, self).__init__(message)
 
 
 class DistFacade:
@@ -88,17 +87,16 @@ class DistFacade:
 
 
 class PluginManager:
-    """Core :py:class:`.PluginManager` class which manages registration
-    of plugin objects and 1:N hook calling.
+    """Core class which manages registration of plugin objects and 1:N hook
+    calling.
 
-    You can register new hooks by calling :py:meth:`add_hookspecs(module_or_class)
-    <.PluginManager.add_hookspecs>`.
-    You can register plugin objects (which contain hooks) by calling
-    :py:meth:`register(plugin) <.PluginManager.register>`.  The :py:class:`.PluginManager`
-    is initialized with a prefix that is searched for in the names of the dict
-    of registered plugin objects.
+    You can register new hooks by calling :meth:`add_hookspecs(module_or_class)
+    <PluginManager.add_hookspecs>`.
 
-    For debugging purposes you can call :py:meth:`.PluginManager.enable_tracing`
+    You can register plugin objects (which contain hook implementations) by
+    calling :meth:`register(plugin) <PluginManager.register>`.
+
+    For debugging purposes you can call :meth:`PluginManager.enable_tracing`
     which will subsequently send debug information to the trace helper.
     """
 
@@ -132,9 +130,15 @@ class PluginManager:
         return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
 
     def register(self, plugin: _Plugin, name: Optional[str] = None) -> Optional[str]:
-        """Register a plugin and return its canonical name or ``None`` if the name
-        is blocked from registering.  Raise a :py:class:`ValueError` if the plugin
-        is already registered."""
+        """Register a plugin and return its name.
+
+        If a name is not specified, a name is generated using
+        :func:`get_canonical_name`.
+
+        If the name is blocked from registering, returns ``None``.
+
+        If the plugin is already registered, raises a :class:`ValueError`.
+        """
         plugin_name = name or self.get_canonical_name(plugin)
 
         if plugin_name in self._name2plugin:
@@ -193,8 +197,11 @@ class PluginManager:
     def unregister(
         self, plugin: Optional[_Plugin] = None, name: Optional[str] = None
     ) -> _Plugin:
-        """unregister a plugin object and all its contained hook implementations
-        from internal data structures."""
+        """Unregister a plugin and all of its hook implementations.
+
+        The plugin can be specified either by the plugin object or the plugin
+        name. If both are specified, they must agree.
+        """
         if name is None:
             assert plugin is not None, "one of name or plugin needs to be specified"
             name = self.get_name(plugin)
@@ -216,17 +223,20 @@ class PluginManager:
         return plugin
 
     def set_blocked(self, name: str) -> None:
-        """block registrations of the given name, unregister if already registered."""
+        """Block registrations of the given name, unregister if already registered."""
         self.unregister(name=name)
         self._name2plugin[name] = None
 
     def is_blocked(self, name: str) -> bool:
-        """return ``True`` if the given plugin name is blocked."""
+        """Return whether the given plugin name is blocked."""
         return name in self._name2plugin and self._name2plugin[name] is None
 
     def add_hookspecs(self, module_or_class: _Namespace) -> None:
-        """add new hook specifications defined in the given ``module_or_class``.
-        Functions are recognized if they have been decorated accordingly."""
+        """Add new hook specifications defined in the given ``module_or_class``.
+
+        Functions are recognized as hook specifications if they have been
+        decorated with a matching :class:`HookspecMarker`.
+        """
         names = []
         for name in dir(module_or_class):
             spec_opts = self.parse_hookspec_opts(module_or_class, name)
@@ -236,7 +246,7 @@ class PluginManager:
                     hc = _HookCaller(name, self._hookexec, module_or_class, spec_opts)
                     setattr(self.hook, name, hc)
                 else:
-                    # plugins registered this hook without knowing the spec
+                    # Plugins registered this hook without knowing the spec.
                     hc.set_specification(module_or_class, spec_opts)
                     for hookfunction in hc.get_hookimpls():
                         self._verify_hook(hc, hookfunction)
@@ -257,32 +267,35 @@ class PluginManager:
         return opts
 
     def get_plugins(self) -> Set[Any]:
-        """return the set of registered plugins."""
+        """Return a set of all registered plugin objects."""
         return set(self._name2plugin.values())
 
     def is_registered(self, plugin: _Plugin) -> bool:
-        """Return ``True`` if the plugin is already registered."""
+        """Return whether the plugin is already registered."""
         return any(plugin == val for val in self._name2plugin.values())
 
     def get_canonical_name(self, plugin: _Plugin) -> str:
-        """Return canonical name for a plugin object. Note that a plugin
-        may be registered under a different name which was specified
-        by the caller of :py:meth:`register(plugin, name) <.PluginManager.register>`.
-        To obtain the name of an registered plugin use :py:meth:`get_name(plugin)
-        <.PluginManager.get_name>` instead."""
+        """Return a canonical name for a plugin object.
+
+        Note that a plugin may be registered under a different name
+        specified by the caller of :meth:`register(plugin, name) <register>`.
+        To obtain the name of n registered plugin use :meth:`get_name(plugin)
+        <get_name>` instead.
+        """
         name: Optional[str] = getattr(plugin, "__name__", None)
         return name or str(id(plugin))
 
     def get_plugin(self, name: str) -> Optional[Any]:
-        """Return a plugin or ``None`` for the given name."""
+        """Return the plugin registered under the given name, if any."""
         return self._name2plugin.get(name)
 
     def has_plugin(self, name: str) -> bool:
-        """Return ``True`` if a plugin with the given name is registered."""
+        """Return whether a plugin with the given name is registered."""
         return self.get_plugin(name) is not None
 
     def get_name(self, plugin: _Plugin) -> Optional[str]:
-        """Return name for registered plugin or ``None`` if not registered."""
+        """Return the name the plugin is registered under, or ``None`` if
+        is isn't."""
         for name, val in self._name2plugin.items():
             if plugin == val:
                 return name
@@ -325,8 +338,9 @@ class PluginManager:
             )
 
     def check_pending(self) -> None:
-        """Verify that all hooks which have not been verified against
-        a hook specification are optional, otherwise raise :py:class:`.PluginValidationError`."""
+        """Verify that all hooks which have not been verified against a
+        hook specification are optional, otherwise raise
+        :class:`PluginValidationError`."""
         for name in self.hook.__dict__:
             if name[0] != "_":
                 hook: _HookCaller = getattr(self.hook, name)
@@ -344,10 +358,10 @@ class PluginManager:
     ) -> int:
         """Load modules from querying the specified setuptools ``group``.
 
-        :param str group: entry point group to load plugins
-        :param str name: if given, loads only plugins with the given ``name``.
+        :param str group: Entry point group to load plugins.
+        :param str name: If given, loads only plugins with the given ``name``.
         :rtype: int
-        :return: return the number of loaded plugins by this call.
+        :return: The number of plugins loaded by this call.
         """
         count = 0
         for dist in list(importlib_metadata.distributions()):
@@ -367,16 +381,16 @@ class PluginManager:
         return count
 
     def list_plugin_distinfo(self) -> List[Tuple[_Plugin, DistFacade]]:
-        """return list of distinfo/plugin tuples for all setuptools registered
-        plugins."""
+        """Return a list of (plugin, distinfo) pairs for all
+        setuptools-registered plugins."""
         return list(self._plugin_distinfo)
 
     def list_name_plugin(self) -> List[Tuple[str, _Plugin]]:
-        """return list of name/plugin pairs."""
+        """Return a list of (name, plugin) pairs for all registered plugins."""
         return list(self._name2plugin.items())
 
     def get_hookcallers(self, plugin: _Plugin) -> Optional[List[_HookCaller]]:
-        """get all hook callers for the specified plugin."""
+        """Get all hook callers for the specified plugin."""
         if self.get_name(plugin) is None:
             return None
         hookcallers = []
@@ -389,16 +403,16 @@ class PluginManager:
     def add_hookcall_monitoring(
         self, before: _BeforeTrace, after: _AfterTrace
     ) -> Callable[[], None]:
-        """add before/after tracing functions for all hooks
-        and return an undo function which, when called,
-        will remove the added tracers.
+        """Add before/after tracing functions for all hooks.
+
+        Returns an undo function which, when called, removes the added tracers.
 
         ``before(hook_name, hook_impls, kwargs)`` will be called ahead
         of all hook calls and receive a hookcaller instance, a list
         of HookImpl instances and the keyword arguments for the hook call.
 
         ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
-        same arguments as ``before`` but also a :py:class:`pluggy._callers._Result` object
+        same arguments as ``before`` but also a :class:`_Result` object
         which represents the result of the overall hook call.
         """
         oldcall = self._inner_hookexec
@@ -424,7 +438,10 @@ class PluginManager:
         return undo
 
     def enable_tracing(self) -> Callable[[], None]:
-        """enable tracing of hook calls and return an undo function."""
+        """Enable tracing of hook calls.
+
+        Returns an undo function which, when called, removes the added tracing.
+        """
         hooktrace = self.trace.root.get("hook")
 
         def before(

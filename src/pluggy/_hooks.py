@@ -53,11 +53,11 @@ if TYPE_CHECKING:
 
 
 class HookspecMarker:
-    """Decorator helper class for marking functions as hook specifications.
+    """Decorator for marking functions as hook specifications.
 
-    You can instantiate it with a project_name to get a decorator.
-    Calling :py:meth:`.PluginManager.add_hookspecs` later will discover all marked functions
-    if the :py:class:`.PluginManager` uses the same project_name.
+    Instantiate it with a project_name to get a decorator.
+    Calling :meth:`PluginManager.add_hookspecs` later will discover all marked
+    functions if the :class:`PluginManager` uses the same project_name.
     """
 
     __slots__ = ("project_name",)
@@ -92,18 +92,18 @@ class HookspecMarker:
         historic: bool = False,
         warn_on_impl: Optional[Warning] = None,
     ) -> Union[_F, Callable[[_F], _F]]:
-        """if passed a function, directly sets attributes on the function
-        which will make it discoverable to :py:meth:`.PluginManager.add_hookspecs`.
-        If passed no function, returns a decorator which can be applied to a function
-        later using the attributes supplied.
+        """If passed a function, directly sets attributes on the function
+        which will make it discoverable to :meth:`PluginManager.add_hookspecs`.
 
-        If ``firstresult`` is ``True`` the 1:N hook call (N being the number of registered
-        hook implementation functions) will stop at I<=N when the I'th function
-        returns a non-``None`` result.
+        If passed no function, returns a decorator which can be applied to a
+        function later using the attributes supplied.
 
-        If ``historic`` is ``True`` calls to a hook will be memorized and replayed
-        on later registered plugins.
+        If ``firstresult`` is ``True``, the 1:N hook call (N being the number of
+        registered hook implementation functions) will stop at I<=N when the
+        I'th function returns a non-``None`` result.
 
+        If ``historic`` is ``True``, every call to the hook will be memorized
+        and replayed on plugins registered after the call was made.
         """
 
         def setattr_hookspec_opts(func: _F) -> _F:
@@ -124,11 +124,11 @@ class HookspecMarker:
 
 
 class HookimplMarker:
-    """Decorator helper class for marking functions as hook implementations.
+    """Decorator for marking functions as hook implementations.
 
-    You can instantiate with a ``project_name`` to get a decorator.
-    Calling :py:meth:`.PluginManager.register` later will discover all marked functions
-    if the :py:class:`.PluginManager` uses the same project_name.
+    Instantiate it with a ``project_name`` to get a decorator.
+    Calling :meth:`PluginManager.register` later will discover all marked
+    functions if the :class:`PluginManager` uses the same project_name.
     """
 
     __slots__ = ("project_name",)
@@ -169,30 +169,33 @@ class HookimplMarker:
         trylast: bool = False,
         specname: Optional[str] = None,
     ) -> Union[_F, Callable[[_F], _F]]:
-        """if passed a function, directly sets attributes on the function
-        which will make it discoverable to :py:meth:`.PluginManager.register`.
+        """If passed a function, directly sets attributes on the function
+        which will make it discoverable to :meth:`PluginManager.register`.
+
         If passed no function, returns a decorator which can be applied to a
         function later using the attributes supplied.
 
-        If ``optionalhook`` is ``True`` a missing matching hook specification will not result
-        in an error (by default it is an error if no matching spec is found).
+        If ``optionalhook`` is ``True``, a missing matching hook specification
+        will not result in an error (by default it is an error if no matching
+        spec is found).
 
-        If ``tryfirst`` is ``True`` this hook implementation will run as early as possible
-        in the chain of N hook implementations for a specification.
+        If ``tryfirst`` is ``True``, this hook implementation will run as early
+        as possible in the chain of N hook implementations for a specification.
 
-        If ``trylast`` is ``True`` this hook implementation will run as late as possible
-        in the chain of N hook implementations.
+        If ``trylast`` is ``True``, this hook implementation will run as late as
+        possible in the chain of N hook implementations.
 
-        If ``hookwrapper`` is ``True`` the hook implementations needs to execute exactly
-        one ``yield``.  The code before the ``yield`` is run early before any non-hookwrapper
-        function is run.  The code after the ``yield`` is run after all non-hookwrapper
-        function have run.  The ``yield`` receives a :py:class:`.callers._Result` object
-        representing the exception or result outcome of the inner calls (including other
-        hookwrapper calls).
+        If ``hookwrapper`` is ``True``, the hook implementations needs to
+        execute exactly one ``yield``. The code before the ``yield`` is run
+        early before any non-hookwrapper function is run. The code after the
+        ``yield`` is run after all non-hookwrapper function have run  The
+        ``yield`` receives a :class:`_Result` object representing the exception
+        or result outcome of the inner calls (including other hookwrapper
+        calls).
 
-        If ``specname`` is provided, it will be used instead of the function name when
-        matching this hook implementation to a hook specification during registration.
-
+        If ``specname`` is provided, it will be used instead of the function
+        name when matching this hook implementation to a hook specification
+        during registration.
         """
 
         def setattr_hookimpl_opts(func: _F) -> _F:
@@ -268,7 +271,7 @@ def varnames(func: object) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
 
 
 class _HookRelay:
-    """hook holder object for performing 1:N hook calls where N is the number
+    """Hook holder object for performing 1:N hook calls where N is the number
     of registered plugins."""
 
     __slots__ = ("__dict__",)
@@ -396,7 +399,7 @@ class _HookCaller:
         """Call the hook with given ``kwargs`` for all registered plugins and
         for all plugins which will be registered afterwards.
 
-        If ``result_callback`` is not ``None`` it will be called for for each
+        If ``result_callback`` is provided, it will be called for each
         non-``None`` result obtained from a hook implementation.
         """
         assert self._call_history is not None
