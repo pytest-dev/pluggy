@@ -34,13 +34,18 @@ def test_parse_hookimpl_override() -> None:
     pm = MyPluginManager(hookspec.project_name)
     pm.register(Plugin())
     pm.add_hookspecs(Spec)
-    assert not pm.hook.x1meth._nonwrappers[0].hookwrapper
-    assert not pm.hook.x1meth._nonwrappers[0].tryfirst
-    assert not pm.hook.x1meth._nonwrappers[0].trylast
-    assert not pm.hook.x1meth._nonwrappers[0].optionalhook
 
-    assert pm.hook.x1meth2._wrappers[0].tryfirst
-    assert pm.hook.x1meth2._wrappers[0].hookwrapper
+    hookimpls = pm.hook.x1meth.get_hookimpls()
+    assert len(hookimpls) == 1
+    assert not hookimpls[0].hookwrapper
+    assert not hookimpls[0].tryfirst
+    assert not hookimpls[0].trylast
+    assert not hookimpls[0].optionalhook
+
+    hookimpls = pm.hook.x1meth2.get_hookimpls()
+    assert len(hookimpls) == 1
+    assert hookimpls[0].hookwrapper
+    assert hookimpls[0].tryfirst
 
 
 def test_warn_when_deprecated_specified(recwarn) -> None:
@@ -127,6 +132,6 @@ def test_repr() -> None:
 
     plugin = Plugin()
     pname = pm.register(plugin)
-    assert repr(pm.hook.myhook._nonwrappers[0]) == (
+    assert repr(pm.hook.myhook.get_hookimpls()[0]) == (
         f"<HookImpl plugin_name={pname!r}, plugin={plugin!r}>"
     )

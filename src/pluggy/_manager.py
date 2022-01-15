@@ -25,6 +25,7 @@ from ._hooks import (
     HookImpl,
     HookSpec,
     _HookCaller,
+    _SubsetHookCaller,
     _HookImplFunction,
     _HookRelay,
     _Namespace,
@@ -114,7 +115,6 @@ class PluginManager:
     def __init__(self, project_name: str) -> None:
         self.project_name: "Final" = project_name
         self._name2plugin: "Final[Dict[str, _Plugin]]" = {}
-        self._plugin2hookcallers: "Final[Dict[_Plugin, List[_HookCaller]]]" = {}
         self._plugin_distinfo: "Final[List[Tuple[_Plugin, DistFacade]]]" = []
         self.trace: "Final" = _tracing.TagTracer().get("pluginmanage")
         self.hook: "Final" = _HookRelay()
@@ -137,11 +137,17 @@ class PluginManager:
         is already registered."""
         plugin_name = name or self.get_canonical_name(plugin)
 
-        if plugin_name in self._name2plugin or plugin in self._plugin2hookcallers:
+        if plugin_name in self._name2plugin:
             if self._name2plugin.get(plugin_name, -1) is None:
                 return None  # blocked plugin, return None to indicate no registration
             raise ValueError(
-                "Plugin already registered: %s=%s\n%s"
+                "Plugin name already registered: %s=%s\n%s"
+                % (plugin_name, plugin, self._name2plugin)
+            )
+
+        if plugin in self._name2plugin.values():
+            raise ValueError(
+                "Plugin already registered under a different name: %s=%s\n%s"
                 % (plugin_name, plugin, self._name2plugin)
             )
 
@@ -150,8 +156,6 @@ class PluginManager:
         self._name2plugin[plugin_name] = plugin
 
         # register matching hook implementations of the plugin
-        hookcallers: List[_HookCaller] = []
-        self._plugin2hookcallers[plugin] = hookcallers
         for name in dir(plugin):
             hookimpl_opts = self.parse_hookimpl_opts(plugin, name)
             if hookimpl_opts is not None:
@@ -167,7 +171,6 @@ class PluginManager:
                     self._verify_hook(hook, hookimpl)
                     hook._maybe_apply_history(hookimpl)
                 hook._add_hookimpl(hookimpl)
-                hookcallers.append(hook)
         return plugin_name
 
     def parse_hookimpl_opts(
@@ -200,13 +203,15 @@ class PluginManager:
         if plugin is None:
             plugin = self.get_plugin(name)
 
+        hookcallers = self.get_hookcallers(plugin)
+        if hookcallers:
+            for hookcaller in hookcallers:
+                hookcaller._remove_plugin(plugin)
+
         # if self._name2plugin[name] == None registration was blocked: ignore
         if self._name2plugin.get(name):
             assert name is not None
             del self._name2plugin[name]
-
-        for hookcaller in self._plugin2hookcallers.pop(plugin, []):
-            hookcaller._remove_plugin(plugin)
 
         return plugin
 
@@ -253,11 +258,11 @@ class PluginManager:
 
     def get_plugins(self) -> Set[Any]:
         """return the set of registered plugins."""
-        return set(self._plugin2hookcallers)
+        return set(self._name2plugin.values())
 
     def is_registered(self, plugin: _Plugin) -> bool:
         """Return ``True`` if the plugin is already registered."""
-        return plugin in self._plugin2hookcallers
+        return any(plugin == val for val in self._name2plugin.values())
 
     def get_canonical_name(self, plugin: _Plugin) -> str:
         """Return canonical name for a plugin object. Note that a plugin
@@ -372,7 +377,14 @@ class PluginManager:
 
     def get_hookcallers(self, plugin: _Plugin) -> Optional[List[_HookCaller]]:
         """get all hook callers for the specified plugin."""
-        return self._plugin2hookcallers.get(plugin)
+        if self.get_name(plugin) is None:
+            return None
+        hookcallers = []
+        for hookcaller in self.hook.__dict__.values():
+            for hookimpl in hookcaller.get_hookimpls():
+                if hookimpl.plugin is plugin:
+                    hookcallers.append(hookcaller)
+        return hookcallers
 
     def add_hookcall_monitoring(
         self, before: _BeforeTrace, after: _AfterTrace
@@ -436,24 +448,13 @@ class PluginManager:
     def subset_hook_caller(
         self, name: str, remove_plugins: Iterable[_Plugin]
     ) -> _HookCaller:
-        """Return a new :py:class:`._hooks._HookCaller` instance for the named method
-        which manages calls to all registered plugins except the
-        ones from remove_plugins."""
+        """Return a proxy :py:class:`._hooks._HookCaller` instance for the named
+        method which manages calls to all registered plugins except the ones
+        from remove_plugins."""
         orig: _HookCaller = getattr(self.hook, name)
-        plugins_to_remove = [plug for plug in remove_plugins if hasattr(plug, name)]
+        plugins_to_remove = {plug for plug in remove_plugins if hasattr(plug, name)}
         if plugins_to_remove:
-            assert orig.spec is not None
-            hc = _HookCaller(
-                orig.name, orig._hookexec, orig.spec.namespace, orig.spec.opts
-            )
-            for hookimpl in orig.get_hookimpls():
-                plugin = hookimpl.plugin
-                if plugin not in plugins_to_remove:
-                    hc._add_hookimpl(hookimpl)
-                    # we also keep track of this hook caller so it
-                    # gets properly removed on plugin unregistration
-                    self._plugin2hookcallers.setdefault(plugin, []).append(hc)
-            return hc
+            return _SubsetHookCaller(orig, plugins_to_remove)
         return orig
 
 
