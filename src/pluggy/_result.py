@@ -34,7 +34,7 @@ def _raise_wrapfail(
 
 
 class HookCallError(Exception):
-    """Hook was called wrongly."""
+    """Hook was called incorrectly."""
 
 
 class _Result(Generic[_T]):
@@ -67,7 +67,7 @@ class _Result(Generic[_T]):
         """Force the result(s) to ``result``.
 
         If the hook was marked as a ``firstresult`` a single value should
-        be set otherwise set a (modified) list of results. Any exceptions
+        be set, otherwise set a (modified) list of results. Any exceptions
         found during invocation will be deleted.
         """
         self._result = result
@@ -77,7 +77,7 @@ class _Result(Generic[_T]):
         """Get the result(s) for this hook call.
 
         If the hook was marked as a ``firstresult`` only a single value
-        will be returned otherwise a list of results.
+        will be returned, otherwise a list of results.
         """
         __tracebackhide__ = True
         if self._excinfo is None:
