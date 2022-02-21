@@ -381,9 +381,7 @@ class _HookCaller:
                     )
                     break
 
-    def __call__(self, *args: object, **kwargs: object) -> Any:
-        if args:
-            raise TypeError("hook calling supports only keyword arguments")
+    def __call__(self, **kwargs: object) -> Any:
         assert (
             not self.is_historic()
         ), "Cannot directly call a historic hook - use call_historic instead."
