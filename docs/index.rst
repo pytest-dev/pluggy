@@ -472,7 +472,7 @@ then make sure to mark those hooks as :ref:`optional <optionalhook>`.
 Opt-in arguments
 ^^^^^^^^^^^^^^^^
 To allow for *hookspecs* to evolve over the lifetime of a project,
-*hookimpls* can accept **less** arguments then defined in the spec.
+*hookimpls* can accept **less** arguments than defined in the spec.
 This allows for extending hook arguments (and thus semantics) without
 breaking existing *hookimpls*.
 
@@ -514,7 +514,7 @@ First result only
 ^^^^^^^^^^^^^^^^^
 A *hookspec* can be marked such that when the *hook* is called the call loop
 will only invoke up to the first *hookimpl* which returns a result other
-then ``None``.
+than ``None``.
 
 .. code-block:: python
 
@@ -726,7 +726,7 @@ Collecting results
 ------------------
 By default calling a hook results in all underlying :ref:`hookimpls
 <impls>` functions to be invoked in sequence via a loop. Any function
-which returns a value other then a ``None`` result will have that result
+which returns a value other than a ``None`` result will have that result
 appended to a :py:class:`list` which is returned by the call.
 
 The only exception to this behaviour is if the hook has been marked to return
