@@ -40,7 +40,7 @@ def test_only_kwargs(pm: PluginManager) -> None:
 
 
 def test_opt_in_args(pm: PluginManager) -> None:
-    """Verfiy that two hookimpls with mutex args can serve
+    """Verify that two hookimpls with mutex args can serve
     under the same spec.
     """
 
