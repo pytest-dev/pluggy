@@ -1,3 +1,5 @@
+from functools import wraps
+from typing import Callable
 from pluggy._hooks import varnames
 from pluggy._manager import _formatdef
 
@@ -82,3 +84,17 @@ def test_formatdef() -> None:
         pass
 
     assert _formatdef(function4) == "function4(arg1, *args, **kwargs)"
+
+
+def test_varnames_decorator() -> None:
+    def my_decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
+
+    @my_decorator
+    def example(a, b=123) -> None:
+        pass
+
+    assert varnames(example) == (("a",), ("b",))
