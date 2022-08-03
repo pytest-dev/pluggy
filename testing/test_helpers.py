@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Callable
+from typing import Any, Callable, TypeVar, cast
 from pluggy._hooks import varnames
 from pluggy._manager import _formatdef
 
@@ -87,11 +87,13 @@ def test_formatdef() -> None:
 
 
 def test_varnames_decorator() -> None:
-    def my_decorator(func: Callable) -> Callable:
+    F = TypeVar('F', bound=Callable[..., Any])
+
+    def my_decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
-        return wrapper
+        return cast(F, wrapper)
 
     @my_decorator
     def example(a, b=123) -> None:
