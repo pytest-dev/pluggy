@@ -99,4 +99,13 @@ def test_varnames_decorator() -> None:
     def example(a, b=123) -> None:
         pass
 
+    class Example:
+        @my_decorator
+        def example_method(self, x, y=1) -> None:
+            pass
+
+    ex_inst = Example()
+
     assert varnames(example) == (("a",), ("b",))
+    assert varnames(Example.example_method) == (("x",), ("y",))
+    assert varnames(ex_inst.example_method) == (("x",), ("y",))
