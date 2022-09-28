@@ -1,8 +1,9 @@
 """
 ``PluginManager`` unit and public API testing.
 """
+from __future__ import annotations
 import pytest
-from typing import Any, List
+from typing import Any, Callable
 
 from pluggy import (
     HookCallError,
@@ -11,7 +12,7 @@ from pluggy import (
     PluginManager,
     PluginValidationError,
 )
-from pluggy._manager import importlib_metadata
+import pluggy._importlib
 
 
 hookspec = HookspecMarker("example")
@@ -265,13 +266,12 @@ def test_with_result_memorized(pm: PluginManager, result_callback: bool) -> None
     correctly applies the ``result_callback`` function, when provided,
     to the result from calling each newly registered hook.
     """
-    out = []
+    out: list[int] = []
+    callback: Callable[[int], None] | None
     if not result_callback:
         callback = None
     else:
-
-        def callback(res) -> None:
-            out.append(res)
+        callback = out.append
 
     class Hooks:
         @hookspec(historic=True)
@@ -381,7 +381,7 @@ def test_call_with_too_few_args(pm: PluginManager) -> None:
     class Plugin1:
         @hookimpl
         def he_method1(self, arg):
-            0 / 0
+            return 0 / 0
 
     pm.register(Plugin1())
     with pytest.raises(HookCallError):
@@ -553,7 +553,7 @@ def test_load_setuptools_instantiation(monkeypatch, pm: PluginManager) -> None:
     def my_distributions():
         return (dist,)
 
-    monkeypatch.setattr(importlib_metadata, "distributions", my_distributions)
+    monkeypatch.setattr(pluggy._importlib, "distributions", my_distributions)
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 1
     plugin = pm.get_plugin("myname")
@@ -564,13 +564,13 @@ def test_load_setuptools_instantiation(monkeypatch, pm: PluginManager) -> None:
     assert len(ret) == 1
     assert len(ret[0]) == 2
     assert ret[0][0] == plugin
-    assert ret[0][1]._dist == dist  # type: ignore[comparison-overlap]
+    assert ret[0][1]._dist == dist
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 0  # no plugin loaded by this call
 
 
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
-    out: List[Any] = []
+    out: list[Any] = []
 
     class api1:
         @hookimpl
@@ -623,7 +623,7 @@ def test_hook_tracing(he_pm: PluginManager) -> None:
             raise ValueError()
 
     he_pm.register(api1())
-    out: List[Any] = []
+    out: list[Any] = []
     he_pm.trace.root.setwriter(out.append)
     undo = he_pm.enable_tracing()
     try:
