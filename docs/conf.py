@@ -33,7 +33,7 @@ release = metadata.version(project)
 version = ".".join(release.split(".")[:2])
 
 
-language = None
+language = "en"
 
 pygments_style = "sphinx"
 # html_logo = "_static/img/plug.png"

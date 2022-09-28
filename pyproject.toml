@@ -1,12 +1,69 @@
 [build-system]
 requires = [
-  "setuptools",
-  "setuptools-scm",
-  "wheel",
+    "hatchling>=1.3.1",
+    "hatch-vcs",
+]
+build-backend = "hatchling.build"
+
+[project]
+name = "pluggy"
+description = "plugin and hook calling mechanisms for python"
+readme = "README.rst"
+license = "MIT"
+requires-python = ">=3.7"
+authors = [
+    { name = "Holger Krekel", email = "holger@merlinux.eu" },
+]
+classifiers = [
+    "Development Status :: 6 - Mature",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "importlib-metadata>=0.12;python_version<\"3.8\"",
+]
+dynamic = [
+    "version",
 ]
 
-[tool.setuptools_scm]
-write_to = "src/pluggy/_version.py"
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "tox",
+]
+testing = [
+    "pytest",
+    "pytest-benchmark",
+]
+
+[project.urls]
+Homepage = "https://github.com/pytest-dev/pluggy"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/pluggy/_version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+]
+
 
 [tool.towncrier]
 package = "pluggy"
@@ -15,42 +72,19 @@ filename = "CHANGELOG.rst"
 directory = "changelog/"
 title_format = "pluggy {version} ({project_date})"
 template = "changelog/_template.rst"
-
-  [[tool.towncrier.type]]
-  directory = "removal"
-  name = "Deprecations and Removals"
-  showcontent = true
-
-  [[tool.towncrier.type]]
-  directory = "feature"
-  name = "Features"
-  showcontent = true
-
-  [[tool.towncrier.type]]
-  directory = "bugfix"
-  name = "Bug Fixes"
-  showcontent = true
-
-  [[tool.towncrier.type]]
-  directory = "vendor"
-  name = "Vendored Libraries"
-  showcontent = true
-
-  [[tool.towncrier.type]]
-  directory = "doc"
-  name = "Improved Documentation"
-  showcontent = true
-
-  [[tool.towncrier.type]]
-  directory = "trivial"
-  name = "Trivial/Internal Changes"
-  showcontent = true
+type = [
+    { directory = "removal", name = "Deprecations and Removals", showcontent = true },
+    { directory = "feature", name = "Features", showcontent = true },
+    { directory = "bugfix", name = "Bug Fixes", showcontent = true },
+    { directory = "vendor", name = "Vendored Libraries", showcontent = true },
+    { directory = "doc", name = "Improved Documentation", showcontent = true },
+    { directory = "trivial", name = "Trivial/Internal Changes", showcontent = true },
+]
 
 [tool.mypy]
+python_version = "3.7"
 mypy_path = "src"
 check_untyped_defs = true
-# Hopefully we can set this someday!
-# disallow_any_expr = true
 disallow_any_generics = true
 disallow_any_unimported = true
 disallow_subclassing_any = true

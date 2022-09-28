@@ -19,11 +19,9 @@ jobs:
       fail-fast: false
       matrix:
         name: [
-          "windows-py36",
           "windows-py310",
           "windows-pypy3",
 
-          "ubuntu-py36",
           "ubuntu-py37-pytestmain",
           "ubuntu-py37",
           "ubuntu-py38",
@@ -37,23 +35,14 @@ jobs:
         ]
 
         include:
-          - name: "windows-py36"
-            python: "3.6"
-            os: windows-latest
-            tox_env: "py36"
           - name: "windows-py310"
             python: "3.10"
             os: windows-latest
             tox_env: "py310"
           - name: "windows-pypy3"
-            python: "pypy3"
+            python: "pypy3.7"
             os: windows-latest
-            tox_env: "pypy3"
-          - name: "ubuntu-py36"
-            python: "3.6"
-            os: ubuntu-latest
-            tox_env: "py36"
-            use_coverage: true
+            tox_env: "py37"
           - name: "ubuntu-py37-pytestmain"
             python: "3.7"
             os: ubuntu-latest
@@ -80,7 +69,7 @@ jobs:
             tox_env: "py310"
             use_coverage: true
           - name: "ubuntu-pypy3"
-            python: "pypy3"
+            python: "pypy3.7"
             os: ubuntu-latest
             tox_env: "pypy3"
             use_coverage: true
@@ -103,7 +92,7 @@ jobs:
         fetch-depth: 0
 
     - name: Set up Python ${{ matrix.python }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python }}
 
@@ -135,7 +124,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.8"
 

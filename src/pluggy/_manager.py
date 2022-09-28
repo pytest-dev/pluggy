@@ -1,24 +1,19 @@
+from __future__ import annotations
 import inspect
-import sys
 import types
 import warnings
 from typing import (
     Any,
     Callable,
     cast,
-    Dict,
     Iterable,
-    List,
     Mapping,
-    Optional,
     Sequence,
-    Set,
-    Tuple,
     TYPE_CHECKING,
-    Union,
 )
 
 from . import _tracing
+from ._importlib import DistFacade, iter_entrypoint_loaders
 from ._result import _Result
 from ._callers import _multicall
 from ._hooks import (
@@ -32,11 +27,6 @@ from ._hooks import (
     normalize_hookimpl_opts,
     _Plugin,
 )
-
-if sys.version_info >= (3, 8):
-    from importlib import metadata as importlib_metadata
-else:
-    import importlib_metadata
 
 if TYPE_CHECKING:
     from typing_extensions import Final
@@ -68,24 +58,6 @@ class PluginValidationError(Exception):
         self.plugin = plugin
 
 
-class DistFacade:
-    """Emulate a pkg_resources Distribution"""
-
-    def __init__(self, dist: importlib_metadata.Distribution) -> None:
-        self._dist = dist
-
-    @property
-    def project_name(self) -> str:
-        name: str = self.metadata["name"]
-        return name
-
-    def __getattr__(self, attr: str, default=None):
-        return getattr(self._dist, attr, default)
-
-    def __dir__(self) -> List[str]:
-        return sorted(dir(self._dist) + ["_dist", "project_name"])
-
-
 class PluginManager:
     """Core class which manages registration of plugin objects and 1:N hook
     calling.
@@ -111,11 +83,11 @@ class PluginManager:
     )
 
     def __init__(self, project_name: str) -> None:
-        self.project_name: "Final" = project_name
-        self._name2plugin: "Final[Dict[str, _Plugin]]" = {}
-        self._plugin_distinfo: "Final[List[Tuple[_Plugin, DistFacade]]]" = []
-        self.trace: "Final" = _tracing.TagTracer().get("pluginmanage")
-        self.hook: "Final" = _HookRelay()
+        self.project_name: Final = project_name
+        self._name2plugin: Final[dict[str, _Plugin]] = {}
+        self._plugin_distinfo: Final[list[tuple[_Plugin, DistFacade]]] = []
+        self.trace: Final = _tracing.TagTracer().get("pluginmanage")
+        self.hook: Final = _HookRelay()
         self._inner_hookexec = _multicall
 
     def _hookexec(
@@ -124,12 +96,12 @@ class PluginManager:
         methods: Sequence[HookImpl],
         kwargs: Mapping[str, object],
         firstresult: bool,
-    ) -> Union[object, List[object]]:
+    ) -> object | list[object]:
         # called from all hookcaller instances.
         # enable_tracing will set its own wrapping function at self._inner_hookexec
         return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
 
-    def register(self, plugin: _Plugin, name: Optional[str] = None) -> Optional[str]:
+    def register(self, plugin: _Plugin, name: str | None = None) -> str | None:
         """Register a plugin and return its name.
 
         If a name is not specified, a name is generated using
@@ -167,7 +139,7 @@ class PluginManager:
                 method: _HookImplFunction[object] = getattr(plugin, name)
                 hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
                 name = hookimpl_opts.get("specname") or name
-                hook: Optional[_HookCaller] = getattr(self.hook, name, None)
+                hook: _HookCaller | None = getattr(self.hook, name, None)
                 if hook is None:
                     hook = _HookCaller(name, self._hookexec)
                     setattr(self.hook, name, hook)
@@ -177,25 +149,20 @@ class PluginManager:
                 hook._add_hookimpl(hookimpl)
         return plugin_name
 
-    def parse_hookimpl_opts(
-        self, plugin: _Plugin, name: str
-    ) -> Optional["_HookImplOpts"]:
+    def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> _HookImplOpts | None:
         method: object = getattr(plugin, name)
         if not inspect.isroutine(method):
             return None
         try:
-            res: Optional["_HookImplOpts"] = getattr(
+            res: _HookImplOpts | None = getattr(
                 method, self.project_name + "_impl", None
             )
         except Exception:
             res = {}  # type: ignore[assignment]
-        if res is not None and not isinstance(res, dict):
-            # false positive
-            res = None
         return res
 
     def unregister(
-        self, plugin: Optional[_Plugin] = None, name: Optional[str] = None
+        self, plugin: _Plugin | None = None, name: str | None = None
     ) -> _Plugin:
         """Unregister a plugin and all of its hook implementations.
 
@@ -241,7 +208,7 @@ class PluginManager:
         for name in dir(module_or_class):
             spec_opts = self.parse_hookspec_opts(module_or_class, name)
             if spec_opts is not None:
-                hc: Optional[_HookCaller] = getattr(self.hook, name, None)
+                hc: _HookCaller | None = getattr(self.hook, name, None)
                 if hc is None:
                     hc = _HookCaller(name, self._hookexec, module_or_class, spec_opts)
                     setattr(self.hook, name, hc)
@@ -259,14 +226,12 @@ class PluginManager:
 
     def parse_hookspec_opts(
         self, module_or_class: _Namespace, name: str
-    ) -> Optional["_HookSpecOpts"]:
+    ) -> _HookSpecOpts | None:
         method: HookSpec = getattr(module_or_class, name)
-        opts: Optional[_HookSpecOpts] = getattr(
-            method, self.project_name + "_spec", None
-        )
+        opts: _HookSpecOpts | None = getattr(method, self.project_name + "_spec", None)
         return opts
 
-    def get_plugins(self) -> Set[Any]:
+    def get_plugins(self) -> set[Any]:
         """Return a set of all registered plugin objects."""
         return set(self._name2plugin.values())
 
@@ -282,10 +247,10 @@ class PluginManager:
         To obtain the name of n registered plugin use :meth:`get_name(plugin)
         <get_name>` instead.
         """
-        name: Optional[str] = getattr(plugin, "__name__", None)
+        name: str | None = getattr(plugin, "__name__", None)
         return name or str(id(plugin))
 
-    def get_plugin(self, name: str) -> Optional[Any]:
+    def get_plugin(self, name: str) -> Any | None:
         """Return the plugin registered under the given name, if any."""
         return self._name2plugin.get(name)
 
@@ -293,7 +258,7 @@ class PluginManager:
         """Return whether a plugin with the given name is registered."""
         return self.get_plugin(name) is not None
 
-    def get_name(self, plugin: _Plugin) -> Optional[str]:
+    def get_name(self, plugin: _Plugin) -> str | None:
         """Return the name the plugin is registered under, or ``None`` if
         is isn't."""
         for name, val in self._name2plugin.items():
@@ -353,9 +318,7 @@ class PluginManager:
                                 % (name, hookimpl.plugin),
                             )
 
-    def load_setuptools_entrypoints(
-        self, group: str, name: Optional[str] = None
-    ) -> int:
+    def load_setuptools_entrypoints(self, group: str, name: str | None = None) -> int:
         """Load modules from querying the specified setuptools ``group``.
 
         :param str group: Entry point group to load plugins.
@@ -364,32 +327,26 @@ class PluginManager:
         :return: The number of plugins loaded by this call.
         """
         count = 0
-        for dist in list(importlib_metadata.distributions()):
-            for ep in dist.entry_points:
-                if (
-                    ep.group != group
-                    or (name is not None and ep.name != name)
-                    # already registered
-                    or self.get_plugin(ep.name)
-                    or self.is_blocked(ep.name)
-                ):
-                    continue
-                plugin = ep.load()
-                self.register(plugin, name=ep.name)
-                self._plugin_distinfo.append((plugin, DistFacade(dist)))
-                count += 1
+        for dist, ep_name, loader in iter_entrypoint_loaders(group, name):
+            if self.get_plugin(ep_name) or self.is_blocked(ep_name):
+                continue
+                # already registered
+            plugin = loader()
+            self.register(plugin, name=ep_name)
+            self._plugin_distinfo.append((plugin, dist))
+            count += 1
         return count
 
-    def list_plugin_distinfo(self) -> List[Tuple[_Plugin, DistFacade]]:
+    def list_plugin_distinfo(self) -> list[tuple[_Plugin, DistFacade]]:
         """Return a list of (plugin, distinfo) pairs for all
         setuptools-registered plugins."""
         return list(self._plugin_distinfo)
 
-    def list_name_plugin(self) -> List[Tuple[str, _Plugin]]:
+    def list_name_plugin(self) -> list[tuple[str, _Plugin]]:
         """Return a list of (name, plugin) pairs for all registered plugins."""
         return list(self._name2plugin.items())
 
-    def get_hookcallers(self, plugin: _Plugin) -> Optional[List[_HookCaller]]:
+    def get_hookcallers(self, plugin: _Plugin) -> list[_HookCaller] | None:
         """Get all hook callers for the specified plugin."""
         if self.get_name(plugin) is None:
             return None
@@ -422,7 +379,7 @@ class PluginManager:
             hook_impls: Sequence[HookImpl],
             caller_kwargs: Mapping[str, object],
             firstresult: bool,
-        ) -> Union[object, List[object]]:
+        ) -> object | list[object]:
             before(hook_name, hook_impls, caller_kwargs)
             outcome = _Result.from_call(
                 lambda: oldcall(hook_name, hook_impls, caller_kwargs, firstresult)
