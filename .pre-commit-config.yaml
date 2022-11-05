@@ -39,4 +39,4 @@ repos:
     rev: v3.2.0
     hooks:
     -   id: pyupgrade
-        args: [--py36-plus]
+        args: [--py37-plus]
