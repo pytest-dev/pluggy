@@ -19,16 +19,16 @@ jobs:
       fail-fast: false
       matrix:
         name: [
-          "windows-py36",
-          "windows-py310",
+          "windows-py37",
+          "windows-py311",
           "windows-pypy3",
 
-          "ubuntu-py36",
           "ubuntu-py37-pytestmain",
           "ubuntu-py37",
           "ubuntu-py38",
           "ubuntu-py39",
           "ubuntu-py310",
+          "ubuntu-py311",
           "ubuntu-pypy3",
           "ubuntu-benchmark",
 
@@ -37,23 +37,18 @@ jobs:
         ]
 
         include:
-          - name: "windows-py36"
-            python: "3.6"
+          - name: "windows-py37"
+            python: "3.7"
             os: windows-latest
-            tox_env: "py36"
-          - name: "windows-py310"
+            tox_env: "py37"
+          - name: "windows-py311"
             python: "3.10"
             os: windows-latest
-            tox_env: "py310"
+            tox_env: "py311"
           - name: "windows-pypy3"
-            python: "pypy3"
+            python: "pypy3.9"
             os: windows-latest
             tox_env: "pypy3"
-          - name: "ubuntu-py36"
-            python: "3.6"
-            os: ubuntu-latest
-            tox_env: "py36"
-            use_coverage: true
           - name: "ubuntu-py37-pytestmain"
             python: "3.7"
             os: ubuntu-latest
@@ -78,9 +73,13 @@ jobs:
             python: "3.10"
             os: ubuntu-latest
             tox_env: "py310"
+          - name: "ubuntu-py311"
+            python: "3.11"
+            os: ubuntu-latest
+            tox_env: "py311"
             use_coverage: true
           - name: "ubuntu-pypy3"
-            python: "pypy3"
+            python: "pypy3.9"
             os: ubuntu-latest
             tox_env: "pypy3"
             use_coverage: true
@@ -98,12 +97,12 @@ jobs:
             tox_env: "docs"
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
     - name: Set up Python ${{ matrix.python }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python }}
 
@@ -131,11 +130,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.8"
 
@@ -148,7 +147,7 @@ jobs:
         run: python setup.py sdist bdist_wheel
 
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@v1.4.1
+        uses: pypa/gh-action-pypi-publish@v1.5.1
         with:
           user: __token__
           password: ${{ secrets.pypi_token }}
