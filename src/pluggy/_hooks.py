@@ -244,8 +244,11 @@ def varnames(func: object) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
         except Exception:
             return (), ()
 
-    try:  # func MUST be a function or method here or we won't parse any args
-        sig = inspect.signature(func.__func__ if inspect.ismethod(func) else func)
+    try:
+        # func MUST be a function or method here or we won't parse any args.
+        sig = inspect.signature(
+            func.__func__ if inspect.ismethod(func) else func  # type:ignore[arg-type]
+        )
     except TypeError:
         return (), ()
 

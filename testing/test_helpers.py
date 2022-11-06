@@ -87,12 +87,13 @@ def test_formatdef() -> None:
 
 
 def test_varnames_decorator() -> None:
-    F = TypeVar('F', bound=Callable[..., Any])
+    F = TypeVar("F", bound=Callable[..., Any])
 
     def my_decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
+
         return cast(F, wrapper)
 
     @my_decorator
