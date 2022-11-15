@@ -31,9 +31,6 @@ jobs:
           "ubuntu-py311",
           "ubuntu-pypy3",
           "ubuntu-benchmark",
-
-          "linting",
-          "docs",
         ]
 
         include:
@@ -87,14 +84,6 @@ jobs:
             python: "3.8"
             os: ubuntu-latest
             tox_env: "benchmark"
-          - name: "linting"
-            python: "3.8"
-            os: ubuntu-latest
-            tox_env: "linting"
-          - name: "docs"
-            python: "3.8"
-            os: ubuntu-latest
-            tox_env: "docs"
 
     steps:
     - uses: actions/checkout@v3
