@@ -73,7 +73,7 @@ Running this directly gets us::
 .. |versions| image:: https://img.shields.io/pypi/pyversions/pluggy.svg
     :target: https://pypi.org/pypi/pluggy
 
-.. |github-actions| image:: https://github.com/pytest-dev/pluggy/workflows/main/badge.svg
+.. |github-actions| image:: https://github.com/pytest-dev/pluggy/workflows/test/badge.svg
     :target: https://github.com/pytest-dev/pluggy/actions
 
 .. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/pluggy.svg
@@ -86,7 +86,7 @@ Running this directly gets us::
 .. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
 
-.. |codecov| image:: https://codecov.io/gh/pytest-dev/pluggy/branch/master/graph/badge.svg
+.. |codecov| image:: https://codecov.io/gh/pytest-dev/pluggy/branch/main/graph/badge.svg
     :target: https://codecov.io/gh/pytest-dev/pluggy
     :alt: Code coverage Status
 

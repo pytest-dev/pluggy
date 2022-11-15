@@ -1,12 +1,10 @@
-name: main
+name: test
 
 on:
   push:
     branches:
       - main
       - test-me-*
-    tags:
-      - "*"
 
   pull_request:
     branches:
@@ -16,12 +14,12 @@ jobs:
   check-package:
     name: Build & inspect our package.
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: hynek/build-and-inspect-python-package@v2
+
   test:
     needs: [check-package]
     runs-on: ${{ matrix.os }}
@@ -137,20 +135,3 @@ jobs:
         fail_ci_if_error: true
         files: ./coverage.xml
         verbose: true
-
-  deploy:
-    needs: [check-package]
-    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') && github.repository == 'pytest-dev/pluggy'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-    steps:
-      - name: Download built packages from the check-package job.
-        uses: actions/download-artifact@v8
-        with:
-          name: Packages
-          path: dist
-      - name: Publish package
-        uses: pypa/gh-action-pypi-publish@v1.14.0
-        with:
-          attestations: true
