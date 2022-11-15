@@ -1,5 +1,7 @@
 import pytest
-from pluggy import HookspecMarker, PluginManager
+
+from pluggy import HookspecMarker
+from pluggy import PluginManager
 
 
 @pytest.fixture(

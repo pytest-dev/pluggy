@@ -2,10 +2,17 @@
 Call loop machinery
 """
 import sys
-from typing import cast, Generator, List, Mapping, Sequence, Union
+from typing import cast
+from typing import Generator
+from typing import List
+from typing import Mapping
+from typing import Sequence
 from typing import TYPE_CHECKING
+from typing import Union
 
-from ._result import HookCallError, _Result, _raise_wrapfail
+from ._result import _raise_wrapfail
+from ._result import _Result
+from ._result import HookCallError
 
 if TYPE_CHECKING:
     from ._hooks import HookImpl

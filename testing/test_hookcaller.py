@@ -1,8 +1,16 @@
-from typing import Callable, List, Sequence, TypeVar
+from typing import Callable
+from typing import List
+from typing import Sequence
+from typing import TypeVar
 
 import pytest
-from pluggy import HookimplMarker, HookspecMarker, PluginManager, PluginValidationError
-from pluggy._hooks import HookImpl, _HookCaller
+
+from pluggy import HookimplMarker
+from pluggy import HookspecMarker
+from pluggy import PluginManager
+from pluggy import PluginValidationError
+from pluggy._hooks import _HookCaller
+from pluggy._hooks import HookImpl
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
