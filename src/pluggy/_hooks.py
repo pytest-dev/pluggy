@@ -501,7 +501,7 @@ class _SubsetHookCaller(_HookCaller):
         self._hookexec = orig._hookexec  # type: ignore[misc]
 
     @property  # type: ignore[misc]
-    def _hookimpls(self) -> List["HookImpl"]:  # type: ignore[override]
+    def _hookimpls(self) -> List["HookImpl"]:
         return [
             impl
             for impl in self._orig._hookimpls

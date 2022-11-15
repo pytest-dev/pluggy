@@ -191,7 +191,7 @@ class PluginManager:
             res = {}  # type: ignore[assignment]
         if res is not None and not isinstance(res, dict):
             # false positive
-            res = None
+            res = None  # type:ignore[unreachable]
         return res
 
     def unregister(

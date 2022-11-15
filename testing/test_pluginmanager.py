@@ -2,6 +2,7 @@
 ``PluginManager`` unit and public API testing.
 """
 import pytest
+import sys
 from typing import Any, List
 
 from pluggy import (
@@ -11,7 +12,11 @@ from pluggy import (
     PluginManager,
     PluginValidationError,
 )
-from pluggy._manager import importlib_metadata
+
+if sys.version_info >= (3, 8):
+    from importlib import metadata as importlib_metadata
+else:
+    import importlib_metadata
 
 
 hookspec = HookspecMarker("example")
