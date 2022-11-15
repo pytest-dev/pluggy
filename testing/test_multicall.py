@@ -1,9 +1,17 @@
-from typing import Callable, Mapping, List, Sequence, Type, Union
+from typing import Callable
+from typing import List
+from typing import Mapping
+from typing import Sequence
+from typing import Type
+from typing import Union
 
 import pytest
-from pluggy import HookCallError, HookspecMarker, HookimplMarker
-from pluggy._hooks import HookImpl
+
+from pluggy import HookCallError
+from pluggy import HookimplMarker
+from pluggy import HookspecMarker
 from pluggy._callers import _multicall
+from pluggy._hooks import HookImpl
 
 
 hookspec = HookspecMarker("example")

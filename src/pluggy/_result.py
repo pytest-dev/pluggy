@@ -3,17 +3,15 @@ Hook wrapper "result" utilities.
 """
 import sys
 from types import TracebackType
-from typing import (
-    Callable,
-    cast,
-    Generator,
-    Generic,
-    Optional,
-    Tuple,
-    Type,
-    TYPE_CHECKING,
-    TypeVar,
-)
+from typing import Callable
+from typing import cast
+from typing import Generator
+from typing import Generic
+from typing import Optional
+from typing import Tuple
+from typing import Type
+from typing import TYPE_CHECKING
+from typing import TypeVar
 
 if TYPE_CHECKING:
     from typing import NoReturn

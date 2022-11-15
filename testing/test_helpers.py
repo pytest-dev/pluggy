@@ -1,5 +1,9 @@
 from functools import wraps
-from typing import Any, Callable, TypeVar, cast
+from typing import Any
+from typing import Callable
+from typing import cast
+from typing import TypeVar
+
 from pluggy._hooks import varnames
 from pluggy._manager import _formatdef
 

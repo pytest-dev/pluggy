@@ -1,5 +1,9 @@
 import pytest
-from pluggy import PluginManager, PluginValidationError, HookimplMarker, HookspecMarker
+
+from pluggy import HookimplMarker
+from pluggy import HookspecMarker
+from pluggy import PluginManager
+from pluggy import PluginValidationError
 
 
 hookspec = HookspecMarker("example")

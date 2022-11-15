@@ -1,5 +1,8 @@
 import pytest
-from pluggy import PluginManager, HookimplMarker, HookspecMarker
+
+from pluggy import HookimplMarker
+from pluggy import HookspecMarker
+from pluggy import PluginManager
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")

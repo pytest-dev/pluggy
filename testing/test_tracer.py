@@ -1,8 +1,8 @@
-from pluggy._tracing import TagTracer
+from typing import List
 
 import pytest
 
-from typing import List
+from pluggy._tracing import TagTracer
 
 
 @pytest.fixture

@@ -5,8 +5,10 @@ import argparse
 import sys
 from subprocess import check_call
 
-from colorama import init, Fore
-from git import Repo, Remote
+from colorama import Fore
+from colorama import init
+from git import Remote
+from git import Repo
 
 
 def create_branch(version):

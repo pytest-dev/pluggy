@@ -2,36 +2,32 @@ import inspect
 import sys
 import types
 import warnings
-from typing import (
-    Any,
-    Callable,
-    cast,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import Any
+from typing import Callable
+from typing import cast
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Mapping
+from typing import Optional
+from typing import Sequence
+from typing import Set
+from typing import Tuple
+from typing import TYPE_CHECKING
+from typing import Union
 
 from . import _tracing
-from ._result import _Result
 from ._callers import _multicall
-from ._hooks import (
-    HookImpl,
-    HookSpec,
-    _HookCaller,
-    _SubsetHookCaller,
-    _HookImplFunction,
-    _HookRelay,
-    _Namespace,
-    normalize_hookimpl_opts,
-    _Plugin,
-)
+from ._hooks import _HookCaller
+from ._hooks import _HookImplFunction
+from ._hooks import _HookRelay
+from ._hooks import _Namespace
+from ._hooks import _Plugin
+from ._hooks import _SubsetHookCaller
+from ._hooks import HookImpl
+from ._hooks import HookSpec
+from ._hooks import normalize_hookimpl_opts
+from ._result import _Result
 
 if sys.version_info >= (3, 8):
     from importlib import metadata as importlib_metadata

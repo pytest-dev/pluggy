@@ -1,9 +1,10 @@
 import itertools
 import random
 
-import pluggy
+from eggsample import hookspecs
+from eggsample import lib
 
-from eggsample import hookspecs, lib
+import pluggy
 
 condiments_tray = {"pickled walnuts": 13, "steak sauce": 4, "mushy peas": 2}
 

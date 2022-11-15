@@ -1,17 +1,17 @@
 """
 ``PluginManager`` unit and public API testing.
 """
-import pytest
 import sys
-from typing import Any, List
+from typing import Any
+from typing import List
 
-from pluggy import (
-    HookCallError,
-    HookimplMarker,
-    HookspecMarker,
-    PluginManager,
-    PluginValidationError,
-)
+import pytest
+
+from pluggy import HookCallError
+from pluggy import HookimplMarker
+from pluggy import HookspecMarker
+from pluggy import PluginManager
+from pluggy import PluginValidationError
 
 if sys.version_info >= (3, 8):
     from importlib import metadata as importlib_metadata
