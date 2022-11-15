@@ -73,7 +73,7 @@ Running this directly gets us::
 .. |versions| image:: https://img.shields.io/pypi/pyversions/pluggy.svg
     :target: https://pypi.org/pypi/pluggy
 
-.. |github-actions| image:: https://github.com/pytest-dev/pluggy/workflows/main/badge.svg
+.. |github-actions| image:: https://github.com/pytest-dev/pluggy/workflows/test/badge.svg
     :target: https://github.com/pytest-dev/pluggy/actions
 
 .. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/pluggy.svg
