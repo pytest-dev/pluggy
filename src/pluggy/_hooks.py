@@ -338,7 +338,7 @@ class _HookCaller:
         spec_opts: "_HookSpecOpts",
     ) -> None:
         if self.spec is not None:
-            raise RuntimeError(
+            raise ValueError(
                 f"Hook {self.spec.name!r} is already registered "
                 f"within namespace {self.spec.namespace}"
             )

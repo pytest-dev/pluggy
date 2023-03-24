@@ -419,5 +419,9 @@ def test_hook_conflict(pm: PluginManager) -> None:
             pass
 
     pm.add_hookspecs(Api1)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError) as exc:
         pm.add_hookspecs(Api2)
+    assert str(exc.value) == (
+        "Hook 'conflict' is already registered within namespace "
+        "<class 'test_hookcaller.test_hook_conflict.<locals>.Api1'>"
+    )
