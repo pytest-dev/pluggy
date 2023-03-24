@@ -337,7 +337,11 @@ class _HookCaller:
         specmodule_or_class: _Namespace,
         spec_opts: "_HookSpecOpts",
     ) -> None:
-        assert not self.has_spec()
+        if self.has_spec():
+            raise RuntimeError(
+                f"Hook {self.spec.name!r} is already registered "
+                f"within namespace {self.spec.namespace}"
+            )
         self.spec = HookSpec(specmodule_or_class, self.name, spec_opts)
         if spec_opts.get("historic"):
             self._call_history = []

@@ -405,3 +405,19 @@ def test_hookrelay_registration_by_specname_raises(pm: PluginManager) -> None:
     pm.register(Plugin2())
     with pytest.raises(PluginValidationError):
         pm.check_pending()
+
+
+def test_hook_conflict(pm: PluginManager) -> None:
+    class Api1:
+        @hookspec
+        def conflict(self) -> None:
+            pass
+
+    class Api2:
+        @hookspec
+        def conflict(self) -> None:
+            pass
+
+    pm.add_hookspecs(Api1)
+    with pytest.raises(RuntimeError):
+        pm.add_hookspecs(Api2)
