@@ -411,12 +411,12 @@ def test_hook_conflict(pm: PluginManager) -> None:
     class Api1:
         @hookspec
         def conflict(self) -> None:
-            pass
+            """Api1 hook"""
 
     class Api2:
         @hookspec
         def conflict(self) -> None:
-            pass
+            """Api2 hook"""
 
     pm.add_hookspecs(Api1)
     with pytest.raises(ValueError) as exc:
