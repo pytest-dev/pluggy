@@ -7,7 +7,7 @@ repos:
         args: ["--in-place", "--remove-unused-variables", "--remove-all-unused-imports"]
         language: python
         files: \.py$
--   repo: https://github.com/asottile/reorder_python_imports
+-   repo: https://github.com/asottile/reorder-python-imports
     rev: v3.9.0
     hooks:
     -   id: reorder-python-imports
@@ -24,7 +24,7 @@ repos:
     hooks:
     -   id: rst-backticks
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.2
+    rev: v3.4.0
     hooks:
     -   id: pyupgrade
         args: [--py37-plus]
@@ -47,7 +47,7 @@ repos:
         language: python
         additional_dependencies: [pygments, restructuredtext_lint]
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.2.0
+    rev: v1.3.0
     hooks:
     -   id: mypy
         files: ^(src/|testing/)
