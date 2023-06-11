@@ -100,6 +100,8 @@ def test_call_order(pm: PluginManager) -> None:
             assert arg == 0
             outcome = yield
             assert outcome.get_result() == [3, 2, 1]
+            assert outcome.exception is None
+            assert outcome.excinfo is None
 
     pm.register(Plugin1())
     pm.register(Plugin2())

@@ -1,7 +1,6 @@
 """
 Call loop machinery
 """
-import sys
 from typing import cast
 from typing import Generator
 from typing import List
@@ -31,7 +30,7 @@ def _multicall(
     """
     __tracebackhide__ = True
     results: List[object] = []
-    excinfo = None
+    exception = None
     try:  # run impl and wrapper setup functions in a loop
         teardowns = []
         try:
@@ -61,19 +60,15 @@ def _multicall(
                         results.append(res)
                         if firstresult:  # halt further impl calls
                             break
-        except BaseException:
-            _excinfo = sys.exc_info()
-            assert _excinfo[0] is not None
-            assert _excinfo[1] is not None
-            assert _excinfo[2] is not None
-            excinfo = (_excinfo[0], _excinfo[1], _excinfo[2])
+        except BaseException as exc:
+            exception = exc
     finally:
         if firstresult:  # first result hooks return a single value
             outcome: _Result[Union[object, List[object]]] = _Result(
-                results[0] if results else None, excinfo
+                results[0] if results else None, exception
             )
         else:
-            outcome = _Result(results, excinfo)
+            outcome = _Result(results, exception)
 
         # run all wrapper post-yield blocks
         for gen in reversed(teardowns):

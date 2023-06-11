@@ -149,7 +149,9 @@ def test_hookwrapper_exception(exc: "Type[BaseException]") -> None:
     @hookimpl(hookwrapper=True)
     def m1():
         out.append("m1 init")
-        yield None
+        result = yield
+        assert isinstance(result.exception, exc)
+        assert result.excinfo[0] == exc
         out.append("m1 finish")
 
     @hookimpl

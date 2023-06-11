@@ -775,7 +775,7 @@ hook invocation point:
             outcome.get_result()
         except RuntimeError:
             # log the error details
-            print(outcome.excinfo)
+            print(outcome.exception)
 
 
     pm = PluginManager("myproject")
