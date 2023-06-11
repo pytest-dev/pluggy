@@ -45,7 +45,7 @@ def test_hook_and_wrappers_speed(benchmark, hooks, wrappers):
         firstresult = False
         return (hook_name, hook_impls, caller_kwargs, firstresult), {}
 
-    benchmark.pedantic(_multicall, setup=setup)
+    benchmark.pedantic(_multicall, setup=setup, rounds=10)
 
 
 @pytest.mark.parametrize(
