@@ -290,10 +290,12 @@ class PluginManager:
         return None
 
     def _verify_hook(self, hook: _HookCaller, hookimpl: HookImpl) -> None:
-        if hook.is_historic() and hookimpl.hookwrapper:
+        if hook.is_historic() and (
+            hookimpl.hookwrapper or hookimpl.isgeneratorfunction
+        ):
             raise PluginValidationError(
                 hookimpl.plugin,
-                "Plugin %r\nhook %r\nhistoric incompatible to hookwrapper"
+                "Plugin %r\nhook %r\nhistoric incompatible with yield/hookwrapper"
                 % (hookimpl.plugin_name, hook.name),
             )
 

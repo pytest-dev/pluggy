@@ -360,6 +360,23 @@ def test_register_historic_incompat_hookwrapper(pm: PluginManager) -> None:
         pm.register(Plugin())
 
 
+def test_register_historic_incompat_generator_fun(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec(historic=True)
+        def he_method1(self, arg):
+            pass
+
+    pm.add_hookspecs(Hooks)
+
+    class Plugin:
+        @hookimpl()
+        def he_method1(self, arg):
+            yield
+
+    with pytest.raises(PluginValidationError):
+        pm.register(Plugin())
+
+
 def test_call_extra(pm: PluginManager) -> None:
     class Hooks:
         @hookspec

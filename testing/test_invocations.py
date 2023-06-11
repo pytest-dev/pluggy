@@ -103,10 +103,19 @@ def test_call_order(pm: PluginManager) -> None:
             assert outcome.exception is None
             assert outcome.excinfo is None
 
+    class Plugin5:
+        @hookimpl
+        def hello(self, arg):
+            assert arg == 0
+            outcome = yield
+            assert outcome == [3, 2, 1]
+            return outcome
+
     pm.register(Plugin1())
     pm.register(Plugin2())
     pm.register(Plugin3())
     pm.register(Plugin4())  # hookwrapper should get same list result
+    pm.register(Plugin5())  # hookwrapper should get same list result
     res = pm.hook.hello(arg=0)
     assert res == [3, 2, 1]
 
@@ -135,6 +144,13 @@ def test_firstresult_definition(pm: PluginManager) -> None:
             return None
 
     class Plugin4:
+        def hello(self, arg):
+            assert arg == 3
+            outcome = yield
+            assert outcome == 2
+            return outcome
+
+    class Plugin5:
         @hookimpl(hookwrapper=True)
         def hello(self, arg):
             assert arg == 3
@@ -145,11 +161,12 @@ def test_firstresult_definition(pm: PluginManager) -> None:
     pm.register(Plugin2())  # used as result
     pm.register(Plugin3())  # None result is ignored
     pm.register(Plugin4())  # hookwrapper should get same non-list result
+    pm.register(Plugin5())  # hookwrapper should get same non-list result
     res = pm.hook.hello(arg=3)
     assert res == 2
 
 
-def test_firstresult_force_result(pm: PluginManager) -> None:
+def test_firstresult_force_result_hookwrapper(pm: PluginManager) -> None:
     """Verify forcing a result in a wrapper."""
 
     class Api:
@@ -171,6 +188,41 @@ def test_firstresult_force_result(pm: PluginManager) -> None:
             outcome = yield
             assert outcome.get_result() == 4
             outcome.force_result(0)
+
+    class Plugin3:
+        @hookimpl
+        def hello(self, arg):
+            return None
+
+    pm.register(Plugin1())
+    pm.register(Plugin2())  # wrapper
+    pm.register(Plugin3())  # ignored since returns None
+    res = pm.hook.hello(arg=3)
+    assert res == 0  # this result is forced and not a list
+
+
+def test_firstresult_force_result(pm: PluginManager) -> None:
+    """Verify forcing a result in a wrapper."""
+
+    class Api:
+        @hookspec(firstresult=True)
+        def hello(self, arg):
+            "api hook 1"
+
+    pm.add_hookspecs(Api)
+
+    class Plugin1:
+        @hookimpl
+        def hello(self, arg):
+            return arg + 1
+
+    class Plugin2:
+        @hookimpl
+        def hello(self, arg):
+            assert arg == 3
+            outcome = yield
+            assert outcome == 4
+            return 0
 
     class Plugin3:
         @hookimpl

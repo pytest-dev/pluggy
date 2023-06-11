@@ -19,6 +19,7 @@ exclude_lines =
     pragma: no cover
 
     if TYPE_CHECKING:
+    if False:
 
     if __name__ == .__main__.:
 

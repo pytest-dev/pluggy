@@ -23,7 +23,10 @@ _T = TypeVar("_T")
 
 
 def _raise_wrapfail(
-    wrap_controller: Generator[None, _Result[_T], None], msg: str
+    wrap_controller: (
+        Generator[None, _Result[_T], None] | Generator[None, object, object]
+    ),
+    msg: str,
 ) -> NoReturn:
     co = wrap_controller.gi_code
     raise RuntimeError(
