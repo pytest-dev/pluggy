@@ -75,9 +75,21 @@ class _Result(Generic[_T]):
         If the hook was marked as a ``firstresult`` a single value should
         be set, otherwise set a (modified) list of results. Any exceptions
         found during invocation will be deleted.
+
+        This overrides any previous result or exception.
         """
         self._result = result
         self._exception = None
+
+    def force_exception(self, exception: BaseException) -> None:
+        """Force the result to fail with ``exception``.
+
+        This overrides any previous result or exception.
+
+        .. versionadded:: 1.1.0
+        """
+        self._result = None
+        self._exception = exception
 
     def get_result(self) -> _T:
         """Get the result(s) for this hook call.
