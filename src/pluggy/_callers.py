@@ -1,13 +1,13 @@
 """
 Call loop machinery
 """
+from __future__ import annotations
+
 from typing import cast
 from typing import Generator
-from typing import List
 from typing import Mapping
 from typing import Sequence
 from typing import TYPE_CHECKING
-from typing import Union
 
 from ._result import _raise_wrapfail
 from ._result import _Result
@@ -19,17 +19,17 @@ if TYPE_CHECKING:
 
 def _multicall(
     hook_name: str,
-    hook_impls: Sequence["HookImpl"],
+    hook_impls: Sequence[HookImpl],
     caller_kwargs: Mapping[str, object],
     firstresult: bool,
-) -> Union[object, List[object]]:
+) -> object | list[object]:
     """Execute a call into multiple python functions/methods and return the
     result(s).
 
     ``caller_kwargs`` comes from _HookCaller.__call__().
     """
     __tracebackhide__ = True
-    results: List[object] = []
+    results: list[object] = []
     exception = None
     try:  # run impl and wrapper setup functions in a loop
         teardowns = []
@@ -64,7 +64,7 @@ def _multicall(
             exception = exc
     finally:
         if firstresult:  # first result hooks return a single value
-            outcome: _Result[Union[object, List[object]]] = _Result(
+            outcome: _Result[object | list[object]] = _Result(
                 results[0] if results else None, exception
             )
         else:
