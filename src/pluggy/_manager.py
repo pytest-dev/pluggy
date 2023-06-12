@@ -452,7 +452,7 @@ class PluginManager:
             methods: Sequence[HookImpl],
             kwargs: Mapping[str, object],
         ) -> None:
-            if outcome.excinfo is None:
+            if outcome.exception is None:
                 hooktrace("finish", hook_name, "-->", outcome.get_result())
             hooktrace.root.indent -= 1
 
