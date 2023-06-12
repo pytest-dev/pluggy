@@ -53,6 +53,7 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+docs/_changelog_towncrier_draft.rst
 
 # PyBuilder
 target/
