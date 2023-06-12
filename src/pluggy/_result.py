@@ -1,6 +1,8 @@
 """
 Hook wrapper "result" utilities.
 """
+from __future__ import annotations
+
 from types import TracebackType
 from typing import Callable
 from typing import cast
@@ -21,8 +23,8 @@ _T = TypeVar("_T")
 
 
 def _raise_wrapfail(
-    wrap_controller: Generator[None, "_Result[_T]", None], msg: str
-) -> "NoReturn":
+    wrap_controller: Generator[None, _Result[_T], None], msg: str
+) -> NoReturn:
     co = wrap_controller.gi_code
     raise RuntimeError(
         "wrap_controller at %r %s:%d %s"
@@ -39,14 +41,14 @@ class _Result(Generic[_T]):
 
     def __init__(
         self,
-        result: Optional[_T],
-        exception: Optional[BaseException],
+        result: _T | None,
+        exception: BaseException | None,
     ) -> None:
         self._result = result
         self._exception = exception
 
     @property
-    def excinfo(self) -> Optional[_ExcInfo]:
+    def excinfo(self) -> _ExcInfo | None:
         exc = self._exception
         if exc is None:
             return None
@@ -54,11 +56,11 @@ class _Result(Generic[_T]):
             return (type(exc), exc, exc.__traceback__)
 
     @property
-    def exception(self) -> Optional[BaseException]:
+    def exception(self) -> BaseException | None:
         return self._exception
 
     @classmethod
-    def from_call(cls, func: Callable[[], _T]) -> "_Result[_T]":
+    def from_call(cls, func: Callable[[], _T]) -> _Result[_T]:
         __tracebackhide__ = True
         result = exception = None
         try:
