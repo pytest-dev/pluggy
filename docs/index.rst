@@ -387,7 +387,13 @@ be implemented as generator function with a single ``yield`` in its body:
         # all corresponding hookimpls are invoked here
         outcome = yield
 
-        for item in outcome.get_result():
+        try:
+            result = outcome.get_result()
+        except BaseException as e:
+            outcome.force_exception(e)
+            return
+
+        for item in result:
             print("JSON config override is {}".format(item))
 
         if config.debug:
@@ -397,14 +403,21 @@ be implemented as generator function with a single ``yield`` in its body:
             outcome.force_result(defaults)
 
 The generator is :py:meth:`sent <python:generator.send>` a :py:class:`pluggy._callers._Result` object which can
-be assigned in the ``yield`` expression and used to override or inspect
-the final result(s) returned back to the caller using the
-:py:meth:`~pluggy._callers._Result.force_result` or
-:py:meth:`~pluggy._callers._Result.get_result` methods.
+be assigned in the ``yield`` expression and used to inspect
+the final result(s) or exceptions returned back to the caller using the
+:py:meth:`~pluggy._callers._Result.get_result` method, override the result
+using the :py:meth:`~pluggy._callers._Result.force_result`, or override
+the exception using the :py:meth:`~pluggy._callers._Result.force_exception`
+method.
 
 .. note::
-    Hook wrappers can **not** return results (as per generator function
-    semantics); they can only modify them using the ``_Result`` API.
+    Hookwrappers can **not** return results; they can only modify them using
+    the :py:meth:`~pluggy._callers._Result.force_result` API.
+
+    Hookwrappers should **not** raise exceptions; this will cause further
+    hookwrappers to be skipped. They should use
+    :py:meth:`~pluggy._callers._Result.force_exception` to adjust the
+    exception.
 
 Also see the :ref:`pytest:hookwrapper` section in the ``pytest`` docs.
 

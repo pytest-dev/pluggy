@@ -161,3 +161,52 @@ def test_hookwrapper_exception(exc: "Type[BaseException]") -> None:
     with pytest.raises(exc):
         MC([m2, m1], {})
     assert out == ["m1 init", "m1 finish"]
+
+
+def test_hookwrapper_force_exception() -> None:
+    out = []
+
+    @hookimpl(hookwrapper=True)
+    def m1():
+        out.append("m1 init")
+        result = yield
+        try:
+            result.get_result()
+        except BaseException as exc:
+            result.force_exception(exc)
+        out.append("m1 finish")
+
+    @hookimpl(hookwrapper=True)
+    def m2():
+        out.append("m2 init")
+        result = yield
+        try:
+            result.get_result()
+        except BaseException as exc:
+            new_exc = OSError("m2")
+            new_exc.__cause__ = exc
+            result.force_exception(new_exc)
+        out.append("m2 finish")
+
+    @hookimpl(hookwrapper=True)
+    def m3():
+        out.append("m3 init")
+        yield
+        out.append("m3 finish")
+
+    @hookimpl
+    def m4():
+        raise ValueError("m4")
+
+    with pytest.raises(OSError, match="m2") as excinfo:
+        MC([m4, m3, m2, m1], {})
+    assert out == [
+        "m1 init",
+        "m2 init",
+        "m3 init",
+        "m3 finish",
+        "m2 finish",
+        "m1 finish",
+    ]
+    assert excinfo.value.__cause__ is not None
+    assert str(excinfo.value.__cause__) == "m4"
