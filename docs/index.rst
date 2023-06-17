@@ -438,11 +438,11 @@ execution of all corresponding non-wrappper *hookimpls*.
         """Wrap calls to ``setup_project()`` implementations which
         should return json encoded config options.
         """
-        if config.debug:
-            print("Pre-hook config is {}".format(config.tojson()))
-
         # get initial default config
         defaults = config.tojson()
+
+        if config.debug:
+            print("Pre-hook config is {}".format(config.tojson()))
 
         # all corresponding hookimpls are invoked here
         outcome = yield
