@@ -52,7 +52,7 @@ def changelog(version, write_out=False):
     else:
         addopts = ["--draft"]
     print(f"{Fore.CYAN}Generating CHANGELOG")
-    check_call(["towncrier", "--yes", "--version", version] + addopts)
+    check_call(["towncrier", "build", "--yes", "--version", version] + addopts)
 
 
 def main():
