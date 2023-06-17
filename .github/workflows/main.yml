@@ -29,6 +29,7 @@ jobs:
           "ubuntu-py39",
           "ubuntu-py310",
           "ubuntu-py311",
+          "ubuntu-py312",
           "ubuntu-pypy3",
           "ubuntu-benchmark",
         ]
@@ -74,6 +75,11 @@ jobs:
             python: "3.11"
             os: ubuntu-latest
             tox_env: "py311"
+            use_coverage: true
+          - name: "ubuntu-py312"
+            python: "3.12-dev"
+            os: ubuntu-latest
+            tox_env: "py312"
             use_coverage: true
           - name: "ubuntu-pypy3"
             python: "pypy3.9"
@@ -125,18 +131,18 @@ jobs:
 
       - uses: actions/setup-python@v4
         with:
-          python-version: "3.8"
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade wheel setuptools setuptools_scm
+          pip install --upgrade build
 
       - name: Build package
-        run: python setup.py sdist bdist_wheel
+        run: python -m build --sdist --wheel --outdir dist/
 
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@v1.5.1
+        uses: pypa/gh-action-pypi-publish@v1.8.6
         with:
           user: __token__
           password: ${{ secrets.pypi_token }}
