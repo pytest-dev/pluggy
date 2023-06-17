@@ -104,10 +104,10 @@ def _multicall(
                         teardown.throw(outcome._exception)
                     else:
                         teardown.send(outcome._result)
-                        # Following is unreachable for a well behaved hook wrapper.
-                        # Try to force finalizers otherwise postponed till GC action.
-                        # Note: close() may raise if generator handles GeneratorExit.
-                        teardown.close()
+                    # Following is unreachable for a well behaved hook wrapper.
+                    # Try to force finalizers otherwise postponed till GC action.
+                    # Note: close() may raise if generator handles GeneratorExit.
+                    teardown.close()
                 except StopIteration as si:
                     outcome.force_result(si.value)
                     continue
