@@ -19,9 +19,9 @@ def hook(arg1, arg2, arg3):
     return arg1, arg2, arg3
 
 
-@hookimpl(hookwrapper=True)
+@hookimpl
 def wrapper(arg1, arg2, arg3):
-    yield
+    return (yield)
 
 
 @pytest.fixture(params=[10, 100], ids="hooks={}".format)
@@ -70,7 +70,7 @@ def test_call_hook(benchmark, plugins, wrappers, nesting):
     class HookSpec:
         @hookspec
         def fun(self, hooks, nesting: int):
-            yield
+            pass
 
     class Plugin:
         def __init__(self, num: int) -> None:
@@ -91,9 +91,9 @@ def test_call_hook(benchmark, plugins, wrappers, nesting):
         def __repr__(self) -> str:
             return f"<PluginWrap {self.num}>"
 
-        @hookimpl(hookwrapper=True)
+        @hookimpl
         def fun(self):
-            yield
+            return (yield)
 
     pm.add_hookspecs(HookSpec)
 

@@ -101,6 +101,50 @@ def test_hookwrapper() -> None:
     assert out == ["m1 init", "m2", "m1 finish"]
 
 
+def test_hookwrapper_two_yields() -> None:
+    @hookimpl(hookwrapper=True)
+    def m():
+        yield
+        yield
+
+    with pytest.raises(RuntimeError, match="has second yield"):
+        MC([m], {})
+
+
+def test_generator_fun() -> None:
+    out = []
+
+    @hookimpl
+    def m1():
+        out.append("m1 init")
+        result = yield
+        out.append("m1 finish")
+        return result * 2
+
+    @hookimpl
+    def m2():
+        out.append("m2")
+        return 2
+
+    res = MC([m2, m1], {})
+    assert res == [2, 2]
+    assert out == ["m1 init", "m2", "m1 finish"]
+    out[:] = []
+    res = MC([m2, m1], {}, firstresult=True)
+    assert res == 4
+    assert out == ["m1 init", "m2", "m1 finish"]
+
+
+def test_generator_fun_two_yields() -> None:
+    @hookimpl
+    def m():
+        yield
+        yield
+
+    with pytest.raises(RuntimeError, match="has second yield"):
+        MC([m], {})
+
+
 def test_hookwrapper_order() -> None:
     out = []
 
@@ -110,15 +154,37 @@ def test_hookwrapper_order() -> None:
         yield 1
         out.append("m1 finish")
 
-    @hookimpl(hookwrapper=True)
+    @hookimpl
     def m2():
         out.append("m2 init")
-        yield 2
+        result = yield 2
         out.append("m2 finish")
+        return result
 
-    res = MC([m2, m1], {})
+    @hookimpl(hookwrapper=True)
+    def m3():
+        out.append("m3 init")
+        yield 3
+        out.append("m3 finish")
+
+    @hookimpl(hookwrapper=True)
+    def m4():
+        out.append("m4 init")
+        yield 4
+        out.append("m4 finish")
+
+    res = MC([m4, m3, m2, m1], {})
     assert res == []
-    assert out == ["m1 init", "m2 init", "m2 finish", "m1 finish"]
+    assert out == [
+        "m1 init",
+        "m2 init",
+        "m3 init",
+        "m4 init",
+        "m4 finish",
+        "m3 finish",
+        "m2 finish",
+        "m1 finish",
+    ]
 
 
 def test_hookwrapper_not_yield() -> None:
@@ -127,6 +193,16 @@ def test_hookwrapper_not_yield() -> None:
         pass
 
     with pytest.raises(TypeError):
+        MC([m1], {})
+
+
+def test_hookwrapper_yield_not_executed() -> None:
+    @hookimpl(hookwrapper=True)
+    def m1():
+        if False:
+            yield  # type: ignore[unreachable]
+
+    with pytest.raises(RuntimeError, match="did not yield"):
         MC([m1], {})
 
 
@@ -140,6 +216,37 @@ def test_hookwrapper_too_many_yield() -> None:
         MC([m1], {})
     assert "m1" in str(ex.value)
     assert (__file__ + ":") in str(ex.value)
+
+
+def test_generator_fun_yield_not_executed() -> None:
+    @hookimpl
+    def m1():
+        if False:
+            yield  # type: ignore[unreachable]
+
+    with pytest.raises(RuntimeError, match="did not yield"):
+        MC([m1], {})
+
+
+def test_generator_fun_too_many_yield() -> None:
+    out = []
+
+    @hookimpl
+    def m1():
+        try:
+            yield 1
+            yield 2
+        finally:
+            out.append("cleanup")
+
+    with pytest.raises(RuntimeError) as ex:
+        try:
+            MC([m1], {})
+        finally:
+            out.append("finally")
+    assert "m1" in str(ex.value)
+    assert (__file__ + ":") in str(ex.value)
+    assert out == ["cleanup", "finally"]
 
 
 @pytest.mark.parametrize("exc", [ValueError, SystemExit])
@@ -210,3 +317,138 @@ def test_hookwrapper_force_exception() -> None:
     ]
     assert excinfo.value.__cause__ is not None
     assert str(excinfo.value.__cause__) == "m4"
+
+
+@pytest.mark.parametrize("exc", [ValueError, SystemExit])
+def test_generator_fun_exception(exc: "Type[BaseException]") -> None:
+    out = []
+
+    @hookimpl
+    def m1():
+        out.append("m1 init")
+        try:
+            result = yield
+        except BaseException as e:
+            assert isinstance(e, exc)
+            raise
+        finally:
+            out.append("m1 finish")
+        return result
+
+    @hookimpl
+    def m2():
+        out.append("m2 init")
+        raise exc
+
+    with pytest.raises(exc):
+        MC([m2, m1], {})
+    assert out == ["m1 init", "m2 init", "m1 finish"]
+
+
+def test_generator_fun_exception_chaining() -> None:
+    @hookimpl
+    def m1():
+        raise Exception("m1")
+
+    @hookimpl
+    def m2():
+        try:
+            yield
+        except Exception:
+            raise Exception("m2")
+
+    @hookimpl
+    def m3():
+        yield
+        return 10
+
+    @hookimpl
+    def m4():
+        try:
+            yield
+        except Exception as e:
+            raise Exception("m4") from e
+
+    with pytest.raises(Exception) as excinfo:
+        MC([m1, m2, m3, m4], {})
+    assert str(excinfo.value) == "m4"
+    assert excinfo.value.__cause__ is not None
+    assert str(excinfo.value.__cause__) == "m2"
+    assert excinfo.value.__cause__.__context__ is not None
+    assert str(excinfo.value.__cause__.__context__) == "m1"
+
+
+def test_unwind_inner_wrapper_teardown_exc() -> None:
+    out = []
+
+    @hookimpl
+    def m1():
+        out.append("m1 init")
+        try:
+            yield
+            out.append("m1 unreachable")
+        except BaseException:
+            out.append("m1 teardown")
+            raise
+        finally:
+            out.append("m1 cleanup")
+
+    @hookimpl
+    def m2():
+        out.append("m2 init")
+        yield
+        out.append("m2 raise")
+        raise ValueError()
+
+    with pytest.raises(ValueError):
+        try:
+            MC([m2, m1], {})
+        finally:
+            out.append("finally")
+
+    assert out == [
+        "m1 init",
+        "m2 init",
+        "m2 raise",
+        "m1 teardown",
+        "m1 cleanup",
+        "finally",
+    ]
+
+
+def test_suppress_inner_wrapper_teardown_exc() -> None:
+    out = []
+
+    @hookimpl
+    def m1():
+        out.append("m1 init")
+        result = yield
+        out.append("m1 finish")
+        return result
+
+    @hookimpl
+    def m2():
+        out.append("m2 init")
+        try:
+            yield
+            out.append("m2 unreachable")
+        except ValueError:
+            out.append("m2 suppress")
+            return 22
+
+    @hookimpl
+    def m3():
+        out.append("m3 init")
+        yield
+        out.append("m3 raise")
+        raise ValueError()
+
+    assert MC([m3, m2, m1], {}) == 22
+    assert out == [
+        "m1 init",
+        "m2 init",
+        "m3 init",
+        "m3 raise",
+        "m2 suppress",
+        "m1 finish",
+    ]

@@ -185,17 +185,30 @@ class HookimplMarker:
         If ``trylast`` is ``True``, this hook implementation will run as late as
         possible in the chain of N hook implementations.
 
-        If ``hookwrapper`` is ``True``, the hook implementations needs to
-        execute exactly one ``yield``. The code before the ``yield`` is run
-        early before any non-hookwrapper function is run. The code after the
-        ``yield`` is run after all non-hookwrapper function have run  The
-        ``yield`` receives a :class:`_Result` object representing the exception
-        or result outcome of the inner calls (including other hookwrapper
-        calls).
+        If the hook implementation is a generator function, and ``hookwrapper``
+        is ``False`` or not set ("new-style hook wrapper"), the hook
+        implementation needs to execute exactly one ``yield``. The code before
+        the ``yield`` is run early before any non-hook-wrapper function is run.
+        The code after the ``yield`` is run after all non-hook-wrapper functions
+        have run. The ``yield`` receives the result value of the inner calls, or
+        raises the exception of inner calls (including earlier hook wrapper
+        calls). The return value of the function becomes the return value of the
+        hook, and a raised exception becomes the exception of the hook.
+
+        If ``hookwrapper`` is ``True`` ("old-style hook wrapper"), the hook
+        implementation needs to execute exactly one ``yield``. The code before
+        the ``yield`` is run early before any non-hook-wrapper function is run.
+        The code after the ``yield`` is run after all non-hook-wrapper function
+        have run  The ``yield`` receives a :class:`_Result` object representing
+        the exception or result outcome of the inner calls (including earlier
+        hook wrapper calls).
 
         If ``specname`` is provided, it will be used instead of the function
         name when matching this hook implementation to a hook specification
         during registration.
+
+        .. versionadded:: 1.1
+            New-style hook wrappers.
         """
 
         def setattr_hookimpl_opts(func: _F) -> _F:
@@ -360,12 +373,12 @@ class _HookCaller:
     def _add_hookimpl(self, hookimpl: HookImpl) -> None:
         """Add an implementation to the callback chain."""
         for i, method in enumerate(self._hookimpls):
-            if method.hookwrapper:
+            if method.hookwrapper or method.isgeneratorfunction:
                 splitpoint = i
                 break
         else:
             splitpoint = len(self._hookimpls)
-        if hookimpl.hookwrapper:
+        if hookimpl.hookwrapper or hookimpl.isgeneratorfunction:
             start, end = splitpoint, len(self._hookimpls)
         else:
             start, end = 0, splitpoint
@@ -455,7 +468,11 @@ class _HookCaller:
             hookimpl = HookImpl(None, "<temp>", method, opts)
             # Find last non-tryfirst nonwrapper method.
             i = len(hookimpls) - 1
-            while i >= 0 and hookimpls[i].tryfirst and not hookimpls[i].hookwrapper:
+            while (
+                i >= 0
+                and hookimpls[i].tryfirst
+                and not (hookimpls[i].hookwrapper or hookimpls[i].isgeneratorfunction)
+            ):
                 i -= 1
             hookimpls.insert(i + 1, hookimpl)
         firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
@@ -528,6 +545,7 @@ class HookImpl:
         "plugin",
         "opts",
         "plugin_name",
+        "isgeneratorfunction",
         "hookwrapper",
         "optionalhook",
         "tryfirst",
@@ -546,6 +564,7 @@ class HookImpl:
         self.plugin = plugin
         self.opts = hook_impl_opts
         self.plugin_name = plugin_name
+        self.isgeneratorfunction = inspect.isgeneratorfunction(self.function)
         self.hookwrapper = hook_impl_opts["hookwrapper"]
         self.optionalhook = hook_impl_opts["optionalhook"]
         self.tryfirst = hook_impl_opts["tryfirst"]

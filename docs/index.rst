@@ -362,13 +362,73 @@ For another example see the :ref:`pytest:plugin-hookorder` section of the
 
 Wrappers
 ^^^^^^^^
-A *hookimpl* can be marked with a ``"hookwrapper"`` option which indicates that
-the function will be called to *wrap* (or surround) all other normal *hookimpl*
-calls. A *hookwrapper* can thus execute some code ahead and after the execution
-of all corresponding non-wrappper *hookimpls*.
 
-Much in the same way as a :py:func:`@contextlib.contextmanager <python:contextlib.contextmanager>`, *hookwrappers* must
-be implemented as generator function with a single ``yield`` in its body:
+.. note::
+    This section describes "new-style hook wrappers", which were added in Pluggy
+    1.1. For earlier versions, see the "old-style hook wrappers" section below.
+    The two styles are fully interoperable.
+
+A *hookimpl* can be a generator function, which indicates that the function will
+be called to *wrap* (or surround) all other normal *hookimpl* calls. A *hook
+wrapper* can thus execute some code ahead and after the execution of all
+corresponding non-wrappper *hookimpls*.
+
+Much in the same way as a :py:func:`@contextlib.contextmanager <python:contextlib.contextmanager>`,
+*hook wrappers* must be implemented as generator function with a single ``yield`` in its body:
+
+.. code-block:: python
+
+    @hookimpl
+    def setup_project(config, args):
+        """Wrap calls to ``setup_project()`` implementations which
+        should return json encoded config options.
+        """
+        # get initial default config
+        defaults = config.tojson()
+
+        if config.debug:
+            print("Pre-hook config is {}".format(config.tojson()))
+
+        # all corresponding hookimpls are invoked here
+        result = yield
+
+        for item in result:
+            print("JSON config override is {}".format(item))
+
+        if config.debug:
+            print("Post-hook config is {}".format(config.tojson()))
+
+        if config.use_defaults:
+            return defaults
+        else:
+            return result
+
+The generator is :py:meth:`sent <python:generator.send>` the return value
+of the hook thus far, or, if the previous calls raised an exception, it is
+:py:meth:`thrown <python:generator.throw>` the exception.
+
+The function should do one of two things:
+- Return a value, which can be the same value as received from the ``yield``, or
+something else entirely.
+- Raise an exception.
+The return value or exception propagate to further hook wrappers, and finally
+to the hook caller.
+
+Also see the :ref:`pytest:hookwrapper` section in the ``pytest`` docs.
+
+Old-style wrappers
+^^^^^^^^^^^^^^^^^^
+
+.. note::
+    Prefer to use new-style hook wrappers, unless you need to support Pluggy
+    versions before 1.1.
+
+A *hookimpl* can be marked with the ``"hookwrapper"`` option, which indicates
+that the function will be called to *wrap* (or surround) all other normal
+*hookimpl* calls. A *hookwrapper* can thus execute some code ahead and after the
+execution of all corresponding non-wrappper *hookimpls*.
+
+*hookwrappers* must be implemented as generator function with a single ``yield`` in its body:
 
 
 .. code-block:: python
@@ -411,15 +471,13 @@ the exception using the :py:meth:`~pluggy._callers._Result.force_exception`
 method.
 
 .. note::
-    Hookwrappers can **not** return results; they can only modify them using
-    the :py:meth:`~pluggy._callers._Result.force_result` API.
+    Old-style hook wrappers can **not** return results; they can only modify
+    them using the :py:meth:`~pluggy._callers._Result.force_result` API.
 
-    Hookwrappers should **not** raise exceptions; this will cause further
-    hookwrappers to be skipped. They should use
+    Old-style Hook wrappers should **not** raise exceptions; this will cause
+    further hookwrappers to be skipped. They should use
     :py:meth:`~pluggy._callers._Result.force_exception` to adjust the
     exception.
-
-Also see the :ref:`pytest:hookwrapper` section in the ``pytest`` docs.
 
 .. _specs:
 
@@ -538,7 +596,7 @@ than ``None``.
 This can be useful for optimizing a call loop for which you are only
 interested in a single core *hookimpl*. An example is the
 :func:`~_pytest.hookspec.pytest_cmdline_main` central routine of ``pytest``.
-Note that all ``hookwrappers`` are still invoked with the first result.
+Note that all hook wrappers are still invoked with the first result.
 
 Also see the :ref:`pytest:firstresult` section in the ``pytest`` docs.
 
@@ -750,10 +808,9 @@ single value (which is not ``None``) will be returned.
 
 Exception handling
 ------------------
-If any *hookimpl* errors with an exception no further callbacks
-are invoked and the exception is packaged up and delivered to
-any :ref:`wrappers <hookwrappers>` before being re-raised at the
-hook invocation point:
+If any *hookimpl* errors with an exception no further callbacks are invoked and
+the exception is delivered to any :ref:`wrappers <hookwrappers>` before being
+re-raised at the hook invocation point:
 
 .. code-block:: python
 
@@ -780,15 +837,14 @@ hook invocation point:
             return 3
 
 
-    @hookimpl(hookwrapper=True)
+    @hookimpl
     def myhook(self, args):
-        outcome = yield
-
         try:
-            outcome.get_result()
-        except RuntimeError:
-            # log the error details
-            print(outcome.exception)
+            return (yield)
+        except RuntimeError as exc:
+            # log runtime error details
+            print(exc)
+            raise
 
 
     pm = PluginManager("myproject")

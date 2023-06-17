@@ -1,0 +1,10 @@
+Add "new-style" hook wrappers, a simpler but equally powerful alternative to the existing ``hookwrapper=True`` wrappers.
+
+New-style wrappers are generator functions, similarly to ``hookwrapper``, but do away with the :class:`result <pluggy._callers._Result>` object.
+Instead, the return value is sent directly to the ``yield`` statement, or, if inner calls raised an exception, it is raised from the ``yield``.
+The wrapper is excepted to return a value or raise an exception, which will become the result of the hook call.
+
+New-style wrappers are fully interoperable with old-style wrappers.
+We encourage users to use the new style, however we do not intend to deprecate the old style any time soon.
+
+See :ref:`hookwrappers` for the full documentation.
