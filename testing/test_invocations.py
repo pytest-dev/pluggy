@@ -1,3 +1,5 @@
+from typing import Iterator
+
 import pytest
 
 from pluggy import HookimplMarker
@@ -104,12 +106,12 @@ def test_call_order(pm: PluginManager) -> None:
             assert outcome.excinfo is None
 
     class Plugin5:
-        @hookimpl
+        @hookimpl(wrapper=True)
         def hello(self, arg):
             assert arg == 0
-            outcome = yield
-            assert outcome == [3, 2, 1]
-            return outcome
+            result = yield
+            assert result == [3, 2, 1]
+            return result
 
     pm.register(Plugin1())
     pm.register(Plugin2())
@@ -144,6 +146,7 @@ def test_firstresult_definition(pm: PluginManager) -> None:
             return None
 
     class Plugin4:
+        @hookimpl(wrapper=True)
         def hello(self, arg):
             assert arg == 3
             outcome = yield
@@ -160,7 +163,7 @@ def test_firstresult_definition(pm: PluginManager) -> None:
     pm.register(Plugin1())  # discarded - not the last registered plugin
     pm.register(Plugin2())  # used as result
     pm.register(Plugin3())  # None result is ignored
-    pm.register(Plugin4())  # hookwrapper should get same non-list result
+    pm.register(Plugin4())  # wrapper should get same non-list result
     pm.register(Plugin5())  # hookwrapper should get same non-list result
     res = pm.hook.hello(arg=3)
     assert res == 2
@@ -217,7 +220,7 @@ def test_firstresult_force_result(pm: PluginManager) -> None:
             return arg + 1
 
     class Plugin2:
-        @hookimpl
+        @hookimpl(wrapper=True)
         def hello(self, arg):
             assert arg == 3
             outcome = yield
@@ -287,3 +290,39 @@ def test_no_hookspec(pm: PluginManager) -> None:
     pm.register(Plugin())
 
     assert pm.hook.hello(arg=10, extra=20) == ["Plugin.hello"]
+
+
+def test_non_wrapper_generator(pm: PluginManager) -> None:
+    """A hookimpl can be a generator without being a wrapper,
+    meaning it returns an iterator result."""
+
+    class Api:
+        @hookspec
+        def hello(self) -> Iterator[int]:
+            raise NotImplementedError()
+
+    pm.add_hookspecs(Api)
+
+    class Plugin1:
+        @hookimpl
+        def hello(self):
+            yield 1
+
+    class Plugin2:
+        @hookimpl
+        def hello(self):
+            yield 2
+            yield 3
+
+    class Plugin3:
+        @hookimpl(wrapper=True)
+        def hello(self):
+            return (yield)
+
+    pm.register(Plugin1())
+    pm.register(Plugin2())  # wrapper
+    res = pm.hook.hello()
+    assert [y for x in res for y in x] == [2, 3, 1]
+    pm.register(Plugin3())
+    res = pm.hook.hello()
+    assert [y for x in res for y in x] == [2, 3, 1]

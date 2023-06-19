@@ -35,10 +35,19 @@ class AddMeth:
         self.hc = hc
 
     def __call__(
-        self, tryfirst: bool = False, trylast: bool = False, hookwrapper: bool = False
+        self,
+        tryfirst: bool = False,
+        trylast: bool = False,
+        hookwrapper: bool = False,
+        wrapper: bool = False,
     ) -> Callable[[FuncT], FuncT]:
         def wrap(func: FuncT) -> FuncT:
-            hookimpl(tryfirst=tryfirst, trylast=trylast, hookwrapper=hookwrapper)(func)
+            hookimpl(
+                tryfirst=tryfirst,
+                trylast=trylast,
+                hookwrapper=hookwrapper,
+                wrapper=wrapper,
+            )(func)
             self.hc._add_hookimpl(
                 HookImpl(None, "<temp>", func, func.example_impl),  # type: ignore[attr-defined]
             )
@@ -150,7 +159,7 @@ def test_adding_wrappers_ordering(hc: _HookCaller, addmeth: AddMeth) -> None:
     def he_method1():
         yield
 
-    @addmeth()
+    @addmeth(wrapper=True)
     def he_method1_fun():
         yield
 
@@ -184,7 +193,7 @@ def test_adding_wrappers_ordering_tryfirst(hc: _HookCaller, addmeth: AddMeth) ->
     def he_method2():
         yield
 
-    @addmeth(tryfirst=True)
+    @addmeth(wrapper=True, tryfirst=True)
     def he_method3():
         yield
 
@@ -218,7 +227,7 @@ def test_adding_wrappers_complex(hc: _HookCaller, addmeth: AddMeth) -> None:
 
     assert funcs(hc.get_hookimpls()) == [m3, m2, m1, m4]
 
-    @addmeth(tryfirst=True)
+    @addmeth(wrapper=True, tryfirst=True)
     def m5():
         yield
 
@@ -236,7 +245,7 @@ def test_adding_wrappers_complex(hc: _HookCaller, addmeth: AddMeth) -> None:
 
     assert funcs(hc.get_hookimpls()) == [m3, m2, m7, m6, m1, m4, m5]
 
-    @addmeth()
+    @addmeth(wrapper=True)
     def m8():
         yield
 
@@ -260,7 +269,7 @@ def test_adding_wrappers_complex(hc: _HookCaller, addmeth: AddMeth) -> None:
 
     assert funcs(hc.get_hookimpls()) == [m9, m3, m2, m7, m6, m10, m11, m1, m4, m8, m5]
 
-    @addmeth()
+    @addmeth(wrapper=True)
     def m12():
         yield
 

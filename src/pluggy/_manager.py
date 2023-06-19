@@ -290,12 +290,10 @@ class PluginManager:
         return None
 
     def _verify_hook(self, hook: _HookCaller, hookimpl: HookImpl) -> None:
-        if hook.is_historic() and (
-            hookimpl.hookwrapper or hookimpl.isgeneratorfunction
-        ):
+        if hook.is_historic() and (hookimpl.hookwrapper or hookimpl.wrapper):
             raise PluginValidationError(
                 hookimpl.plugin,
-                "Plugin %r\nhook %r\nhistoric incompatible with yield/hookwrapper"
+                "Plugin %r\nhook %r\nhistoric incompatible with yield/wrapper/hookwrapper"
                 % (hookimpl.plugin_name, hook.name),
             )
 
@@ -319,11 +317,22 @@ class PluginManager:
                 ),
             )
 
-        if hookimpl.hookwrapper and not inspect.isgeneratorfunction(hookimpl.function):
+        if (
+            hookimpl.wrapper or hookimpl.hookwrapper
+        ) and not inspect.isgeneratorfunction(hookimpl.function):
             raise PluginValidationError(
                 hookimpl.plugin,
                 "Plugin %r for hook %r\nhookimpl definition: %s\n"
-                "Declared as hookwrapper=True but function is not a generator function"
+                "Declared as wrapper=True or hookwrapper=True "
+                "but function is not a generator function"
+                % (hookimpl.plugin_name, hook.name, _formatdef(hookimpl.function)),
+            )
+
+        if hookimpl.wrapper and hookimpl.hookwrapper:
+            raise PluginValidationError(
+                hookimpl.plugin,
+                "Plugin %r for hook %r\nhookimpl definition: %s\n"
+                "The wrapper=True and hookwrapper=True options are mutually exclusive"
                 % (hookimpl.plugin_name, hook.name, _formatdef(hookimpl.function)),
             )
 

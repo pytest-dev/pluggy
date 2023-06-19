@@ -45,6 +45,7 @@ if TYPE_CHECKING:
         warn_on_impl: Warning | None
 
     class _HookImplOpts(TypedDict):
+        wrapper: bool
         hookwrapper: bool
         optionalhook: bool
         tryfirst: bool
@@ -145,6 +146,7 @@ class HookimplMarker:
         tryfirst: bool = ...,
         trylast: bool = ...,
         specname: str | None = ...,
+        wrapper: bool = ...,
     ) -> _F:
         ...
 
@@ -157,6 +159,7 @@ class HookimplMarker:
         tryfirst: bool = ...,
         trylast: bool = ...,
         specname: str | None = ...,
+        wrapper: bool = ...,
     ) -> Callable[[_F], _F]:
         ...
 
@@ -168,6 +171,7 @@ class HookimplMarker:
         tryfirst: bool = False,
         trylast: bool = False,
         specname: str | None = None,
+        wrapper: bool = False,
     ) -> _F | Callable[[_F], _F]:
         """If passed a function, directly sets attributes on the function
         which will make it discoverable to :meth:`PluginManager.register`.
@@ -185,8 +189,7 @@ class HookimplMarker:
         If ``trylast`` is ``True``, this hook implementation will run as late as
         possible in the chain of N hook implementations.
 
-        If the hook implementation is a generator function, and ``hookwrapper``
-        is ``False`` or not set ("new-style hook wrapper"), the hook
+        If ``wrapper`` is ``True``("new-style hook wrapper"), the hook
         implementation needs to execute exactly one ``yield``. The code before
         the ``yield`` is run early before any non-hook-wrapper function is run.
         The code after the ``yield`` is run after all non-hook-wrapper functions
@@ -201,18 +204,19 @@ class HookimplMarker:
         The code after the ``yield`` is run after all non-hook-wrapper function
         have run  The ``yield`` receives a :class:`_Result` object representing
         the exception or result outcome of the inner calls (including earlier
-        hook wrapper calls).
+        hook wrapper calls). This option is mutually exclusive with ``wrapper``.
 
         If ``specname`` is provided, it will be used instead of the function
         name when matching this hook implementation to a hook specification
         during registration.
 
-        .. versionadded:: 1.1
-            New-style hook wrappers.
+        .. versionadded:: 1.2.0
+            The ``wrapper`` parameter.
         """
 
         def setattr_hookimpl_opts(func: _F) -> _F:
             opts: _HookImplOpts = {
+                "wrapper": wrapper,
                 "hookwrapper": hookwrapper,
                 "optionalhook": optionalhook,
                 "tryfirst": tryfirst,
@@ -231,6 +235,7 @@ class HookimplMarker:
 def normalize_hookimpl_opts(opts: _HookImplOpts) -> None:
     opts.setdefault("tryfirst", False)
     opts.setdefault("trylast", False)
+    opts.setdefault("wrapper", False)
     opts.setdefault("hookwrapper", False)
     opts.setdefault("optionalhook", False)
     opts.setdefault("specname", None)
@@ -373,12 +378,12 @@ class _HookCaller:
     def _add_hookimpl(self, hookimpl: HookImpl) -> None:
         """Add an implementation to the callback chain."""
         for i, method in enumerate(self._hookimpls):
-            if method.hookwrapper or method.isgeneratorfunction:
+            if method.hookwrapper or method.wrapper:
                 splitpoint = i
                 break
         else:
             splitpoint = len(self._hookimpls)
-        if hookimpl.hookwrapper or hookimpl.isgeneratorfunction:
+        if hookimpl.hookwrapper or hookimpl.wrapper:
             start, end = splitpoint, len(self._hookimpls)
         else:
             start, end = 0, splitpoint
@@ -457,6 +462,7 @@ class _HookCaller:
         ), "Cannot directly call a historic hook - use call_historic instead."
         self._verify_all_args_are_provided(kwargs)
         opts: _HookImplOpts = {
+            "wrapper": False,
             "hookwrapper": False,
             "optionalhook": False,
             "trylast": False,
@@ -471,7 +477,7 @@ class _HookCaller:
             while (
                 i >= 0
                 and hookimpls[i].tryfirst
-                and not (hookimpls[i].hookwrapper or hookimpls[i].isgeneratorfunction)
+                and not (hookimpls[i].hookwrapper or hookimpls[i].wrapper)
             ):
                 i -= 1
             hookimpls.insert(i + 1, hookimpl)
@@ -545,7 +551,7 @@ class HookImpl:
         "plugin",
         "opts",
         "plugin_name",
-        "isgeneratorfunction",
+        "wrapper",
         "hookwrapper",
         "optionalhook",
         "tryfirst",
@@ -564,7 +570,7 @@ class HookImpl:
         self.plugin = plugin
         self.opts = hook_impl_opts
         self.plugin_name = plugin_name
-        self.isgeneratorfunction = inspect.isgeneratorfunction(self.function)
+        self.wrapper = hook_impl_opts["wrapper"]
         self.hookwrapper = hook_impl_opts["hookwrapper"]
         self.optionalhook = hook_impl_opts["optionalhook"]
         self.tryfirst = hook_impl_opts["tryfirst"]

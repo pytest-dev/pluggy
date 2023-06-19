@@ -156,6 +156,21 @@ def test_register_hookwrapper_not_a_generator_function(he_pm: PluginManager) -> 
     assert excinfo.value.plugin is plugin
 
 
+def test_register_both_wrapper_and_hookwrapper(he_pm: PluginManager) -> None:
+    class hello:
+        @hookimpl(wrapper=True, hookwrapper=True)
+        def he_method1(self):
+            yield  # pragma: no cover
+
+    plugin = hello()
+
+    with pytest.raises(
+        PluginValidationError, match="wrapper.*hookwrapper.*mutually exclusive"
+    ) as excinfo:
+        he_pm.register(plugin)
+    assert excinfo.value.plugin is plugin
+
+
 def test_register(pm: PluginManager) -> None:
     class MyPlugin:
         @hookimpl
@@ -360,7 +375,7 @@ def test_register_historic_incompat_hookwrapper(pm: PluginManager) -> None:
         pm.register(Plugin())
 
 
-def test_register_historic_incompat_generator_fun(pm: PluginManager) -> None:
+def test_register_historic_incompat_wrapper(pm: PluginManager) -> None:
     class Hooks:
         @hookspec(historic=True)
         def he_method1(self, arg):
@@ -369,7 +384,7 @@ def test_register_historic_incompat_generator_fun(pm: PluginManager) -> None:
     pm.add_hookspecs(Hooks)
 
     class Plugin:
-        @hookimpl()
+        @hookimpl(wrapper=True)
         def he_method1(self, arg):
             yield
 

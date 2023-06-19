@@ -19,7 +19,7 @@ def hook(arg1, arg2, arg3):
     return arg1, arg2, arg3
 
 
-@hookimpl
+@hookimpl(wrapper=True)
 def wrapper(arg1, arg2, arg3):
     return (yield)
 
@@ -91,7 +91,7 @@ def test_call_hook(benchmark, plugins, wrappers, nesting):
         def __repr__(self) -> str:
             return f"<PluginWrap {self.num}>"
 
-        @hookimpl
+        @hookimpl(wrapper=True)
         def fun(self):
             return (yield)
 

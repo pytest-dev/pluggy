@@ -366,19 +366,25 @@ Wrappers
 .. note::
     This section describes "new-style hook wrappers", which were added in Pluggy
     1.1. For earlier versions, see the "old-style hook wrappers" section below.
-    The two styles are fully interoperable.
 
-A *hookimpl* can be a generator function, which indicates that the function will
-be called to *wrap* (or surround) all other normal *hookimpl* calls. A *hook
-wrapper* can thus execute some code ahead and after the execution of all
-corresponding non-wrappper *hookimpls*.
+    New-style hooks wrappers are declared with ``wrapper=True``, while
+    old-style hook wrappers are declared with ``hookwrapper=True``.
+
+    The two styles are fully interoperable between plugins using different
+    styles. However within the same plugin we recommend using only one style,
+    for consistency.
+
+A *hookimpl* can be marked with the ``"wrapper"`` option, which indicates
+that the function will be called to *wrap* (or surround) all other normal
+*hookimpl* calls. A *hook wrapper* can thus execute some code ahead and after the
+execution of all corresponding non-wrappper *hookimpls*.
 
 Much in the same way as a :py:func:`@contextlib.contextmanager <python:contextlib.contextmanager>`,
 *hook wrappers* must be implemented as generator function with a single ``yield`` in its body:
 
 .. code-block:: python
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def setup_project(config, args):
         """Wrap calls to ``setup_project()`` implementations which
         should return json encoded config options.
@@ -837,7 +843,7 @@ re-raised at the hook invocation point:
             return 3
 
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def myhook(self, args):
         try:
             return (yield)

@@ -25,7 +25,7 @@ def test_parse_hookimpl_override() -> None:
         def x1meth2(self):
             yield  # pragma: no cover
 
-        @hookimpl(trylast=True)
+        @hookimpl(wrapper=True, trylast=True)
         def x1meth3(self):
             return (yield)  # pragma: no cover
 
@@ -49,7 +49,7 @@ def test_parse_hookimpl_override() -> None:
     hookimpls = pm.hook.x1meth.get_hookimpls()
     assert len(hookimpls) == 1
     assert not hookimpls[0].hookwrapper
-    assert not hookimpls[0].isgeneratorfunction
+    assert not hookimpls[0].wrapper
     assert not hookimpls[0].tryfirst
     assert not hookimpls[0].trylast
     assert not hookimpls[0].optionalhook
@@ -57,13 +57,13 @@ def test_parse_hookimpl_override() -> None:
     hookimpls = pm.hook.x1meth2.get_hookimpls()
     assert len(hookimpls) == 1
     assert hookimpls[0].hookwrapper
-    assert hookimpls[0].isgeneratorfunction
+    assert not hookimpls[0].wrapper
     assert hookimpls[0].tryfirst
 
     hookimpls = pm.hook.x1meth3.get_hookimpls()
     assert len(hookimpls) == 1
     assert not hookimpls[0].hookwrapper
-    assert hookimpls[0].isgeneratorfunction
+    assert hookimpls[0].wrapper
     assert not hookimpls[0].tryfirst
     assert hookimpls[0].trylast
 
