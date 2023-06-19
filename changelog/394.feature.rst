@@ -1,5 +1,0 @@
-Added the :meth:`~pluggy._callers._Result.force_exception` method to ``_Result``.
-
-``force_exception`` allows hookwrappers to force an exception or override/adjust an existing exception of a hook invocation,
-in a properly behaving manner. Using ``force_exception`` is preferred over raising an exception from the hookwrapper,
-because raising an exception causes other hookwrappers to be skipped.
