@@ -21,8 +21,12 @@ Versions follow `Semantic Versioning <https://semver.org/>`_ (``<major>.<minor>.
 
 .. towncrier release notes start
 
-pluggy 1.1.0 (2023-06-19)
-=========================
+pluggy 1.1.0 (YANKED)
+=====================
+
+.. note::
+
+  This release was yanked because unfortunately the new-style hook wrappers broke some downstream projects. See `#403 <https://github.com/pytest-dev/pluggy/issues/403>`__ for more information.
 
 Deprecations and Removals
 -------------------------
