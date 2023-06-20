@@ -507,8 +507,6 @@ class _SubsetHookCaller(_HookCaller):
     __slots__ = (
         "_orig",
         "_remove_plugins",
-        "name",
-        "_hookexec",
     )
 
     def __init__(self, orig: _HookCaller, remove_plugins: AbstractSet[_Plugin]) -> None:
