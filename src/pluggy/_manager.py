@@ -92,16 +92,6 @@ class PluginManager:
     which will subsequently send debug information to the trace helper.
     """
 
-    __slots__ = (
-        "project_name",
-        "_name2plugin",
-        "_plugin2hookcallers",
-        "_plugin_distinfo",
-        "trace",
-        "hook",
-        "_inner_hookexec",
-    )
-
     def __init__(self, project_name: str) -> None:
         self.project_name: Final = project_name
         self._name2plugin: Final[dict[str, _Plugin]] = {}
