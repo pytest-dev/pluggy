@@ -111,10 +111,10 @@ def test_hookwrapper_two_yields() -> None:
         MC([m], {})
 
 
-def test_generator_fun() -> None:
+def test_wrapper() -> None:
     out = []
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def m1():
         out.append("m1 init")
         result = yield
@@ -135,8 +135,8 @@ def test_generator_fun() -> None:
     assert out == ["m1 init", "m2", "m1 finish"]
 
 
-def test_generator_fun_two_yields() -> None:
-    @hookimpl
+def test_wrapper_two_yields() -> None:
+    @hookimpl(wrapper=True)
     def m():
         yield
         yield
@@ -154,7 +154,7 @@ def test_hookwrapper_order() -> None:
         yield 1
         out.append("m1 finish")
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def m2():
         out.append("m2 init")
         result = yield 2
@@ -218,8 +218,8 @@ def test_hookwrapper_too_many_yield() -> None:
     assert (__file__ + ":") in str(ex.value)
 
 
-def test_generator_fun_yield_not_executed() -> None:
-    @hookimpl
+def test_wrapper_yield_not_executed() -> None:
+    @hookimpl(wrapper=True)
     def m1():
         if False:
             yield  # type: ignore[unreachable]
@@ -228,10 +228,10 @@ def test_generator_fun_yield_not_executed() -> None:
         MC([m1], {})
 
 
-def test_generator_fun_too_many_yield() -> None:
+def test_wrapper_too_many_yield() -> None:
     out = []
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def m1():
         try:
             yield 1
@@ -320,10 +320,10 @@ def test_hookwrapper_force_exception() -> None:
 
 
 @pytest.mark.parametrize("exc", [ValueError, SystemExit])
-def test_generator_fun_exception(exc: "Type[BaseException]") -> None:
+def test_wrapper_exception(exc: "Type[BaseException]") -> None:
     out = []
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def m1():
         out.append("m1 init")
         try:
@@ -345,24 +345,24 @@ def test_generator_fun_exception(exc: "Type[BaseException]") -> None:
     assert out == ["m1 init", "m2 init", "m1 finish"]
 
 
-def test_generator_fun_exception_chaining() -> None:
+def test_wrapper_exception_chaining() -> None:
     @hookimpl
     def m1():
         raise Exception("m1")
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def m2():
         try:
             yield
         except Exception:
             raise Exception("m2")
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def m3():
         yield
         return 10
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def m4():
         try:
             yield
@@ -381,7 +381,7 @@ def test_generator_fun_exception_chaining() -> None:
 def test_unwind_inner_wrapper_teardown_exc() -> None:
     out = []
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def m1():
         out.append("m1 init")
         try:
@@ -393,7 +393,7 @@ def test_unwind_inner_wrapper_teardown_exc() -> None:
         finally:
             out.append("m1 cleanup")
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def m2():
         out.append("m2 init")
         yield
@@ -419,14 +419,14 @@ def test_unwind_inner_wrapper_teardown_exc() -> None:
 def test_suppress_inner_wrapper_teardown_exc() -> None:
     out = []
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def m1():
         out.append("m1 init")
         result = yield
         out.append("m1 finish")
         return result
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def m2():
         out.append("m2 init")
         try:
@@ -436,7 +436,7 @@ def test_suppress_inner_wrapper_teardown_exc() -> None:
             out.append("m2 suppress")
             return 22
 
-    @hookimpl
+    @hookimpl(wrapper=True)
     def m3():
         out.append("m3 init")
         yield

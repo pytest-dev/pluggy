@@ -66,7 +66,7 @@ def _multicall(
                         teardowns.append((wrapper_gen,))
                     except StopIteration:
                         _raise_wrapfail(wrapper_gen, "did not yield")
-                elif hook_impl.isgeneratorfunction:
+                elif hook_impl.wrapper:
                     try:
                         # If this cast is not valid, a type error is raised below,
                         # which is the desired response.

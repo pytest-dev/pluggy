@@ -26,7 +26,9 @@ pluggy 1.1.0 (YANKED)
 
 .. note::
 
-  This release was yanked because unfortunately the new-style hook wrappers broke some downstream projects. See `#403 <https://github.com/pytest-dev/pluggy/issues/403>`__ for more information.
+  This release was yanked because unfortunately the implicit new-style hook wrappers broke some downstream projects.
+  See `#403 <https://github.com/pytest-dev/pluggy/issues/403>`__ for more information.
+  This was rectified in the 1.2.0 release.
 
 Deprecations and Removals
 -------------------------
