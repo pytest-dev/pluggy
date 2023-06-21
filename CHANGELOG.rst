@@ -21,6 +21,15 @@ Versions follow `Semantic Versioning <https://semver.org/>`_ (``<major>.<minor>.
 
 .. towncrier release notes start
 
+pluggy 1.2.0 (2023-06-21)
+=========================
+
+Features
+--------
+
+- `#405 <https://github.com/pytest-dev/pluggy/issues/405>`_: The new-style hook wrappers, added in the yanked 1.1.0 release, now require an explicit ``wrapper=True`` designation in the ``@hookimpl()`` decorator.
+
+
 pluggy 1.1.0 (YANKED)
 =====================
 
