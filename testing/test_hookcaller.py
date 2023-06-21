@@ -428,3 +428,23 @@ def test_hookrelay_registration_by_specname_raises(pm: PluginManager) -> None:
     pm.register(Plugin2())
     with pytest.raises(PluginValidationError):
         pm.check_pending()
+
+
+def test_hook_conflict(pm: PluginManager) -> None:
+    class Api1:
+        @hookspec
+        def conflict(self) -> None:
+            """Api1 hook"""
+
+    class Api2:
+        @hookspec
+        def conflict(self) -> None:
+            """Api2 hook"""
+
+    pm.add_hookspecs(Api1)
+    with pytest.raises(ValueError) as exc:
+        pm.add_hookspecs(Api2)
+    assert str(exc.value) == (
+        "Hook 'conflict' is already registered within namespace "
+        "<class 'test_hookcaller.test_hook_conflict.<locals>.Api1'>"
+    )
