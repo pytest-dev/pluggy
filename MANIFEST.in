@@ -3,5 +3,6 @@ include README.rst
 include setup.py
 include tox.ini
 include LICENSE
+include src/pluggy/py.typed
 graft testing
 recursive-exclude * *.pyc *.pyo
