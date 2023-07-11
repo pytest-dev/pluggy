@@ -23,7 +23,7 @@ jobs:
           "windows-py311",
           "windows-pypy3",
 
-          "ubuntu-py37-pytestmain",
+          "ubuntu-py38-pytestmain",
           "ubuntu-py37",
           "ubuntu-py38",
           "ubuntu-py39",
@@ -47,11 +47,6 @@ jobs:
             python: "pypy3.9"
             os: windows-latest
             tox_env: "pypy3"
-          - name: "ubuntu-py37-pytestmain"
-            python: "3.7"
-            os: ubuntu-latest
-            tox_env: "py37-pytestmain"
-            use_coverage: true
           - name: "ubuntu-py37"
             python: "3.7"
             os: ubuntu-latest
@@ -61,6 +56,11 @@ jobs:
             python: "3.8"
             os: ubuntu-latest
             tox_env: "py38"
+            use_coverage: true
+          - name: "ubuntu-py38-pytestmain"
+            python: "3.8"
+            os: ubuntu-latest
+            tox_env: "py38-pytestmain"
             use_coverage: true
           - name: "ubuntu-py39"
             python: "3.9"
