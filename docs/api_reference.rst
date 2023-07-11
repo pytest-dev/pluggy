@@ -7,10 +7,10 @@ API Reference
     :members:
     :undoc-members:
 
-.. autoclass:: pluggy._callers._Result
-.. automethod:: pluggy._callers._Result.get_result
-.. automethod:: pluggy._callers._Result.force_result
-.. automethod:: pluggy._callers._Result.force_exception
+.. autoclass:: pluggy._result._Result
+.. automethod:: pluggy._result._Result.get_result
+.. automethod:: pluggy._result._Result.force_result
+.. automethod:: pluggy._result._Result.force_exception
 
 .. autoclass:: pluggy._hooks._HookCaller
 .. automethod:: pluggy._hooks._HookCaller.call_extra

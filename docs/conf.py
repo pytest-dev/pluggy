@@ -86,10 +86,10 @@ texinfo_documents = [
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "pytest": ("https://docs.pytest.org/en/latest", None),
-    "setuptools": ("https://setuptools.readthedocs.io/en/latest", None),
-    "tox": ("https://tox.readthedocs.io/en/latest", None),
+    "setuptools": ("https://setuptools.pypa.io/en/latest", None),
+    "tox": ("https://tox.wiki/en/latest", None),
     "devpi": ("https://devpi.net/docs/devpi/devpi/stable/+doc/", None),
-    "kedro": ("https://kedro.readthedocs.io/en/latest/", None),
+    "kedro": ("https://docs.kedro.org/en/latest/", None),
 }
 
 

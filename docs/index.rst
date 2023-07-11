@@ -468,21 +468,21 @@ execution of all corresponding non-wrappper *hookimpls*.
         if config.use_defaults:
             outcome.force_result(defaults)
 
-The generator is :py:meth:`sent <python:generator.send>` a :py:class:`pluggy._callers._Result` object which can
+The generator is :py:meth:`sent <python:generator.send>` a :py:class:`pluggy._result._Result` object which can
 be assigned in the ``yield`` expression and used to inspect
 the final result(s) or exceptions returned back to the caller using the
-:py:meth:`~pluggy._callers._Result.get_result` method, override the result
-using the :py:meth:`~pluggy._callers._Result.force_result`, or override
-the exception using the :py:meth:`~pluggy._callers._Result.force_exception`
+:py:meth:`~pluggy._result._Result.get_result` method, override the result
+using the :py:meth:`~pluggy._result._Result.force_result`, or override
+the exception using the :py:meth:`~pluggy._result._Result.force_exception`
 method.
 
 .. note::
     Old-style hook wrappers can **not** return results; they can only modify
-    them using the :py:meth:`~pluggy._callers._Result.force_result` API.
+    them using the :py:meth:`~pluggy._result._Result.force_result` API.
 
     Old-style Hook wrappers should **not** raise exceptions; this will cause
     further hookwrappers to be skipped. They should use
-    :py:meth:`~pluggy._callers._Result.force_exception` to adjust the
+    :py:meth:`~pluggy._result._Result.force_exception` to adjust the
     exception.
 
 .. _specs:
