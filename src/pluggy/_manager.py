@@ -119,7 +119,7 @@ class PluginManager:
 
         If the name is blocked from registering, returns ``None``.
 
-        If the plugin is already registered, raises a :class:`ValueError`.
+        If the plugin is already registered, raises a :exc:`ValueError`.
         """
         plugin_name = name or self.get_canonical_name(plugin)
 
@@ -329,7 +329,7 @@ class PluginManager:
     def check_pending(self) -> None:
         """Verify that all hooks which have not been verified against a
         hook specification are optional, otherwise raise
-        :class:`PluginValidationError`."""
+        :exc:`PluginValidationError`."""
         for name in self.hook.__dict__:
             if name[0] != "_":
                 hook: _HookCaller = getattr(self.hook, name)
@@ -399,7 +399,7 @@ class PluginManager:
         of HookImpl instances and the keyword arguments for the hook call.
 
         ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
-        same arguments as ``before`` but also a :class:`_Result` object
+        same arguments as ``before`` but also a :class:`~pluggy._result._Result` object
         which represents the result of the overall hook call.
         """
         oldcall = self._inner_hookexec

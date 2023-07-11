@@ -51,7 +51,7 @@ Features
 
 - `#260 <https://github.com/pytest-dev/pluggy/issues/260>`_: Added "new-style" hook wrappers, a simpler but equally powerful alternative to the existing ``hookwrapper=True`` wrappers.
 
-  New-style wrappers are generator functions, similarly to ``hookwrapper``, but do away with the :class:`result <pluggy._callers._Result>` object.
+  New-style wrappers are generator functions, similarly to ``hookwrapper``, but do away with the :class:`result <pluggy._result._Result>` object.
   Instead, the return value is sent directly to the ``yield`` statement, or, if inner calls raised an exception, it is raised from the ``yield``.
   The wrapper is expected to return a value or raise an exception, which will become the result of the hook call.
 
@@ -64,7 +64,7 @@ Features
 - `#364 <https://github.com/pytest-dev/pluggy/issues/364>`_: Python 3.11 and 3.12 are now officially supported.
 
 
-- `#394 <https://github.com/pytest-dev/pluggy/issues/394>`_: Added the :meth:`~pluggy._callers._Result.force_exception` method to ``_Result``.
+- `#394 <https://github.com/pytest-dev/pluggy/issues/394>`_: Added the :meth:`~pluggy._result._Result.force_exception` method to ``_Result``.
 
   ``force_exception`` allows (old-style) hookwrappers to force an exception or override/adjust an existing exception of a hook invocation,
   in a properly behaving manner. Using ``force_exception`` is preferred over raising an exception from the hookwrapper,
