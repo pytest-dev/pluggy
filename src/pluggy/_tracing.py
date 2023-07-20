@@ -49,7 +49,7 @@ class TagTracer:
         else:
             processor(tags, args)
 
-    def setwriter(self, writer: _Writer) -> None:
+    def setwriter(self, writer: _Writer | None) -> None:
         self._writer = writer
 
     def setprocessor(self, tags: str | tuple[str, ...], processor: _Processor) -> None:
