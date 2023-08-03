@@ -1,22 +1,24 @@
 from __future__ import annotations
 
+import importlib.metadata
 import inspect
-import sys
 import types
 import warnings
 from typing import Any
 from typing import Callable
 from typing import cast
+from typing import Final
 from typing import Iterable
 from typing import Mapping
 from typing import Sequence
-from typing import TYPE_CHECKING
 
 from . import _tracing
 from ._callers import _multicall
 from ._hooks import _HookCaller
 from ._hooks import _HookImplFunction
+from ._hooks import _HookImplOpts
 from ._hooks import _HookRelay
+from ._hooks import _HookSpecOpts
 from ._hooks import _Namespace
 from ._hooks import _Plugin
 from ._hooks import _SubsetHookCaller
@@ -25,15 +27,6 @@ from ._hooks import HookSpec
 from ._hooks import normalize_hookimpl_opts
 from ._result import _Result
 
-if sys.version_info >= (3, 8):
-    from importlib import metadata as importlib_metadata
-else:
-    import importlib_metadata
-
-if TYPE_CHECKING:
-    from typing_extensions import Final
-
-    from ._hooks import _HookImplOpts, _HookSpecOpts
 
 _BeforeTrace = Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]
 _AfterTrace = Callable[[_Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None]
@@ -63,7 +56,7 @@ class PluginValidationError(Exception):
 class DistFacade:
     """Emulate a pkg_resources Distribution"""
 
-    def __init__(self, dist: importlib_metadata.Distribution) -> None:
+    def __init__(self, dist: importlib.metadata.Distribution) -> None:
         self._dist = dist
 
     @property
@@ -351,7 +344,7 @@ class PluginManager:
         :return: The number of plugins loaded by this call.
         """
         count = 0
-        for dist in list(importlib_metadata.distributions()):
+        for dist in list(importlib.metadata.distributions()):
             for ep in dist.entry_points:
                 if (
                     ep.group != group

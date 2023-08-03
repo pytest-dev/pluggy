@@ -10,6 +10,7 @@ from types import ModuleType
 from typing import AbstractSet
 from typing import Any
 from typing import Callable
+from typing import Final
 from typing import Generator
 from typing import List
 from typing import Mapping
@@ -18,14 +19,11 @@ from typing import overload
 from typing import Sequence
 from typing import Tuple
 from typing import TYPE_CHECKING
+from typing import TypedDict
 from typing import TypeVar
 from typing import Union
 
 from ._result import _Result
-
-if TYPE_CHECKING:
-    from typing_extensions import TypedDict
-    from typing_extensions import Final
 
 
 _T = TypeVar("_T")
@@ -37,20 +35,21 @@ _HookExec = Callable[
     Union[object, List[object]],
 ]
 _HookImplFunction = Callable[..., Union[_T, Generator[None, _Result[_T], None]]]
-if TYPE_CHECKING:
 
-    class _HookSpecOpts(TypedDict):
-        firstresult: bool
-        historic: bool
-        warn_on_impl: Warning | None
 
-    class _HookImplOpts(TypedDict):
-        wrapper: bool
-        hookwrapper: bool
-        optionalhook: bool
-        tryfirst: bool
-        trylast: bool
-        specname: str | None
+class _HookSpecOpts(TypedDict):
+    firstresult: bool
+    historic: bool
+    warn_on_impl: Warning | None
+
+
+class _HookImplOpts(TypedDict):
+    wrapper: bool
+    hookwrapper: bool
+    optionalhook: bool
+    tryfirst: bool
+    trylast: bool
+    specname: str | None
 
 
 class HookspecMarker:

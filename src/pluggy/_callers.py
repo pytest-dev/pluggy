@@ -8,15 +8,12 @@ from typing import Generator
 from typing import Mapping
 from typing import Sequence
 from typing import Tuple
-from typing import TYPE_CHECKING
 from typing import Union
 
+from ._hooks import HookImpl
 from ._result import _raise_wrapfail
 from ._result import _Result
 from ._result import HookCallError
-
-if TYPE_CHECKING:
-    from ._hooks import HookImpl
 
 
 # Need to distinguish between old- and new-style hook wrappers.

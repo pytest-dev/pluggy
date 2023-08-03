@@ -1,13 +1,8 @@
-import sys
+from importlib import metadata
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import sphinx.application
-
-if sys.version_info >= (3, 8):
-    from importlib import metadata
-else:
-    import importlib_metadata as metadata
 
 
 extensions = [
