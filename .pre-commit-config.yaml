@@ -11,7 +11,7 @@ repos:
     rev: v3.10.0
     hooks:
     -   id: reorder-python-imports
-        args: ['--application-directories=.:src', --py37-plus]
+        args: ['--application-directories=.:src', --py38-plus]
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.1.0
     hooks:
@@ -27,7 +27,7 @@ repos:
     rev: v3.10.1
     hooks:
     -   id: pyupgrade
-        args: [--py37-plus]
+        args: [--py38-plus]
 -   repo: https://github.com/psf/black
     rev: 23.7.0
     hooks:
