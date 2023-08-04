@@ -37,6 +37,9 @@ class HookCallError(Exception):
 
 
 class _Result(Generic[_T]):
+    """An object used to inspect and set the result in a :ref:`hook wrapper
+    <hookwrappers>`."""
+
     __slots__ = ("_result", "_exception")
 
     def __init__(
@@ -44,11 +47,13 @@ class _Result(Generic[_T]):
         result: _T | None,
         exception: BaseException | None,
     ) -> None:
+        """:meta private:"""
         self._result = result
         self._exception = exception
 
     @property
     def excinfo(self) -> _ExcInfo | None:
+        """:meta private:"""
         exc = self._exception
         if exc is None:
             return None
@@ -57,10 +62,12 @@ class _Result(Generic[_T]):
 
     @property
     def exception(self) -> BaseException | None:
+        """:meta private:"""
         return self._exception
 
     @classmethod
     def from_call(cls, func: Callable[[], _T]) -> _Result[_T]:
+        """:meta private:"""
         __tracebackhide__ = True
         result = exception = None
         try:

@@ -58,7 +58,7 @@ html_static_path = ["_static"]
 # (source start file, name, description, authors, manual section).
 man_pages = [(master_doc, "pluggy", "pluggy Documentation", [author], 1)]
 
-autodoc_typehints = "none"
+autodoc_member_order = "bysource"
 
 # -- Options for Texinfo output -------------------------------------------
 

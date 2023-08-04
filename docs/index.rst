@@ -305,6 +305,8 @@ be matched and checked against the ``setup_project`` hookspec:
 
         return config
 
+.. _callorder:
+
 Call time order
 ^^^^^^^^^^^^^^^
 By default hooks are :ref:`called <calling>` in LIFO registered order, however,
@@ -421,6 +423,8 @@ The return value or exception propagate to further hook wrappers, and finally
 to the hook caller.
 
 Also see the :ref:`pytest:hookwrapper` section in the ``pytest`` docs.
+
+.. _old_style_hookwrappers:
 
 Old-style wrappers
 ^^^^^^^^^^^^^^^^^^
@@ -629,12 +633,14 @@ dynamically loaded plugins.
 For more info see :ref:`call_historic`.
 
 
+.. _warn_on_impl:
+
 Warnings on hook implementation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 As projects evolve new hooks may be introduced and/or deprecated.
 
-if a hookspec specifies a ``warn_on_impl``, pluggy will trigger it for any plugin implementing the hook.
+If a hookspec specifies a ``warn_on_impl``, pluggy will trigger it for any plugin implementing the hook.
 
 
 .. code-block:: python
@@ -907,6 +913,8 @@ is registered.
     hooks since only the first registered plugin's hook(s) would
     ever be called.
 
+.. _call_extra:
+
 Calling with extras
 -------------------
 You can call a hook with temporarily participating *implementation* functions
@@ -924,6 +932,9 @@ using the :py:meth:`pluggy.PluginManager.subset_hook_caller()` method.
 You then can use that :py:class:`_HookCaller <pluggy._hooks._HookCaller>`
 to make normal, :py:meth:`~pluggy._hooks._HookCaller.call_historic`, or
 :py:meth:`~pluggy._hooks._HookCaller.call_extra` calls as necessary.
+
+
+.. _tracing:
 
 Built-in tracing
 ****************

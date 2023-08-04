@@ -46,10 +46,12 @@ class PluginValidationError(Exception):
     """Plugin failed validation.
 
     :param plugin: The plugin which failed validation.
+    :param message: Error message.
     """
 
     def __init__(self, plugin: _Plugin, message: str) -> None:
         super().__init__(message)
+        #: The plugin which failed validation.
         self.plugin = plugin
 
 
@@ -83,14 +85,23 @@ class PluginManager:
 
     For debugging purposes you can call :meth:`PluginManager.enable_tracing`
     which will subsequently send debug information to the trace helper.
+
+    :param project_name:
+        The short project name. Prefer snake case. Make sure it's unique!
     """
 
     def __init__(self, project_name: str) -> None:
-        self.project_name: Final = project_name
+        #: The project name.
+        self.project_name: Final[str] = project_name
         self._name2plugin: Final[dict[str, _Plugin]] = {}
         self._plugin_distinfo: Final[list[tuple[_Plugin, DistFacade]]] = []
-        self.trace: Final = _tracing.TagTracer().get("pluginmanage")
-        self.hook: Final = _HookRelay()
+        #: The "hook relay", used to call a hook on all registered plugins.
+        #: See :ref:`calling`.
+        self.hook: Final[_HookRelay] = _HookRelay()
+        #: The tracing entry point. See :ref:`tracing`.
+        self.trace: Final[_tracing.TagTracerSub] = _tracing.TagTracer().get(
+            "pluginmanage"
+        )
         self._inner_hookexec = _multicall
 
     def _hookexec(
@@ -107,10 +118,13 @@ class PluginManager:
     def register(self, plugin: _Plugin, name: str | None = None) -> str | None:
         """Register a plugin and return its name.
 
-        If a name is not specified, a name is generated using
-        :func:`get_canonical_name`.
+        :param name:
+            The name under which to register the plugin. If not specified, a
+            name is generated using :func:`get_canonical_name`.
 
-        If the name is blocked from registering, returns ``None``.
+        :returns:
+            The plugin name. If the name is blocked from registering, returns
+            ``None``.
 
         If the plugin is already registered, raises a :exc:`ValueError`.
         """
@@ -153,6 +167,16 @@ class PluginManager:
         return plugin_name
 
     def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> _HookImplOpts | None:
+        """Try to obtain a hook implementation from an item with the given name
+        in the given plugin which is being searched for hook impls.
+
+        :returns:
+            The parsed hookimpl options, or None to skip the given item.
+
+        This method can be overridden by ``PluginManager`` subclasses to
+        customize how hook implementation are picked up. By default, returns the
+        options for items decorated with :class:`HookImplMarker`.
+        """
         method: object = getattr(plugin, name)
         if not inspect.isroutine(method):
             return None
@@ -169,11 +193,13 @@ class PluginManager:
 
     def unregister(
         self, plugin: _Plugin | None = None, name: str | None = None
-    ) -> _Plugin:
+    ) -> Any | None:
         """Unregister a plugin and all of its hook implementations.
 
         The plugin can be specified either by the plugin object or the plugin
         name. If both are specified, they must agree.
+
+        Returns the unregistered plugin, or ``None`` if not found.
         """
         if name is None:
             assert plugin is not None, "one of name or plugin needs to be specified"
@@ -182,6 +208,8 @@ class PluginManager:
 
         if plugin is None:
             plugin = self.get_plugin(name)
+            if plugin is None:
+                return None
 
         hookcallers = self.get_hookcallers(plugin)
         if hookcallers:
@@ -233,6 +261,17 @@ class PluginManager:
     def parse_hookspec_opts(
         self, module_or_class: _Namespace, name: str
     ) -> _HookSpecOpts | None:
+        """Try to obtain a hook specification from an item with the given name
+        in the given module or class which is being searched for hook specs.
+
+        :returns:
+            The parsed hookspec options for defining a hook, or None to skip the
+            given item.
+
+        This method can be overridden by ``PluginManager`` subclasses to
+        customize how hook specifications are picked up. By default, returns the
+        options for items decorated with :class:`HookspecMarker`.
+        """
         method: HookSpec = getattr(module_or_class, name)
         opts: _HookSpecOpts | None = getattr(method, self.project_name + "_spec", None)
         return opts
@@ -250,7 +289,7 @@ class PluginManager:
 
         Note that a plugin may be registered under a different name
         specified by the caller of :meth:`register(plugin, name) <register>`.
-        To obtain the name of n registered plugin use :meth:`get_name(plugin)
+        To obtain the name of a registered plugin use :meth:`get_name(plugin)
         <get_name>` instead.
         """
         name: str | None = getattr(plugin, "__name__", None)
@@ -338,10 +377,13 @@ class PluginManager:
     def load_setuptools_entrypoints(self, group: str, name: str | None = None) -> int:
         """Load modules from querying the specified setuptools ``group``.
 
-        :param str group: Entry point group to load plugins.
-        :param str name: If given, loads only plugins with the given ``name``.
-        :rtype: int
-        :return: The number of plugins loaded by this call.
+        :param group:
+            Entry point group to load plugins.
+        :param name:
+            If given, loads only plugins with the given ``name``.
+
+        :return:
+            The number of plugins loaded by this call.
         """
         count = 0
         for dist in list(importlib.metadata.distributions()):
@@ -370,7 +412,12 @@ class PluginManager:
         return list(self._name2plugin.items())
 
     def get_hookcallers(self, plugin: _Plugin) -> list[_HookCaller] | None:
-        """Get all hook callers for the specified plugin."""
+        """Get all hook callers for the specified plugin.
+
+        :returns:
+            The hook callers, or ``None`` if ``plugin`` is not registered in
+            this plugin manager.
+        """
         if self.get_name(plugin) is None:
             return None
         hookcallers = []
