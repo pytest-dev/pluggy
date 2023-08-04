@@ -352,14 +352,14 @@ class _HookRelay:
 
     if TYPE_CHECKING:
 
-        def __getattr__(self, name: str) -> _HookCaller:
+        def __getattr__(self, name: str) -> HookCaller:
             ...
 
 
 _CallHistory = List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
 
 
-class _HookCaller:
+class HookCaller:
     """A caller of all registered implementations of a hook specification."""
 
     __slots__ = (
@@ -446,7 +446,7 @@ class _HookCaller:
             self._hookimpls.insert(i + 1, hookimpl)
 
     def __repr__(self) -> str:
-        return f"<_HookCaller {self.name!r}>"
+        return f"<HookCaller {self.name!r}>"
 
     def _verify_all_args_are_provided(self, kwargs: Mapping[str, object]) -> None:
         # This is written to avoid expensive operations when not needed.
@@ -553,11 +553,15 @@ class _HookCaller:
                     result_callback(res[0])
 
 
-class _SubsetHookCaller(_HookCaller):
+# Historical name (pluggy<=1.2), kept for backward compatibility.
+_HookCaller = HookCaller
+
+
+class _SubsetHookCaller(HookCaller):
     """A proxy to another HookCaller which manages calls to all registered
     plugins except the ones from remove_plugins."""
 
-    # This class is unusual: in inhertits from `_HookCaller` so all of
+    # This class is unusual: in inhertits from `HookCaller` so all of
     # the *code* runs in the class, but it delegates all underlying *data*
     # to the original HookCaller.
     # `subset_hook_caller` used to be implemented by creating a full-fledged
@@ -572,7 +576,7 @@ class _SubsetHookCaller(_HookCaller):
         "_remove_plugins",
     )
 
-    def __init__(self, orig: _HookCaller, remove_plugins: AbstractSet[_Plugin]) -> None:
+    def __init__(self, orig: HookCaller, remove_plugins: AbstractSet[_Plugin]) -> None:
         self._orig = orig
         self._remove_plugins = remove_plugins
         self.name = orig.name  # type: ignore[misc]

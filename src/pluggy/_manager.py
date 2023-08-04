@@ -14,7 +14,6 @@ from typing import Sequence
 
 from . import _tracing
 from ._callers import _multicall
-from ._hooks import _HookCaller
 from ._hooks import _HookImplFunction
 from ._hooks import _HookImplOpts
 from ._hooks import _HookRelay
@@ -22,6 +21,7 @@ from ._hooks import _HookSpecOpts
 from ._hooks import _Namespace
 from ._hooks import _Plugin
 from ._hooks import _SubsetHookCaller
+from ._hooks import HookCaller
 from ._hooks import HookImpl
 from ._hooks import HookSpec
 from ._hooks import normalize_hookimpl_opts
@@ -156,9 +156,9 @@ class PluginManager:
                 method: _HookImplFunction[object] = getattr(plugin, name)
                 hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
                 name = hookimpl_opts.get("specname") or name
-                hook: _HookCaller | None = getattr(self.hook, name, None)
+                hook: HookCaller | None = getattr(self.hook, name, None)
                 if hook is None:
-                    hook = _HookCaller(name, self._hookexec)
+                    hook = HookCaller(name, self._hookexec)
                     setattr(self.hook, name, hook)
                 elif hook.has_spec():
                     self._verify_hook(hook, hookimpl)
@@ -242,9 +242,9 @@ class PluginManager:
         for name in dir(module_or_class):
             spec_opts = self.parse_hookspec_opts(module_or_class, name)
             if spec_opts is not None:
-                hc: _HookCaller | None = getattr(self.hook, name, None)
+                hc: HookCaller | None = getattr(self.hook, name, None)
                 if hc is None:
-                    hc = _HookCaller(name, self._hookexec, module_or_class, spec_opts)
+                    hc = HookCaller(name, self._hookexec, module_or_class, spec_opts)
                     setattr(self.hook, name, hc)
                 else:
                     # Plugins registered this hook without knowing the spec.
@@ -311,7 +311,7 @@ class PluginManager:
                 return name
         return None
 
-    def _verify_hook(self, hook: _HookCaller, hookimpl: HookImpl) -> None:
+    def _verify_hook(self, hook: HookCaller, hookimpl: HookImpl) -> None:
         if hook.is_historic() and (hookimpl.hookwrapper or hookimpl.wrapper):
             raise PluginValidationError(
                 hookimpl.plugin,
@@ -364,7 +364,7 @@ class PluginManager:
         :exc:`PluginValidationError`."""
         for name in self.hook.__dict__:
             if name[0] != "_":
-                hook: _HookCaller = getattr(self.hook, name)
+                hook: HookCaller = getattr(self.hook, name)
                 if not hook.has_spec():
                     for hookimpl in hook.get_hookimpls():
                         if not hookimpl.optionalhook:
@@ -411,7 +411,7 @@ class PluginManager:
         """Return a list of (name, plugin) pairs for all registered plugins."""
         return list(self._name2plugin.items())
 
-    def get_hookcallers(self, plugin: _Plugin) -> list[_HookCaller] | None:
+    def get_hookcallers(self, plugin: _Plugin) -> list[HookCaller] | None:
         """Get all hook callers for the specified plugin.
 
         :returns:
@@ -491,11 +491,11 @@ class PluginManager:
 
     def subset_hook_caller(
         self, name: str, remove_plugins: Iterable[_Plugin]
-    ) -> _HookCaller:
-        """Return a proxy :py:class:`._hooks._HookCaller` instance for the named
+    ) -> HookCaller:
+        """Return a proxy :class:`~pluggy.HookCaller` instance for the named
         method which manages calls to all registered plugins except the ones
         from remove_plugins."""
-        orig: _HookCaller = getattr(self.hook, name)
+        orig: HookCaller = getattr(self.hook, name)
         plugins_to_remove = {plug for plug in remove_plugins if hasattr(plug, name)}
         if plugins_to_remove:
             return _SubsetHookCaller(orig, plugins_to_remove)

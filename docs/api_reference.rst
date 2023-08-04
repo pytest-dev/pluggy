@@ -18,7 +18,7 @@ API Reference
     :show-inheritance:
     :members:
 
-.. autoclass:: pluggy._hooks._HookCaller()
+.. autoclass:: pluggy.HookCaller()
     :members:
     :special-members: __call__
 
@@ -31,6 +31,6 @@ API Reference
 
     .. data:: <hook name>
 
-        :type: _HookCaller
+        :type: HookCaller
 
         The caller for the hook with the given name.

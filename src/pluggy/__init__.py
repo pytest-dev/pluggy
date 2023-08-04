@@ -8,6 +8,7 @@ except ImportError:
 __all__ = [
     "PluginManager",
     "PluginValidationError",
+    "HookCaller",
     "HookCallError",
     "HookspecMarker",
     "HookimplMarker",
@@ -16,4 +17,4 @@ __all__ = [
 
 from ._manager import PluginManager, PluginValidationError
 from ._result import HookCallError, Result
-from ._hooks import HookspecMarker, HookimplMarker
+from ._hooks import HookspecMarker, HookimplMarker, HookCaller

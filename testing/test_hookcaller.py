@@ -9,7 +9,7 @@ from pluggy import HookimplMarker
 from pluggy import HookspecMarker
 from pluggy import PluginManager
 from pluggy import PluginValidationError
-from pluggy._hooks import _HookCaller
+from pluggy._hooks import HookCaller
 from pluggy._hooks import HookImpl
 
 hookspec = HookspecMarker("example")
@@ -17,7 +17,7 @@ hookimpl = HookimplMarker("example")
 
 
 @pytest.fixture
-def hc(pm: PluginManager) -> _HookCaller:
+def hc(pm: PluginManager) -> HookCaller:
     class Hooks:
         @hookspec
         def he_method1(self, arg: object) -> None:
@@ -31,7 +31,7 @@ FuncT = TypeVar("FuncT", bound=Callable[..., object])
 
 
 class AddMeth:
-    def __init__(self, hc: _HookCaller) -> None:
+    def __init__(self, hc: HookCaller) -> None:
         self.hc = hc
 
     def __call__(
@@ -57,7 +57,7 @@ class AddMeth:
 
 
 @pytest.fixture
-def addmeth(hc: _HookCaller) -> AddMeth:
+def addmeth(hc: HookCaller) -> AddMeth:
     return AddMeth(hc)
 
 
@@ -65,7 +65,7 @@ def funcs(hookmethods: Sequence[HookImpl]) -> List[Callable[..., object]]:
     return [hookmethod.function for hookmethod in hookmethods]
 
 
-def test_adding_nonwrappers(hc: _HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers(hc: HookCaller, addmeth: AddMeth) -> None:
     @addmeth()
     def he_method1() -> None:
         pass
@@ -81,7 +81,7 @@ def test_adding_nonwrappers(hc: _HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [he_method1, he_method2, he_method3]
 
 
-def test_adding_nonwrappers_trylast(hc: _HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers_trylast(hc: HookCaller, addmeth: AddMeth) -> None:
     @addmeth()
     def he_method1_middle() -> None:
         pass
@@ -97,7 +97,7 @@ def test_adding_nonwrappers_trylast(hc: _HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [he_method1, he_method1_middle, he_method1_b]
 
 
-def test_adding_nonwrappers_trylast3(hc: _HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers_trylast3(hc: HookCaller, addmeth: AddMeth) -> None:
     @addmeth()
     def he_method1_a() -> None:
         pass
@@ -122,7 +122,7 @@ def test_adding_nonwrappers_trylast3(hc: _HookCaller, addmeth: AddMeth) -> None:
     ]
 
 
-def test_adding_nonwrappers_trylast2(hc: _HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers_trylast2(hc: HookCaller, addmeth: AddMeth) -> None:
     @addmeth()
     def he_method1_middle() -> None:
         pass
@@ -138,7 +138,7 @@ def test_adding_nonwrappers_trylast2(hc: _HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [he_method1, he_method1_middle, he_method1_b]
 
 
-def test_adding_nonwrappers_tryfirst(hc: _HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers_tryfirst(hc: HookCaller, addmeth: AddMeth) -> None:
     @addmeth(tryfirst=True)
     def he_method1() -> None:
         pass
@@ -154,7 +154,7 @@ def test_adding_nonwrappers_tryfirst(hc: _HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [he_method1_middle, he_method1_b, he_method1]
 
 
-def test_adding_wrappers_ordering(hc: _HookCaller, addmeth: AddMeth) -> None:
+def test_adding_wrappers_ordering(hc: HookCaller, addmeth: AddMeth) -> None:
     @addmeth(hookwrapper=True)
     def he_method1():
         yield
@@ -184,7 +184,7 @@ def test_adding_wrappers_ordering(hc: _HookCaller, addmeth: AddMeth) -> None:
     ]
 
 
-def test_adding_wrappers_ordering_tryfirst(hc: _HookCaller, addmeth: AddMeth) -> None:
+def test_adding_wrappers_ordering_tryfirst(hc: HookCaller, addmeth: AddMeth) -> None:
     @addmeth(hookwrapper=True, tryfirst=True)
     def he_method1():
         yield
@@ -200,7 +200,7 @@ def test_adding_wrappers_ordering_tryfirst(hc: _HookCaller, addmeth: AddMeth) ->
     assert funcs(hc.get_hookimpls()) == [he_method2, he_method1, he_method3]
 
 
-def test_adding_wrappers_complex(hc: _HookCaller, addmeth: AddMeth) -> None:
+def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == []
 
     @addmeth(hookwrapper=True, trylast=True)

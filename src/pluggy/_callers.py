@@ -33,7 +33,7 @@ def _multicall(
     """Execute a call into multiple python functions/methods and return the
     result(s).
 
-    ``caller_kwargs`` comes from _HookCaller.__call__().
+    ``caller_kwargs`` comes from HookCaller.__call__().
     """
     __tracebackhide__ = True
     results: list[object] = []
