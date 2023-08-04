@@ -5,6 +5,7 @@ python:
      # Without this, sphinx can't find pluggy's version.
      - method: pip
        path: .
+     - requirements: docs/requirements.txt
 
 build:
   os: ubuntu-22.04
