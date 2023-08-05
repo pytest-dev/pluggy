@@ -15,15 +15,15 @@ from typing import Sequence
 from . import _tracing
 from ._callers import _multicall
 from ._hooks import _HookImplFunction
-from ._hooks import _HookImplOpts
-from ._hooks import _HookSpecOpts
 from ._hooks import _Namespace
 from ._hooks import _Plugin
 from ._hooks import _SubsetHookCaller
 from ._hooks import HookCaller
 from ._hooks import HookImpl
+from ._hooks import HookImplOpts
 from ._hooks import HookRelay
 from ._hooks import HookSpec
+from ._hooks import HookSpecOpts
 from ._hooks import normalize_hookimpl_opts
 from ._result import Result
 
@@ -166,7 +166,7 @@ class PluginManager:
                 hook._add_hookimpl(hookimpl)
         return plugin_name
 
-    def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> _HookImplOpts | None:
+    def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookImplOpts | None:
         """Try to obtain a hook implementation from an item with the given name
         in the given plugin which is being searched for hook impls.
 
@@ -181,7 +181,7 @@ class PluginManager:
         if not inspect.isroutine(method):
             return None
         try:
-            res: _HookImplOpts | None = getattr(
+            res: HookImplOpts | None = getattr(
                 method, self.project_name + "_impl", None
             )
         except Exception:
@@ -260,7 +260,7 @@ class PluginManager:
 
     def parse_hookspec_opts(
         self, module_or_class: _Namespace, name: str
-    ) -> _HookSpecOpts | None:
+    ) -> HookSpecOpts | None:
         """Try to obtain a hook specification from an item with the given name
         in the given module or class which is being searched for hook specs.
 
@@ -273,7 +273,7 @@ class PluginManager:
         options for items decorated with :class:`HookspecMarker`.
         """
         method: HookSpec = getattr(module_or_class, name)
-        opts: _HookSpecOpts | None = getattr(method, self.project_name + "_spec", None)
+        opts: HookSpecOpts | None = getattr(method, self.project_name + "_spec", None)
         return opts
 
     def get_plugins(self) -> set[Any]:
