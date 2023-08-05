@@ -23,7 +23,7 @@ from typing import TypedDict
 from typing import TypeVar
 from typing import Union
 
-from ._result import _Result
+from ._result import Result
 
 
 _T = TypeVar("_T")
@@ -34,7 +34,7 @@ _HookExec = Callable[
     [str, Sequence["HookImpl"], Mapping[str, object], bool],
     Union[object, List[object]],
 ]
-_HookImplFunction = Callable[..., Union[_T, Generator[None, _Result[_T], None]]]
+_HookImplFunction = Callable[..., Union[_T, Generator[None, Result[_T], None]]]
 
 
 class _HookSpecOpts(TypedDict):
@@ -232,7 +232,7 @@ class HookimplMarker:
             needs to execute exactly one ``yield``. The code before the
             ``yield`` is run early before any non-hook-wrapper function is run.
             The code after the ``yield`` is run after all non-hook-wrapper
-            function have run  The ``yield`` receives a :class:`_Result` object
+            function have run  The ``yield`` receives a :class:`Result` object
             representing the exception or result outcome of the inner calls
             (including earlier hook wrapper calls). This option is mutually
             exclusive with ``wrapper``. See :ref:`old_style_hookwrapper`.

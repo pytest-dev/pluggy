@@ -11,8 +11,9 @@ __all__ = [
     "HookCallError",
     "HookspecMarker",
     "HookimplMarker",
+    "Result",
 ]
 
 from ._manager import PluginManager, PluginValidationError
-from ._result import HookCallError
+from ._result import HookCallError, Result
 from ._hooks import HookspecMarker, HookimplMarker

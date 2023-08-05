@@ -25,11 +25,11 @@ from ._hooks import _SubsetHookCaller
 from ._hooks import HookImpl
 from ._hooks import HookSpec
 from ._hooks import normalize_hookimpl_opts
-from ._result import _Result
+from ._result import Result
 
 
 _BeforeTrace = Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]
-_AfterTrace = Callable[[_Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None]
+_AfterTrace = Callable[[Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None]
 
 
 def _warn_for_function(warning: Warning, function: Callable[..., object]) -> None:
@@ -439,7 +439,7 @@ class PluginManager:
         of HookImpl instances and the keyword arguments for the hook call.
 
         ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
-        same arguments as ``before`` but also a :class:`~pluggy._result._Result` object
+        same arguments as ``before`` but also a :class:`~pluggy.Result` object
         which represents the result of the overall hook call.
         """
         oldcall = self._inner_hookexec
@@ -451,7 +451,7 @@ class PluginManager:
             firstresult: bool,
         ) -> object | list[object]:
             before(hook_name, hook_impls, caller_kwargs)
-            outcome = _Result.from_call(
+            outcome = Result.from_call(
                 lambda: oldcall(hook_name, hook_impls, caller_kwargs, firstresult)
             )
             after(outcome, hook_name, hook_impls, caller_kwargs)
@@ -478,7 +478,7 @@ class PluginManager:
             hooktrace(hook_name, kwargs)
 
         def after(
-            outcome: _Result[object],
+            outcome: Result[object],
             hook_name: str,
             methods: Sequence[HookImpl],
             kwargs: Mapping[str, object],

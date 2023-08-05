@@ -14,7 +14,7 @@ API Reference
 
 .. autodecorator:: pluggy.HookimplMarker
 
-.. autoclass:: pluggy._result._Result()
+.. autoclass:: pluggy.Result()
     :show-inheritance:
     :members:
 
