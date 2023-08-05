@@ -16,13 +16,13 @@ from . import _tracing
 from ._callers import _multicall
 from ._hooks import _HookImplFunction
 from ._hooks import _HookImplOpts
-from ._hooks import _HookRelay
 from ._hooks import _HookSpecOpts
 from ._hooks import _Namespace
 from ._hooks import _Plugin
 from ._hooks import _SubsetHookCaller
 from ._hooks import HookCaller
 from ._hooks import HookImpl
+from ._hooks import HookRelay
 from ._hooks import HookSpec
 from ._hooks import normalize_hookimpl_opts
 from ._result import Result
@@ -97,7 +97,7 @@ class PluginManager:
         self._plugin_distinfo: Final[list[tuple[_Plugin, DistFacade]]] = []
         #: The "hook relay", used to call a hook on all registered plugins.
         #: See :ref:`calling`.
-        self.hook: Final[_HookRelay] = _HookRelay()
+        self.hook: Final[HookRelay] = HookRelay()
         #: The tracing entry point. See :ref:`tracing`.
         self.trace: Final[_tracing.TagTracerSub] = _tracing.TagTracer().get(
             "pluginmanage"

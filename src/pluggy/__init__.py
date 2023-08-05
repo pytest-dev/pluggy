@@ -10,6 +10,7 @@ __all__ = [
     "PluginValidationError",
     "HookCaller",
     "HookCallError",
+    "HookRelay",
     "HookspecMarker",
     "HookimplMarker",
     "Result",
@@ -17,4 +18,4 @@ __all__ = [
 
 from ._manager import PluginManager, PluginValidationError
 from ._result import HookCallError, Result
-from ._hooks import HookspecMarker, HookimplMarker, HookCaller
+from ._hooks import HookspecMarker, HookimplMarker, HookCaller, HookRelay

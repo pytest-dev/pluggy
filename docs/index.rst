@@ -743,8 +743,8 @@ a :py:class:`pluggy.HookCaller` which in turn *loops* through the
 ``1:N`` registered *hookimpls* and calls them in sequence.
 
 Every :py:class:`~pluggy.PluginManager` has a ``hook`` attribute
-which is an instance of this :py:class:`pluggy._hooks._HookRelay`.
-The :py:class:`~pluggy._hooks._HookRelay` itself contains references
+which is an instance of :py:class:`pluggy.HookRelay`.
+The :py:class:`~pluggy.HookRelay` itself contains references
 (by hook name) to each registered *hookimpl*'s :py:class:`~pluggy.HookCaller` instance.
 
 More practically you call a *hook* like so:

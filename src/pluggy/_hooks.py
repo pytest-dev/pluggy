@@ -341,7 +341,7 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     return args, kwargs
 
 
-class _HookRelay:
+class HookRelay:
     """Hook holder object for performing 1:N hook calls where N is the number
     of registered plugins."""
 
@@ -354,6 +354,10 @@ class _HookRelay:
 
         def __getattr__(self, name: str) -> HookCaller:
             ...
+
+
+# Historical name (pluggy<=1.2), kept for backward compatibility.
+_HookRelay = HookRelay
 
 
 _CallHistory = List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]

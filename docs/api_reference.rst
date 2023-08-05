@@ -26,7 +26,7 @@ API Reference
     :show-inheritance:
     :members:
 
-.. autoclass:: pluggy._hooks._HookRelay()
+.. autoclass:: pluggy.HookRelay()
     :members:
 
     .. data:: <hook name>
