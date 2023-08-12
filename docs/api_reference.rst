@@ -3,17 +3,34 @@
 API Reference
 =============
 
-.. automodule:: pluggy
+.. autoclass:: pluggy.PluginManager
     :members:
-    :undoc-members:
 
-.. autoclass:: pluggy._result._Result
-.. automethod:: pluggy._result._Result.get_result
-.. automethod:: pluggy._result._Result.force_result
-.. automethod:: pluggy._result._Result.force_exception
+.. autoclass:: pluggy.PluginValidationError
+    :show-inheritance:
+    :members:
 
-.. autoclass:: pluggy._hooks._HookCaller
-.. automethod:: pluggy._hooks._HookCaller.call_extra
-.. automethod:: pluggy._hooks._HookCaller.call_historic
+.. autodecorator:: pluggy.HookspecMarker
 
-.. autoclass:: pluggy._hooks._HookRelay
+.. autodecorator:: pluggy.HookimplMarker
+
+.. autoclass:: pluggy.Result()
+    :show-inheritance:
+    :members:
+
+.. autoclass:: pluggy.HookCaller()
+    :members:
+    :special-members: __call__
+
+.. autoclass:: pluggy.HookCallError()
+    :show-inheritance:
+    :members:
+
+.. autoclass:: pluggy.HookRelay()
+    :members:
+
+    .. data:: <hook name>
+
+        :type: HookCaller
+
+        The caller for the hook with the given name.

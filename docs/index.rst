@@ -305,6 +305,8 @@ be matched and checked against the ``setup_project`` hookspec:
 
         return config
 
+.. _callorder:
+
 Call time order
 ^^^^^^^^^^^^^^^
 By default hooks are :ref:`called <calling>` in LIFO registered order, however,
@@ -422,6 +424,8 @@ to the hook caller.
 
 Also see the :ref:`pytest:hookwrapper` section in the ``pytest`` docs.
 
+.. _old_style_hookwrappers:
+
 Old-style wrappers
 ^^^^^^^^^^^^^^^^^^
 
@@ -468,21 +472,21 @@ execution of all corresponding non-wrappper *hookimpls*.
         if config.use_defaults:
             outcome.force_result(defaults)
 
-The generator is :py:meth:`sent <python:generator.send>` a :py:class:`pluggy._result._Result` object which can
+The generator is :py:meth:`sent <python:generator.send>` a :py:class:`pluggy.Result` object which can
 be assigned in the ``yield`` expression and used to inspect
 the final result(s) or exceptions returned back to the caller using the
-:py:meth:`~pluggy._result._Result.get_result` method, override the result
-using the :py:meth:`~pluggy._result._Result.force_result`, or override
-the exception using the :py:meth:`~pluggy._result._Result.force_exception`
+:py:meth:`~pluggy.Result.get_result` method, override the result
+using the :py:meth:`~pluggy.Result.force_result`, or override
+the exception using the :py:meth:`~pluggy.Result.force_exception`
 method.
 
 .. note::
     Old-style hook wrappers can **not** return results; they can only modify
-    them using the :py:meth:`~pluggy._result._Result.force_result` API.
+    them using the :py:meth:`~pluggy.Result.force_result` API.
 
     Old-style Hook wrappers should **not** raise exceptions; this will cause
     further hookwrappers to be skipped. They should use
-    :py:meth:`~pluggy._result._Result.force_exception` to adjust the
+    :py:meth:`~pluggy.Result.force_exception` to adjust the
     exception.
 
 .. _specs:
@@ -611,7 +615,7 @@ Also see the :ref:`pytest:firstresult` section in the ``pytest`` docs.
 Historic hooks
 ^^^^^^^^^^^^^^
 You can mark a *hookspec* as being *historic* meaning that the hook
-can be called with :py:meth:`~pluggy._hooks._HookCaller.call_historic()` **before**
+can be called with :py:meth:`~pluggy.HookCaller.call_historic()` **before**
 having been registered:
 
 .. code-block:: python
@@ -629,12 +633,14 @@ dynamically loaded plugins.
 For more info see :ref:`call_historic`.
 
 
+.. _warn_on_impl:
+
 Warnings on hook implementation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 As projects evolve new hooks may be introduced and/or deprecated.
 
-if a hookspec specifies a ``warn_on_impl``, pluggy will trigger it for any plugin implementing the hook.
+If a hookspec specifies a ``warn_on_impl``, pluggy will trigger it for any plugin implementing the hook.
 
 
 .. code-block:: python
@@ -733,13 +739,13 @@ The core functionality of ``pluggy`` enables an extension provider
 to override function calls made at certain points throughout a program.
 
 A particular *hook* is invoked by calling an instance of
-a :py:class:`pluggy._hooks._HookCaller` which in turn *loops* through the
+a :py:class:`pluggy.HookCaller` which in turn *loops* through the
 ``1:N`` registered *hookimpls* and calls them in sequence.
 
 Every :py:class:`~pluggy.PluginManager` has a ``hook`` attribute
-which is an instance of this :py:class:`pluggy._hooks._HookRelay`.
-The :py:class:`~pluggy._hooks._HookRelay` itself contains references
-(by hook name) to each registered *hookimpl*'s :py:class:`~pluggy._hooks._HookCaller` instance.
+which is an instance of :py:class:`pluggy.HookRelay`.
+The :py:class:`~pluggy.HookRelay` itself contains references
+(by hook name) to each registered *hookimpl*'s :py:class:`~pluggy.HookCaller` instance.
 
 More practically you call a *hook* like so:
 
@@ -755,7 +761,7 @@ More practically you call a *hook* like so:
     pm.add_hookspecs(mypluginspec)
     pm.register(myplugin)
 
-    # we invoke the _HookCaller and thus all underlying hookimpls
+    # we invoke the HookCaller and thus all underlying hookimpls
     result_list = pm.hook.myhook(config=config, args=sys.argv)
 
 Note that you **must** call hooks using keyword :std:term:`python:argument` syntax!
@@ -874,7 +880,7 @@ only useful if you expect that some *hookimpls* may be registered **after** the
 hook is initially invoked.
 
 Historic hooks must be :ref:`specially marked <historic>` and called
-using the :py:meth:`~pluggy._hooks._HookCaller.call_historic()` method:
+using the :py:meth:`~pluggy.HookCaller.call_historic()` method:
 
 .. code-block:: python
 
@@ -895,8 +901,8 @@ using the :py:meth:`~pluggy._hooks._HookCaller.call_historic()` method:
     # historic callback is invoked here
     pm.register(mylateplugin)
 
-Note that if you :py:meth:`~pluggy._hooks._HookCaller.call_historic()`
-the :py:class:`~pluggy._hooks._HookCaller` (and thus your calling code)
+Note that if you :py:meth:`~pluggy.HookCaller.call_historic()`
+the :py:class:`~pluggy.HookCaller` (and thus your calling code)
 can not receive results back from the underlying *hookimpl* functions.
 Instead you can provide a *callback* for processing results (like the
 ``callback`` function above) which will be called as each new plugin
@@ -907,23 +913,28 @@ is registered.
     hooks since only the first registered plugin's hook(s) would
     ever be called.
 
+.. _call_extra:
+
 Calling with extras
 -------------------
 You can call a hook with temporarily participating *implementation* functions
 (that aren't in the registry) using the
-:py:meth:`pluggy._hooks._HookCaller.call_extra()` method.
+:py:meth:`pluggy.HookCaller.call_extra()` method.
 
 
 Calling with a subset of registered plugins
 -------------------------------------------
 You can make a call using a subset of plugins by asking the
 :py:class:`~pluggy.PluginManager` first for a
-:py:class:`~pluggy._hooks._HookCaller` with those plugins removed
+:py:class:`~pluggy.HookCaller` with those plugins removed
 using the :py:meth:`pluggy.PluginManager.subset_hook_caller()` method.
 
-You then can use that :py:class:`_HookCaller <pluggy._hooks._HookCaller>`
-to make normal, :py:meth:`~pluggy._hooks._HookCaller.call_historic`, or
-:py:meth:`~pluggy._hooks._HookCaller.call_extra` calls as necessary.
+You then can use that :py:class:`~pluggy.HookCaller`
+to make normal, :py:meth:`~pluggy.HookCaller.call_historic`, or
+:py:meth:`~pluggy.HookCaller.call_extra` calls as necessary.
+
+
+.. _tracing:
 
 Built-in tracing
 ****************

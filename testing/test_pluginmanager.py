@@ -276,7 +276,7 @@ def test_historic_with_subset_hook_caller(pm: PluginManager) -> None:
 
 @pytest.mark.parametrize("result_callback", [True, False])
 def test_with_result_memorized(pm: PluginManager, result_callback: bool) -> None:
-    """Verify that ``_HookCaller._maybe_apply_history()`
+    """Verify that ``HookCaller._maybe_apply_history()`
     correctly applies the ``result_callback`` function, when provided,
     to the result from calling each newly registered hook.
     """
