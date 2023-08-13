@@ -11,6 +11,7 @@ from typing import AbstractSet
 from typing import Any
 from typing import Callable
 from typing import Final
+from typing import final
 from typing import Generator
 from typing import List
 from typing import Mapping
@@ -69,6 +70,7 @@ class HookimplOpts(TypedDict):
     specname: str | None
 
 
+@final
 class HookspecMarker:
     """Decorator for marking functions as hook specifications.
 
@@ -146,6 +148,7 @@ class HookspecMarker:
             return setattr_hookspec_opts
 
 
+@final
 class HookimplMarker:
     """Decorator for marking functions as hook implementations.
 
@@ -341,6 +344,7 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     return args, kwargs
 
 
+@final
 class HookRelay:
     """Hook holder object for performing 1:N hook calls where N is the number
     of registered plugins."""
@@ -382,10 +386,12 @@ class HookCaller:
         spec_opts: HookspecOpts | None = None,
     ) -> None:
         """:meta private:"""
+        #: Name of the hook getting called.
         self.name: Final = name
         self._hookexec: Final = hook_execute
         self._hookimpls: Final[list[HookImpl]] = []
         self._call_history: _CallHistory | None = None
+        # TODO: Document, or make private.
         self.spec: HookSpec | None = None
         if specmodule_or_class is not None:
             assert spec_opts is not None
@@ -606,6 +612,7 @@ class _SubsetHookCaller(HookCaller):
         return f"<_SubsetHookCaller {self.name!r}>"
 
 
+@final
 class HookImpl:
     """A hook implementation in a :class:`HookCaller`."""
 
@@ -635,34 +642,35 @@ class HookImpl:
         self.function: Final = function
         argnames, kwargnames = varnames(self.function)
         #: The positional parameter names of ``function```.
-        self.argnames = argnames
+        self.argnames: Final = argnames
         #: The keyword parameter names of ``function```.
-        self.kwargnames = kwargnames
+        self.kwargnames: Final = kwargnames
         #: The plugin which defined this hook implementation.
-        self.plugin = plugin
+        self.plugin: Final = plugin
         #: The :class:`HookimplOpts` used to configure this hook implementation.
-        self.opts = hook_impl_opts
+        self.opts: Final = hook_impl_opts
         #: The name of the plugin which defined this hook implementation.
-        self.plugin_name = plugin_name
+        self.plugin_name: Final = plugin_name
         #: Whether the hook implementation is a :ref:`wrapper <hookwrapper>`.
-        self.wrapper = hook_impl_opts["wrapper"]
+        self.wrapper: Final = hook_impl_opts["wrapper"]
         #: Whether the hook implementation is an :ref:`old-style wrapper
         #: <old_style_hookwrappers>`.
-        self.hookwrapper = hook_impl_opts["hookwrapper"]
+        self.hookwrapper: Final = hook_impl_opts["hookwrapper"]
         #: Whether validation against a hook specification is :ref:`optional
         #: <optionalhook>`.
-        self.optionalhook = hook_impl_opts["optionalhook"]
+        self.optionalhook: Final = hook_impl_opts["optionalhook"]
         #: Whether to try to order this hook implementation :ref:`first
         #: <callorder>`.
-        self.tryfirst = hook_impl_opts["tryfirst"]
+        self.tryfirst: Final = hook_impl_opts["tryfirst"]
         #: Whether to try to order this hook implementation :ref:`last
         #: <callorder>`.
-        self.trylast = hook_impl_opts["trylast"]
+        self.trylast: Final = hook_impl_opts["trylast"]
 
     def __repr__(self) -> str:
         return f"<HookImpl plugin_name={self.plugin_name!r}, plugin={self.plugin!r}>"
 
 
+@final
 class HookSpec:
     __slots__ = (
         "namespace",

@@ -91,12 +91,12 @@ class PluginManager:
 
     def __init__(self, project_name: str) -> None:
         #: The project name.
-        self.project_name: Final[str] = project_name
+        self.project_name: Final = project_name
         self._name2plugin: Final[dict[str, _Plugin]] = {}
         self._plugin_distinfo: Final[list[tuple[_Plugin, DistFacade]]] = []
         #: The "hook relay", used to call a hook on all registered plugins.
         #: See :ref:`calling`.
-        self.hook: Final[HookRelay] = HookRelay()
+        self.hook: Final = HookRelay()
         #: The tracing entry point. See :ref:`tracing`.
         self.trace: Final[_tracing.TagTracerSub] = _tracing.TagTracer().get(
             "pluginmanage"
