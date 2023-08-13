@@ -34,3 +34,11 @@ API Reference
 .. autoclass:: pluggy.Result()
     :show-inheritance:
     :members:
+
+.. autoclass:: pluggy.HookspecOpts()
+    :show-inheritance:
+    :members:
+
+.. autoclass:: pluggy.HookimplOpts()
+    :show-inheritance:
+    :members:
