@@ -20,10 +20,10 @@ from ._hooks import _Plugin
 from ._hooks import _SubsetHookCaller
 from ._hooks import HookCaller
 from ._hooks import HookImpl
-from ._hooks import HookImplOpts
+from ._hooks import HookimplOpts
 from ._hooks import HookRelay
 from ._hooks import HookSpec
-from ._hooks import HookSpecOpts
+from ._hooks import HookspecOpts
 from ._hooks import normalize_hookimpl_opts
 from ._result import Result
 
@@ -166,7 +166,7 @@ class PluginManager:
                 hook._add_hookimpl(hookimpl)
         return plugin_name
 
-    def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookImplOpts | None:
+    def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
         """Try to obtain a hook implementation from an item with the given name
         in the given plugin which is being searched for hook impls.
 
@@ -181,7 +181,7 @@ class PluginManager:
         if not inspect.isroutine(method):
             return None
         try:
-            res: HookImplOpts | None = getattr(
+            res: HookimplOpts | None = getattr(
                 method, self.project_name + "_impl", None
             )
         except Exception:
@@ -260,7 +260,7 @@ class PluginManager:
 
     def parse_hookspec_opts(
         self, module_or_class: _Namespace, name: str
-    ) -> HookSpecOpts | None:
+    ) -> HookspecOpts | None:
         """Try to obtain a hook specification from an item with the given name
         in the given module or class which is being searched for hook specs.
 
@@ -273,7 +273,7 @@ class PluginManager:
         options for items decorated with :class:`HookspecMarker`.
         """
         method: HookSpec = getattr(module_or_class, name)
-        opts: HookSpecOpts | None = getattr(method, self.project_name + "_spec", None)
+        opts: HookspecOpts | None = getattr(method, self.project_name + "_spec", None)
         return opts
 
     def get_plugins(self) -> set[Any]:
