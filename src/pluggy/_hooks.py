@@ -607,6 +607,8 @@ class _SubsetHookCaller(HookCaller):
 
 
 class HookImpl:
+    """A hook implementation in a :class:`HookCaller`."""
+
     __slots__ = (
         "function",
         "argnames",
@@ -628,15 +630,33 @@ class HookImpl:
         function: _HookImplFunction[object],
         hook_impl_opts: HookimplOpts,
     ) -> None:
+        """:meta private:"""
+        #: The hook implementation function.
         self.function: Final = function
-        self.argnames, self.kwargnames = varnames(self.function)
+        argnames, kwargnames = varnames(self.function)
+        #: The positional parameter names of ``function```.
+        self.argnames = argnames
+        #: The keyword parameter names of ``function```.
+        self.kwargnames = kwargnames
+        #: The plugin which defined this hook implementation.
         self.plugin = plugin
+        #: The :class:`HookimplOpts` used to configure this hook implementation.
         self.opts = hook_impl_opts
+        #: The name of the plugin which defined this hook implementation.
         self.plugin_name = plugin_name
+        #: Whether the hook implementation is a :ref:`wrapper <hookwrapper>`.
         self.wrapper = hook_impl_opts["wrapper"]
+        #: Whether the hook implementation is an :ref:`old-style wrapper
+        #: <old_style_hookwrappers>`.
         self.hookwrapper = hook_impl_opts["hookwrapper"]
+        #: Whether validation against a hook specification is :ref:`optional
+        #: <optionalhook>`.
         self.optionalhook = hook_impl_opts["optionalhook"]
+        #: Whether to try to order this hook implementation :ref:`first
+        #: <callorder>`.
         self.tryfirst = hook_impl_opts["tryfirst"]
+        #: Whether to try to order this hook implementation :ref:`last
+        #: <callorder>`.
         self.trylast = hook_impl_opts["trylast"]
 
     def __repr__(self) -> str:

@@ -966,11 +966,11 @@ The expected signature and default implementations for these functions is:
 
 .. code-block:: python
 
-    def before(hook_name, methods, kwargs):
+    def before(hook_name, hook_impls, kwargs):
         pass
 
 
-    def after(outcome, hook_name, methods, kwargs):
+    def after(outcome, hook_name, hook_impls, kwargs):
         pass
 
 Public API

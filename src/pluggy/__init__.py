@@ -12,6 +12,7 @@ __all__ = [
     "HookCallError",
     "HookspecOpts",
     "HookimplOpts",
+    "HookImpl",
     "HookRelay",
     "HookspecMarker",
     "HookimplMarker",
@@ -27,4 +28,5 @@ from ._hooks import (
     HookRelay,
     HookspecOpts,
     HookimplOpts,
+    HookImpl,
 )
