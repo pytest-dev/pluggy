@@ -174,7 +174,7 @@ class PluginManager:
 
         This method can be overridden by ``PluginManager`` subclasses to
         customize how hook implementation are picked up. By default, returns the
-        options for items decorated with :class:`HookImplMarker`.
+        options for items decorated with :class:`HookimplMarker`.
         """
         method: object = getattr(plugin, name)
         if not inspect.isroutine(method):
