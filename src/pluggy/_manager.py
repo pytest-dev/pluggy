@@ -22,7 +22,6 @@ from ._hooks import HookCaller
 from ._hooks import HookImpl
 from ._hooks import HookimplOpts
 from ._hooks import HookRelay
-from ._hooks import HookSpec
 from ._hooks import HookspecOpts
 from ._hooks import normalize_hookimpl_opts
 from ._result import Result
@@ -272,7 +271,7 @@ class PluginManager:
         customize how hook specifications are picked up. By default, returns the
         options for items decorated with :class:`HookspecMarker`.
         """
-        method: HookSpec = getattr(module_or_class, name)
+        method = getattr(module_or_class, name)
         opts: HookspecOpts | None = getattr(method, self.project_name + "_spec", None)
         return opts
 
