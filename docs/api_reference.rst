@@ -1,5 +1,7 @@
 :orphan:
 
+.. _`api-reference`:
+
 API Reference
 =============
 
