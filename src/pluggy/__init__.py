@@ -6,6 +6,7 @@ except ImportError:
     __version__ = "unknown"
 
 __all__ = [
+    "__version__",
     "PluginManager",
     "PluginValidationError",
     "HookCaller",

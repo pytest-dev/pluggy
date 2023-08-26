@@ -9,8 +9,8 @@ from typing import Sequence
 from typing import Tuple
 
 
-_Writer = Callable[[str], None]
-_Processor = Callable[[Tuple[str, ...], Tuple[Any, ...]], None]
+_Writer = Callable[[str], object]
+_Processor = Callable[[Tuple[str, ...], Tuple[Any, ...]], object]
 
 
 class TagTracer:
