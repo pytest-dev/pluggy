@@ -6,6 +6,7 @@ from __future__ import annotations
 from types import TracebackType
 from typing import Callable
 from typing import cast
+from typing import final
 from typing import Generator
 from typing import Generic
 from typing import NoReturn
@@ -36,6 +37,7 @@ class HookCallError(Exception):
     """Hook was called incorrectly."""
 
 
+@final
 class Result(Generic[ResultType]):
     """An object used to inspect and set the result in a :ref:`hook wrapper
     <hookwrappers>`."""

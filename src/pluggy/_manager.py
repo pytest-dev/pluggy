@@ -20,10 +20,9 @@ from ._hooks import _Plugin
 from ._hooks import _SubsetHookCaller
 from ._hooks import HookCaller
 from ._hooks import HookImpl
-from ._hooks import HookImplOpts
+from ._hooks import HookimplOpts
 from ._hooks import HookRelay
-from ._hooks import HookSpec
-from ._hooks import HookSpecOpts
+from ._hooks import HookspecOpts
 from ._hooks import normalize_hookimpl_opts
 from ._result import Result
 
@@ -92,12 +91,12 @@ class PluginManager:
 
     def __init__(self, project_name: str) -> None:
         #: The project name.
-        self.project_name: Final[str] = project_name
+        self.project_name: Final = project_name
         self._name2plugin: Final[dict[str, _Plugin]] = {}
         self._plugin_distinfo: Final[list[tuple[_Plugin, DistFacade]]] = []
         #: The "hook relay", used to call a hook on all registered plugins.
         #: See :ref:`calling`.
-        self.hook: Final[HookRelay] = HookRelay()
+        self.hook: Final = HookRelay()
         #: The tracing entry point. See :ref:`tracing`.
         self.trace: Final[_tracing.TagTracerSub] = _tracing.TagTracer().get(
             "pluginmanage"
@@ -166,7 +165,7 @@ class PluginManager:
                 hook._add_hookimpl(hookimpl)
         return plugin_name
 
-    def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookImplOpts | None:
+    def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
         """Try to obtain a hook implementation from an item with the given name
         in the given plugin which is being searched for hook impls.
 
@@ -175,13 +174,13 @@ class PluginManager:
 
         This method can be overridden by ``PluginManager`` subclasses to
         customize how hook implementation are picked up. By default, returns the
-        options for items decorated with :class:`HookImplMarker`.
+        options for items decorated with :class:`HookimplMarker`.
         """
         method: object = getattr(plugin, name)
         if not inspect.isroutine(method):
             return None
         try:
-            res: HookImplOpts | None = getattr(
+            res: HookimplOpts | None = getattr(
                 method, self.project_name + "_impl", None
             )
         except Exception:
@@ -260,7 +259,7 @@ class PluginManager:
 
     def parse_hookspec_opts(
         self, module_or_class: _Namespace, name: str
-    ) -> HookSpecOpts | None:
+    ) -> HookspecOpts | None:
         """Try to obtain a hook specification from an item with the given name
         in the given module or class which is being searched for hook specs.
 
@@ -272,8 +271,8 @@ class PluginManager:
         customize how hook specifications are picked up. By default, returns the
         options for items decorated with :class:`HookspecMarker`.
         """
-        method: HookSpec = getattr(module_or_class, name)
-        opts: HookSpecOpts | None = getattr(method, self.project_name + "_spec", None)
+        method = getattr(module_or_class, name)
+        opts: HookspecOpts | None = getattr(method, self.project_name + "_spec", None)
         return opts
 
     def get_plugins(self) -> set[Any]:

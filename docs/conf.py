@@ -61,6 +61,19 @@ man_pages = [(master_doc, "pluggy", "pluggy Documentation", [author], 1)]
 
 autodoc_member_order = "bysource"
 
+nitpicky = True
+nitpick_ignore = {
+    # Don't want to expose this yet (see #428).
+    ("py:class", "pluggy._tracing.TagTracerSub"),
+    # Compat hack, don't want to expose it.
+    ("py:class", "pluggy._manager.DistFacade"),
+    # `types.ModuleType` turns into `module` but then fails to resolve...
+    ("py:class", "module"),
+    # Just a TypeVar.
+    ("py:obj", "pluggy._result.ResultType"),
+    ("py:class", "pluggy._result.ResultType"),
+}
+
 # -- Options for Texinfo output -------------------------------------------
 
 # Grouping the document tree into Texinfo files. List of tuples

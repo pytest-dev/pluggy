@@ -14,9 +14,14 @@ API Reference
 
 .. autodecorator:: pluggy.HookimplMarker
 
-.. autoclass:: pluggy.Result()
-    :show-inheritance:
+.. autoclass:: pluggy.HookRelay()
     :members:
+
+    .. data:: <hook name>
+
+        :type: HookCaller
+
+        The caller for the hook with the given name.
 
 .. autoclass:: pluggy.HookCaller()
     :members:
@@ -26,11 +31,17 @@ API Reference
     :show-inheritance:
     :members:
 
-.. autoclass:: pluggy.HookRelay()
+.. autoclass:: pluggy.Result()
+    :show-inheritance:
     :members:
 
-    .. data:: <hook name>
+.. autoclass:: pluggy.HookImpl()
+    :members:
 
-        :type: HookCaller
+.. autoclass:: pluggy.HookspecOpts()
+    :show-inheritance:
+    :members:
 
-        The caller for the hook with the given name.
+.. autoclass:: pluggy.HookimplOpts()
+    :show-inheritance:
+    :members:
