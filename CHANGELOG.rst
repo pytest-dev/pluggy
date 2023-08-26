@@ -21,6 +21,39 @@ Versions follow `Semantic Versioning <https://semver.org/>`_ (``<major>.<minor>.
 
 .. towncrier release notes start
 
+pluggy 1.3.0 (2023-08-26)
+=========================
+
+Deprecations and Removals
+-------------------------
+
+- `#426 <https://github.com/pytest-dev/pluggy/issues/426>`_: Python 3.7 is no longer supported.
+
+
+
+Features
+--------
+
+- `#428 <https://github.com/pytest-dev/pluggy/issues/428>`_: Pluggy now exposes its typings to static type checkers.
+
+  As part of this, the following changes are made:
+
+  - Renamed ``_Result`` to ``Result``, and exported as :class:`pluggy.Result`.
+  - Renamed ``_HookRelay`` to ``HookRelay``, and exported as :class:`pluggy.HookRelay`.
+  - Renamed ``_HookCaller`` to ``HookCaller``, and exported as :class:`pluggy.HookCaller`.
+  - Exported ``HookImpl`` as :class:`pluggy.HookImpl`.
+  - Renamed ``_HookImplOpts`` to ``HookimplOpts``, and exported as :class:`pluggy.HookimplOpts`.
+  - Renamed ``_HookSpecOpts`` to ``HookspecOpts``, and exported as :class:`pluggy.HookspecOpts`.
+  - Some fields and classes are marked ``Final`` and ``@final``.
+  - The :ref:`api-reference` is updated to clearly delineate pluggy's public API.
+
+  Compatibility aliases are put in place for the renamed types.
+  We do not plan to remove the aliases, but we strongly recommend to only import from ``pluggy.*`` to ensure future compatibility.
+
+  Please note that pluggy is currently unable to provide strong typing for hook calls, e.g. ``pm.hook.my_hook(...)``,
+  nor to statically check that a hook implementation matches the hook specification's type.
+
+
 pluggy 1.2.0 (2023-06-21)
 =========================
 
