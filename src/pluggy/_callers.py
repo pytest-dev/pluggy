@@ -2,26 +2,25 @@
 Call loop machinery
 """
 from __future__ import annotations
-
-from typing import cast
-from typing import Generator
-from typing import Mapping
-from typing import Sequence
-from typing import Tuple
-from typing import Union
-
 from ._hooks import HookImpl
 from ._result import _raise_wrapfail
 from ._result import HookCallError
 from ._result import Result
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from typing import cast
+    from typing import Generator
+    from typing import Mapping
+    from typing import Sequence
+    from typing import Tuple
+    from typing import Union
 
-
-# Need to distinguish between old- and new-style hook wrappers.
-# Wrapping one a singleton tuple is the fastest type-safe way I found to do it.
-Teardown = Union[
-    Tuple[Generator[None, Result[object], None]],
-    Generator[None, object, object],
-]
+    # Need to distinguish between old- and new-style hook wrappers.
+    # Wrapping one a singleton tuple is the fastest type-safe way I found to do it.
+    Teardown  = Union[
+        Tuple[Generator[None, Result[object], None]],
+        Generator[None, object, object],
+    ]
 
 
 def _multicall(

@@ -3,71 +3,82 @@ Internal hook annotation, representation and calling machinery.
 """
 from __future__ import annotations
 
-import inspect
 import sys
 import warnings
-from types import ModuleType
-from typing import AbstractSet
-from typing import Any
-from typing import Callable
-from typing import Final
-from typing import final
-from typing import Generator
-from typing import List
-from typing import Mapping
-from typing import Optional
-from typing import overload
-from typing import Sequence
-from typing import Tuple
-from typing import TYPE_CHECKING
-from typing import TypedDict
-from typing import TypeVar
-from typing import Union
 
-from ._result import Result
-
-
-_T = TypeVar("_T")
-_F = TypeVar("_F", bound=Callable[..., object])
-_Namespace = Union[ModuleType, type]
 _Plugin = object
-_HookExec = Callable[
-    [str, Sequence["HookImpl"], Mapping[str, object], bool],
-    Union[object, List[object]],
-]
-_HookImplFunction = Callable[..., Union[_T, Generator[None, Result[_T], None]]]
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from types import ModuleType
+    from typing import AbstractSet
+    from typing import Any
+    from typing import Callable
+    from typing import Final
+    from typing import final
+    from typing import Generator
+    from typing import List
+    from typing import Mapping
+    from typing import Optional
+    from typing import overload
+    from typing import Sequence
+    from typing import Tuple
+    from typing import TYPE_CHECKING
+    from typing import TypedDict
+    from typing import TypeVar
+    from typing import Union
+
+    from ._result import Result
 
 
-class HookspecOpts(TypedDict):
-    """Options for a hook specification."""
+    _T = TypeVar("_T")
+    _F = TypeVar("_F", bound=Callable[..., object])
+    _Namespace = Union[ModuleType, type]
+    _HookExec = Callable[
+        [str, Sequence["HookImpl"], Mapping[str, object], bool],
+        Union[object, List[object]],
+    ]
+    _HookImplFunction = Callable[..., Union[_T, Generator[None, Result[_T], None]]]
+    _CallHistory = List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
 
-    #: Whether the hook is :ref:`first result only <firstresult>`.
-    firstresult: bool
-    #: Whether the hook is :ref:`historic <historic>`.
-    historic: bool
-    #: Whether the hook :ref:`warns when implemented <warn_on_impl>`.
-    warn_on_impl: Warning | None
+
+    class HookspecOpts(TypedDict):
+        """Options for a hook specification."""
+
+        #: Whether the hook is :ref:`first result only <firstresult>`.
+        firstresult: bool
+        #: Whether the hook is :ref:`historic <historic>`.
+        historic: bool
+        #: Whether the hook :ref:`warns when implemented <warn_on_impl>`.
+        warn_on_impl: Warning | None
 
 
-class HookimplOpts(TypedDict):
-    """Options for a hook implementation."""
+    class HookimplOpts(TypedDict):
+        """Options for a hook implementation."""
 
-    #: Whether the hook implementation is a :ref:`wrapper <hookwrapper>`.
-    wrapper: bool
-    #: Whether the hook implementation is an :ref:`old-style wrapper
-    #: <old_style_hookwrappers>`.
-    hookwrapper: bool
-    #: Whether validation against a hook specification is :ref:`optional
-    #: <optionalhook>`.
-    optionalhook: bool
-    #: Whether to try to order this hook implementation :ref:`first
-    #: <callorder>`.
-    tryfirst: bool
-    #: Whether to try to order this hook implementation :ref:`last
-    #: <callorder>`.
-    trylast: bool
-    #: The name of the hook specification to match, see :ref:`specname`.
-    specname: str | None
+        #: Whether the hook implementation is a :ref:`wrapper <hookwrapper>`.
+        wrapper: bool
+        #: Whether the hook implementation is an :ref:`old-style wrapper
+        #: <old_style_hookwrappers>`.
+        hookwrapper: bool
+        #: Whether validation against a hook specification is :ref:`optional
+        #: <optionalhook>`.
+        optionalhook: bool
+        #: Whether to try to order this hook implementation :ref:`first
+        #: <callorder>`.
+        tryfirst: bool
+        #: Whether to try to order this hook implementation :ref:`last
+        #: <callorder>`.
+        trylast: bool
+        #: The name of the hook specification to match, see :ref:`specname`.
+        specname: str | None
+
+else:
+    def final(func: _F) -> _F:
+        return func
+    overload = final
+
+
 
 
 @final
@@ -286,6 +297,8 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     In case of a class, its ``__init__`` method is considered.
     For methods the ``self`` parameter is not included.
     """
+    import inspect
+
     if inspect.isclass(func):
         try:
             func = func.__init__
@@ -364,7 +377,6 @@ class HookRelay:
 _HookRelay = HookRelay
 
 
-_CallHistory = List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
 
 
 class HookCaller:
