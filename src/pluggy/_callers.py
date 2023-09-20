@@ -28,6 +28,10 @@ if TYPE_CHECKING:
         Tuple[Generator[None, Result[object], None], HookImpl],
     Generator[None, object, object],
 ]
+else:
+
+    def cast(t, v):
+        return v
 
 from ._hooks import HookImpl
 from ._result import HookCallError
@@ -94,7 +98,7 @@ def _multicall(
                         # If this cast is not valid, a type error is raised below,
                         # which is the desired response.
                         res = hook_impl.function(*args)
-                        wrapper_gen = cast(Generator[None, Result[object], None], res)
+                        wrapper_gen = cast("Generator[None, Result[object], None]", res)
                         next(wrapper_gen)  # first yield
                         teardowns.append((wrapper_gen, hook_impl))
                     except StopIteration:
@@ -104,7 +108,7 @@ def _multicall(
                         # If this cast is not valid, a type error is raised below,
                         # which is the desired response.
                         res = hook_impl.function(*args)
-                        function_gen = cast(Generator[None, object, object], res)
+                        function_gen = cast("Generator[None, object, object]", res)
                         next(function_gen)  # first yield
                         teardowns.append(function_gen)
                     except StopIteration:
