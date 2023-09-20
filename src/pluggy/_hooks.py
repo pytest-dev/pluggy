@@ -30,7 +30,6 @@ if TYPE_CHECKING:
 
     from ._result import Result
 
-
     _T = TypeVar("_T")
     _F = TypeVar("_F", bound=Callable[..., object])
     _Namespace = Union[ModuleType, type]
@@ -41,7 +40,6 @@ if TYPE_CHECKING:
     _HookImplFunction = Callable[..., Union[_T, Generator[None, Result[_T], None]]]
     _CallHistory = List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
 
-
     class HookspecOpts(TypedDict):
         """Options for a hook specification."""
 
@@ -51,7 +49,6 @@ if TYPE_CHECKING:
         historic: bool
         #: Whether the hook :ref:`warns when implemented <warn_on_impl>`.
         warn_on_impl: Warning | None
-
 
     class HookimplOpts(TypedDict):
         """Options for a hook implementation."""
@@ -74,11 +71,11 @@ if TYPE_CHECKING:
         specname: str | None
 
 else:
+
     def final(func: _F) -> _F:
         return func
+
     overload = final
-
-
 
 
 @final
@@ -375,8 +372,6 @@ class HookRelay:
 
 # Historical name (pluggy<=1.2), kept for backward compatibility.
 _HookRelay = HookRelay
-
-
 
 
 class HookCaller:
