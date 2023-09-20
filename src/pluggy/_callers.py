@@ -117,7 +117,7 @@ def _multicall(
                         # If this cast is not valid, a type error is raised below,
                         # which is the desired response.
                         res = hook_impl.function(*args)
-                        function_gen = cast(Generator[None, object, object], res)
+                        function_gen = cast("Generator[None, object, object]", res)
                         next(function_gen)  # first yield
                         teardowns.append(function_gen)
                     except StopIteration:
