@@ -2,7 +2,13 @@ from typing import List
 
 import pytest
 
+from pluggy import HookimplMarker
+from pluggy import HookspecMarker
+from pluggy import PluginManager
 from pluggy._tracing import TagTracer
+
+hookspec = HookspecMarker("example")
+hookimpl = HookimplMarker("example")
 
 
 @pytest.fixture
@@ -77,3 +83,79 @@ def test_setprocessor(rootlogger: TagTracer) -> None:
     log2("seen")
     tags, args = l2[0]
     assert args == ("seen",)
+
+
+def test_plugin_tracing(pm: PluginManager) -> None:
+    class Api:
+        @hookspec
+        def hello(self, arg: object) -> None:
+            "api hook 1"
+
+    pm.add_hookspecs(Api)
+    hook = pm.hook
+    test_hc = hook.hello
+
+    class Plugin:
+        @hookimpl
+        def hello(self, arg):
+            return arg + 1
+
+    plugin = Plugin()
+
+    trace_out: List[str] = []
+    pm.trace.root.setwriter(trace_out.append)
+    pm.register(plugin)
+    pm.enable_tracing()
+
+    out = test_hc(arg=3)
+    assert out == [4]
+
+    assert trace_out == [
+        "  hello [hook]\n      arg: 3\n",
+        "  finish hello --> [4] [hook]\n",
+    ]
+
+
+def test_dbl_plugin_tracing(pm: PluginManager) -> None:
+    class Api:
+        @hookspec
+        def hello(self, arg: object) -> None:
+            "api hook 1"
+
+    pm.add_hookspecs(Api)
+    hook = pm.hook
+    test_hc = hook.hello
+
+    class Plugin:
+        @hookimpl
+        def hello(self, arg):
+            return arg + 1
+
+        @hookimpl(specname="hello")
+        def hello_again(self, arg):
+            return arg + 100
+
+    plugin = Plugin()
+
+    trace_out: List[str] = []
+    pm.trace.root.setwriter(trace_out.append)
+    pm.register(plugin)
+    pm.enable_tracing()
+
+    out = test_hc(arg=3)
+    assert out == [103, 4]
+
+    assert trace_out == [
+        "  hello [hook]\n      arg: 3\n",
+        "  finish hello --> [103, 4] [hook]\n",
+    ]
+
+    trace_out.clear()
+    pm.unregister(plugin)
+    out = test_hc(arg=3)
+    assert out == []
+
+    assert trace_out == [
+        "  hello [hook]\n      arg: 3\n",
+        "  finish hello --> [] [hook]\n",
+    ]
