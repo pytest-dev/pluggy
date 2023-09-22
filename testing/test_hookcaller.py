@@ -448,3 +448,59 @@ def test_hook_conflict(pm: PluginManager) -> None:
         "Hook 'conflict' is already registered within namespace "
         "<class 'test_hookcaller.test_hook_conflict.<locals>.Api1'>"
     )
+
+
+def test_hook_multi_impl(pm: PluginManager) -> None:
+    """Since plugins' impls are able to (optionally) specify a spec name, it is possible for a plugin to implement
+    the same spec multiple times."""
+
+    class Api:
+        @hookspec
+        def hello(self, arg: object) -> None:
+            "api hook 1"
+
+    pm.add_hookspecs(Api)
+    hook = pm.hook
+    test_hc = hook.hello
+
+    class Plugin:
+        @hookimpl
+        def hello(self, arg):
+            return arg + 1
+
+        @hookimpl(specname="hello")
+        def hello_again(self, arg):
+            return arg + 100
+
+    plugin = Plugin()
+
+    # Confirm that registration puts the impls into all the right registries
+    pm.register(plugin)
+    out = test_hc(arg=3)
+    assert out == [103, 4]
+
+    assert len(pm.get_plugins()) == 1
+
+    hookimpls = test_hc.get_hookimpls()
+    hook_plugins = [item.plugin for item in hookimpls]
+    assert hook_plugins == [plugin, plugin]
+    for impl in hookimpls:
+        pm._verify_hook(test_hc, impl)
+
+    hook_callers = pm.get_hookcallers(plugin)
+    assert (
+        len(hook_callers) == 2
+    ), "This should return two callers. Same spec but different impls."
+    assert hook_callers[0].spec == hook_callers[1].spec
+
+    subset_caller = pm.subset_hook_caller("hello", [plugin])
+    out = subset_caller(arg=3)
+    assert out == []
+
+    # Confirm that 'unregistering' does the converse
+    pm.unregister(plugin)
+    assert test_hc(arg=3) == []
+    hookimpls = test_hc.get_hookimpls()
+    assert hookimpls == []
+    hook_callers = pm.get_hookcallers(plugin)
+    assert hook_callers is None
