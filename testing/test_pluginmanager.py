@@ -10,6 +10,7 @@ import pytest
 from pluggy import HookCallError
 from pluggy import HookimplMarker
 from pluggy import HookspecMarker
+from pluggy import force_not_a_hook
 from pluggy import PluginManager
 from pluggy import PluginValidationError
 
@@ -209,6 +210,26 @@ def test_register_unknown_hooks(pm: PluginManager) -> None:
     hookcallers = pm.get_hookcallers(pm.get_plugin(pname))
     assert hookcallers is not None
     assert len(hookcallers) == 1
+
+
+def test_register_force_not_hook(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec
+        def he_method1(self):
+            pass
+
+    pm.add_hookspecs(Hooks)
+
+    class Plugin:
+        @force_not_a_hook
+        @hookimpl
+        def he_method1(self):
+            return 1
+
+    pm.register(Plugin())
+    hc = pm.hook
+    out = hc.he_method1()
+    assert out == []
 
 
 def test_register_historic(pm: PluginManager) -> None:

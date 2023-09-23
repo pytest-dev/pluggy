@@ -5,6 +5,7 @@ import inspect
 import types
 import warnings
 from typing import Any
+from typing import TypeVar
 from typing import Callable
 from typing import cast
 from typing import Final
@@ -70,6 +71,32 @@ class DistFacade:
 
     def __dir__(self) -> list[str]:
         return sorted(dir(self._dist) + ["_dist", "project_name"])
+
+
+_T = TypeVar("_T")
+
+
+_pluggy_hide_attr_name = "_pluggy_hide_mark"
+
+
+def force_not_a_hook(obj: _T) -> _T:
+    """
+    Use this to mark a function or method as *hidden* from discovery as a plugin hook.
+
+    This is useful in rare cases. Use it where hooks are discovered by prefix name but some objects exist with
+    matching names which are _not_ to be considered as hook implementations.
+
+    e.g. When using _pytest_, use this marker to mark a function that has a name starting with 'pytest_' but which
+    is not intended to be picked up as a hook implementation.
+
+    >>> @force_not_a_hook
+    ... def pytest_some_function(arg1):
+    ...   # For some reason, we needed to name this function with `pytest_` prefix, but we don't want it treated as a
+    ...   # hook
+    """
+    assert not hasattr(obj, _pluggy_hide_attr_name)
+    setattr(obj, _pluggy_hide_attr_name, True)
+    return obj
 
 
 class PluginManager:
@@ -148,7 +175,7 @@ class PluginManager:
         self._name2plugin[plugin_name] = plugin
 
         # register matching hook implementations of the plugin
-        for name in dir(plugin):
+        for name in self._find_plugin_attrs(plugin):
             hookimpl_opts = self.parse_hookimpl_opts(plugin, name)
             if hookimpl_opts is not None:
                 normalize_hookimpl_opts(hookimpl_opts)
@@ -164,6 +191,24 @@ class PluginManager:
                     hook._maybe_apply_history(hookimpl)
                 hook._add_hookimpl(hookimpl)
         return plugin_name
+
+    def _find_plugin_attrs(self, plugin: _Namespace) -> Iterable[str]:
+        """
+        Override this method to customize the way we select the attribute names from an object to inspect as potential
+        hook implementations.
+
+        The results from this method will run through `parse_hookimpl_opts` which may do additional filtering.
+        """
+        for name in dir(plugin):  # , method in inspect.getmembers(plugin):
+            try:
+                method = getattr(plugin, name, None)
+                pluggy_hide_mark = getattr(method, _pluggy_hide_attr_name, None)
+            except Exception:
+                # Ignore all kinds of exceptions.  Pluggy has to be very exception-tolerant during plugin registration
+                continue
+
+            if pluggy_hide_mark is not True:
+                yield name
 
     def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
         """Try to obtain a hook implementation from an item with the given name
