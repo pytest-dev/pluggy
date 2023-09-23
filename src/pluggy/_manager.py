@@ -5,13 +5,13 @@ import inspect
 import types
 import warnings
 from typing import Any
-from typing import TypeVar
 from typing import Callable
 from typing import cast
 from typing import Final
 from typing import Iterable
 from typing import Mapping
 from typing import Sequence
+from typing import TypeVar
 
 from . import _tracing
 from ._callers import _multicall

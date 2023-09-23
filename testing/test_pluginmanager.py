@@ -7,10 +7,10 @@ from typing import List
 
 import pytest
 
+from pluggy import force_not_a_hook
 from pluggy import HookCallError
 from pluggy import HookimplMarker
 from pluggy import HookspecMarker
-from pluggy import force_not_a_hook
 from pluggy import PluginManager
 from pluggy import PluginValidationError
 
