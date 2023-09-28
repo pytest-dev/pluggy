@@ -1028,11 +1028,11 @@ Table of contents
 .. _callbacks:
     https://en.wikipedia.org/wiki/Callback_(computer_programming)
 .. _tox test suite:
-    https://github.com/pytest-dev/pluggy/blob/master/tox.ini
+    https://github.com/pytest-dev/pluggy/blob/main/tox.ini
 .. _Semantic Versioning:
     https://semver.org/
 .. _Python interpreters:
-    https://github.com/pytest-dev/pluggy/blob/master/tox.ini#L2
+    https://github.com/pytest-dev/pluggy/blob/main/tox.ini#L2
 .. _500+ plugins:
     https://docs.pytest.org/en/latest/reference/plugin_list.html
 .. _pre-commit:
