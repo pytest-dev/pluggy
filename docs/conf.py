@@ -45,7 +45,7 @@ html_theme_options = {
     "github_button": "true",
     "github_banner": "true",
     "github_type": "star",
-    "badge_branch": "master",
+    "badge_branch": "main",
     "page_width": "1080px",
     "sidebar_width": "300px",
     "fixed_sidebar": "false",
