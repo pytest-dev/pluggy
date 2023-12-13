@@ -542,9 +542,10 @@ class HookCaller:
             # Find last non-tryfirst nonwrapper method.
             i = len(hookimpls) - 1
             while (
-                i >= 0
-                and hookimpls[i].tryfirst
-                and not (hookimpls[i].hookwrapper or hookimpls[i].wrapper)
+                i >= 0 
+                and (hookimpls[i].tryfirst 
+                     or hookimpls[i].hookwrapper 
+                     or hookimpls[i].wrapper)
             ):
                 i -= 1
             hookimpls.insert(i + 1, hookimpl)
