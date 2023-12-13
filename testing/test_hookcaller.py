@@ -448,3 +448,38 @@ def test_hook_conflict(pm: PluginManager) -> None:
         "Hook 'conflict' is already registered within namespace "
         "<class 'test_hookcaller.test_hook_conflict.<locals>.Api1'>"
     )
+
+# the following tests is to ensure that the modified call_extra function is still calling the hooks in the right order
+# (when hookwrapper=False and wrapper=False)
+def test_call_extra_hookorder1(hc, addmeth) -> None:
+    # this hook should be executed first 
+    @addmeth(tryfirst=True, hookwrapper=False, wrapper=False)
+    def method1(arg: str) -> int:
+        return 1
+    
+    @addmeth(tryfirst=False, hookwrapper=False, wrapper=False)
+    def method2(arg: str) -> int:
+        return 2
+    
+    result = hc.call_extra([method1, method2], {"arg": "test"})
+    assert result[0] == 1 # value of first hook
+
+# the following test is to ensure that the modified call_extra function is still calling the hooks in the right order
+# (when hookwrapper=False and wrapper=False)
+def test_call_extra_hookorder2(hc, addmeth) -> None:
+    @addmeth(tryfirst=False, hookwrapper=False, wrapper=False)
+    def method1(arg: str) -> int:
+        return 1
+    
+    # this hook should be executed first 
+    @addmeth(tryfirst=True, hookwrapper=False, wrapper=False)
+    def method2(arg: str) -> int:
+        return 2
+    
+    result = hc.call_extra([method1, method2], {"arg": "test"})
+    assert result[0] == 2 # value of first hook
+
+
+
+
+
