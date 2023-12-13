@@ -25,6 +25,7 @@ from typing import TypeVar
 from typing import Union
 
 from ._result import Result
+from ._tracing import saferepr
 
 
 _T = TypeVar("_T")
@@ -456,7 +457,7 @@ class HookCaller:
             self._hookimpls.insert(i + 1, hookimpl)
 
     def __repr__(self) -> str:
-        return f"<HookCaller {self.name!r}>"
+        return f"<HookCaller {saferepr(self.name)}>"
 
     def _verify_all_args_are_provided(self, kwargs: Mapping[str, object]) -> None:
         # This is written to avoid expensive operations when not needed.
@@ -609,7 +610,7 @@ class _SubsetHookCaller(HookCaller):
         return self._orig._call_history
 
     def __repr__(self) -> str:
-        return f"<_SubsetHookCaller {self.name!r}>"
+        return f"<_SubsetHookCaller {saferepr(self.name)}>"
 
 
 @final
@@ -667,7 +668,7 @@ class HookImpl:
         self.trylast: Final = hook_impl_opts["trylast"]
 
     def __repr__(self) -> str:
-        return f"<HookImpl plugin_name={self.plugin_name!r}, plugin={self.plugin!r}>"
+        return f"<HookImpl plugin_name={saferepr(self.plugin_name)}, plugin={saferepr(self.plugin)}>"
 
 
 @final
