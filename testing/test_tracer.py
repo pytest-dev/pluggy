@@ -2,7 +2,8 @@ from typing import List
 
 import pytest
 
-from pluggy._tracing import saferepr, DEFAULT_REPR_MAX_SIZE
+from pluggy._tracing import DEFAULT_REPR_MAX_SIZE
+from pluggy._tracing import saferepr
 from pluggy._tracing import TagTracer
 
 
@@ -79,6 +80,7 @@ def test_setprocessor(rootlogger: TagTracer) -> None:
     tags, args = l2[0]
     assert args == ("seen",)
 
+
 def test_saferepr_simple_repr():
     assert saferepr(1) == "1"
     assert saferepr(None) == "None"
@@ -110,10 +112,10 @@ def test_saferepr_maxsize_error_on_instance():
 
 def test_saferepr_exceptions() -> None:
     class BrokenRepr:
-        def __init__(self, ex):
+        def __init__(self, ex) -> None:
             self.ex = ex
 
-        def __repr__(self):
+        def __repr__(self) -> str:
             raise self.ex
 
     class BrokenReprException(Exception):
@@ -143,10 +145,10 @@ def test_saferepr_baseexception():
     """Test saferepr() with BaseExceptions, which includes pytest outcomes."""
 
     class RaisingOnStrRepr(BaseException):
-        def __init__(self, exc_types):
+        def __init__(self, exc_types) -> None:
             self.exc_types = exc_types
 
-        def raise_exc(self, *args):
+        def raise_exc(self, *args) -> None:
             try:
                 self.exc_type = self.exc_types.pop(0)
             except IndexError:
@@ -155,17 +157,19 @@ def test_saferepr_baseexception():
                 raise self.exc_type(*args)
             raise self.exc_type
 
-        def __str__(self):
+        def __str__(self) -> str:
             self.raise_exc("__str__")
+            return ""
 
-        def __repr__(self):
+        def __repr__(self) -> str:
             self.raise_exc("__repr__")
+            return ""
 
     class BrokenObj:
-        def __init__(self, exc):
+        def __init__(self, exc) -> None:
             self.exc = exc
 
-        def __repr__(self):
+        def __repr__(self) -> str:
             raise self.exc
 
         __str__ = __repr__

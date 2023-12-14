@@ -450,19 +450,14 @@ def test_hook_conflict(pm: PluginManager) -> None:
         "<class 'test_hookcaller.test_hook_conflict.<locals>.Api1'>"
     )
 
-def test_hookcaller_repr_with_saferepr_failure(hc: HookCaller, addmeth: AddMeth) -> None:
-    @addmeth()
-    def he_method1() -> None:
-        pass
 
+def test_hookcaller_repr_with_saferepr_failure(
+    hc: HookCaller, addmeth: AddMeth
+) -> None:
     @addmeth()
     def he_method2() -> None:
         # Intentional error to make the repr fail
         raise ValueError("Intentional error in he_method2")
-
-    @addmeth()
-    def he_method3() -> None:
-        pass
 
     # Verify that HookCaller.repr with saferepr still works despite the error
     expected_repr = f"<HookCaller {saferepr(hc.name)}>"

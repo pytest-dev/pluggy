@@ -668,7 +668,10 @@ class HookImpl:
         self.trylast: Final = hook_impl_opts["trylast"]
 
     def __repr__(self) -> str:
-        return f"<HookImpl plugin_name={saferepr(self.plugin_name)}, plugin={saferepr(self.plugin)}>"
+        return (
+            f"<HookImpl plugin_name={saferepr(self.plugin_name)}, "
+            f"plugin={saferepr(self.plugin)}>"
+        )
 
 
 @final

@@ -3,11 +3,11 @@ Tracing utils
 """
 from __future__ import annotations
 
+import reprlib
 from typing import Any
 from typing import Callable
 from typing import Sequence
 from typing import Tuple
-import reprlib
 
 
 _Writer = Callable[[str], object]
@@ -60,6 +60,7 @@ class TagTracer:
             assert isinstance(tags, tuple)
         self._tags2proc[tags] = processor
 
+
 def _try_repr_or_str(obj: object) -> str:
     try:
         return repr(obj)
@@ -67,6 +68,7 @@ def _try_repr_or_str(obj: object) -> str:
         raise
     except BaseException:
         return f'{type(obj).__name__}("{obj}")'
+
 
 def _format_repr_exception(exc: BaseException, obj: object) -> str:
     try:
@@ -79,12 +81,16 @@ def _format_repr_exception(exc: BaseException, obj: object) -> str:
         exc_info, type(obj).__name__, id(obj)
     )
 
+
 def _ellipsize(s: str, maxsize: int) -> str:
     if len(s) > maxsize:
         i = max(0, (maxsize - 3) // 2)
         j = max(0, maxsize - 3 - i)
-        return s[:i] + "..." + s[len(s) - j :]
+
+        x = len(s) - j
+        return s[:i] + "..." + s[x:]
     return s
+
 
 class SafeRepr(reprlib.Repr):
     """
@@ -92,7 +98,7 @@ class SafeRepr(reprlib.Repr):
     information on exceptions raised during the call.
     """
 
-    def __init__(self, maxsize: Optional[int], use_ascii: bool = False) -> None:
+    def __init__(self, maxsize: int | None, use_ascii: bool = False) -> None:
         """
         :param maxsize:
             If not None, will truncate the resulting repr to that specific size, using ellipsis
@@ -136,8 +142,10 @@ class SafeRepr(reprlib.Repr):
 
 # Maximum size of overall repr of objects to display during assertion errors.
 DEFAULT_REPR_MAX_SIZE = 240
+
+
 def saferepr(
-    obj: object, maxsize: Optional[int] = DEFAULT_REPR_MAX_SIZE, use_ascii: bool = False
+    obj: object, maxsize: int | None = DEFAULT_REPR_MAX_SIZE, use_ascii: bool = False
 ) -> str:
     """Return a size-limited safe repr-string for the given object.
 
@@ -150,6 +158,7 @@ def saferepr(
     """
 
     return SafeRepr(maxsize, use_ascii).repr(obj)
+
 
 class TagTracerSub:
     def __init__(self, root: TagTracer, tags: tuple[str, ...]) -> None:
