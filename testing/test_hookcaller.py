@@ -11,6 +11,7 @@ from pluggy import PluginManager
 from pluggy import PluginValidationError
 from pluggy._hooks import HookCaller
 from pluggy._hooks import HookImpl
+from pluggy._hooks import HookimplOpts
 from pluggy._tracing import saferepr
 
 hookspec = HookspecMarker("example")
@@ -410,7 +411,8 @@ def test_hookrelay_registration_by_specname_raises(pm: PluginManager) -> None:
 
     pm.add_hookspecs(Api)
 
-    # make sure a bad signature still raises an error when using specname
+    """make sure a bad signature still raises an error when using specname"""
+
     class Plugin:
         @hookimpl(specname="hello")
         def foo(self, arg: int, too, many, args) -> int:
@@ -419,8 +421,9 @@ def test_hookrelay_registration_by_specname_raises(pm: PluginManager) -> None:
     with pytest.raises(PluginValidationError):
         pm.register(Plugin())
 
-    # make sure check_pending still fails if specname doesn't have a
-    # corresponding spec.  EVEN if the function name matches one.
+    """make sure check_pending still fails if specname doesn't have a
+    corresponding spec.  EVEN if the function name matches one."""
+
     class Plugin2:
         @hookimpl(specname="bar")
         def hello(self, arg: int) -> int:
@@ -451,14 +454,62 @@ def test_hook_conflict(pm: PluginManager) -> None:
     )
 
 
-def test_hookcaller_repr_with_saferepr_failure(
-    hc: HookCaller, addmeth: AddMeth
-) -> None:
-    @addmeth()
-    def he_method2() -> None:
-        # Intentional error to make the repr fail
-        raise ValueError("Intentional error in he_method2")
+def test_hook_impl_initialization() -> None:
+    # Mock data
+    plugin = "example_plugin"
+    plugin_name = "ExamplePlugin"
 
-    # Verify that HookCaller.repr with saferepr still works despite the error
-    expected_repr = f"<HookCaller {saferepr(hc.name)}>"
-    assert repr(hc) == expected_repr
+    def example_function(x):
+        return x
+
+    hook_impl_opts: HookimplOpts = {
+        "wrapper": False,
+        "hookwrapper": False,
+        "optionalhook": False,
+        "tryfirst": False,
+        "trylast": False,
+        "specname": "",
+    }
+
+    # Initialize HookImpl
+    hook_impl = HookImpl(plugin, plugin_name, example_function, hook_impl_opts)
+
+    # Verify attributes are set correctly
+    assert hook_impl.function == example_function
+    assert hook_impl.argnames == ("x",)
+    assert hook_impl.kwargnames == ()
+    assert hook_impl.plugin == plugin
+    assert hook_impl.opts == hook_impl_opts
+    assert hook_impl.plugin_name == plugin_name
+    assert not hook_impl.wrapper
+    assert not hook_impl.hookwrapper
+    assert not hook_impl.optionalhook
+    assert not hook_impl.tryfirst
+    assert not hook_impl.trylast
+
+
+def test_hook_impl_representation() -> None:
+    # Mock data
+    plugin = "example_plugin"
+    plugin_name = "ExamplePlugin"
+
+    def example_function(x):
+        return x
+
+    hook_impl_opts: HookimplOpts = {
+        "wrapper": False,
+        "hookwrapper": False,
+        "optionalhook": False,
+        "tryfirst": False,
+        "trylast": False,
+        "specname": "",
+    }
+
+    # Initialize HookImpl
+    hook_impl = HookImpl(plugin, plugin_name, example_function, hook_impl_opts)
+
+    # Verify __repr__ method
+    expected_repr = (
+        f"<HookImpl plugin_name={saferepr(plugin_name)}, " f"plugin={saferepr(plugin)}>"
+    )
+    assert repr(hook_impl) == expected_repr

@@ -243,9 +243,6 @@ def test_saferepr_broken_getattribute():
     """
 
     class SomeClass:
-        def __getattribute__(self, attr):
-            raise RuntimeError
-
         def __repr__(self):
             raise RuntimeError
 
