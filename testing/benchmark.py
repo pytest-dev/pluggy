@@ -3,12 +3,12 @@ Benchmarking and performance tests.
 """
 import pytest
 
-from ._tracing import saferepr
 from pluggy import HookimplMarker
 from pluggy import HookspecMarker
 from pluggy import PluginManager
 from pluggy._callers import _multicall
 from pluggy._hooks import HookImpl
+from pluggy._tracing import saferepr
 
 
 hookspec = HookspecMarker("example")
