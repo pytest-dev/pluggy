@@ -480,6 +480,30 @@ def test_call_extra_hookorder2(hc, addmeth) -> None:
     assert result[0] == 2 # value of first hook
 
 
+# the following test is to ensure that the modified call_extra function is still calling the hooks in the right order
+# (when hookwrapper=False and wrapper=False)
+def test_call_extra_hookorder3(hc, addmeth) -> None:
+    @addmeth(tryfirst=False, hookwrapper=False, wrapper=False)
+    def method1(arg: str) -> int:
+        return 1
+    
+    # this hook should be executed last
+    @addmeth(trylast=True, hookwrapper=False, wrapper=False)
+    def method2(arg: str) -> int:
+        return 2
+    
+    @addmeth(tryfirst=False, hookwrapper=False, wrapper=False)
+    def method3(arg: str) -> int:
+        return 3
+    
+    # this hook should be executed first
+    @addmeth(tryfirst=True, hookwrapper=False, wrapper=False)
+    def method4(arg: str) -> int:
+        return 4
+    
+    result = hc.call_extra([method1, method2, method3, method4], {"arg": "test"})
+    assert result[0] == 4 # value of first hook
+    assert result[-1] == 2 # value of last hook
 
 
 
