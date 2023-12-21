@@ -27,7 +27,5 @@ from ._hooks import (
     HookimplMarker,
     HookCaller,
     HookRelay,
-    HookspecOpts,
-    HookimplOpts,
     HookImpl,
 )

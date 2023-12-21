@@ -3,21 +3,35 @@ Hook wrapper "result" utilities.
 """
 from __future__ import annotations
 
-from types import TracebackType
-from typing import Callable
-from typing import cast
-from typing import final
-from typing import Generator
-from typing import Generic
-from typing import NoReturn
-from typing import Optional
-from typing import Tuple
-from typing import Type
-from typing import TypeVar
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from types import TracebackType
+    from typing import Callable
+    from typing import cast
+    from typing import final
+    from typing import Generator
+    from typing import Generic
+    from typing import NoReturn
+    from typing import Optional
+    from typing import Tuple
+    from typing import Type
+    from typing import TypeVar
 
+    _ExcInfo = Tuple[Type[BaseException], BaseException, Optional[TracebackType]]
+    ResultType = TypeVar("ResultType")
+else:
+    from ._hooks import final
 
-_ExcInfo = Tuple[Type[BaseException], BaseException, Optional[TracebackType]]
-ResultType = TypeVar("ResultType")
+    def cast(v, t):
+        return t
+
+    class Generic:
+        """fake generic"""
+
+        def __class_getitem__(cls, key) -> type[object]:
+            return object
+
+    ResultType = "ResultType"
 
 
 def _raise_wrapfail(
@@ -109,7 +123,7 @@ class Result(Generic[ResultType]):
         __tracebackhide__ = True
         exc = self._exception
         if exc is None:
-            return cast(ResultType, self._result)
+            return cast("ResultType", self._result)
         else:
             raise exc.with_traceback(exc.__traceback__)
 
