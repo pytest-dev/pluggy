@@ -18,9 +18,10 @@ __all__ = [
     "HookspecMarker",
     "HookimplMarker",
     "Result",
+    "force_not_a_hook",
 ]
 
-from ._manager import PluginManager, PluginValidationError
+from ._manager import PluginManager, PluginValidationError, force_not_a_hook
 from ._result import HookCallError, Result
 from ._hooks import (
     HookspecMarker,
