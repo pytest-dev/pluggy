@@ -8,6 +8,7 @@ from pluggy import HookspecMarker
 from pluggy import PluginManager
 from pluggy._callers import _multicall
 from pluggy._hooks import HookImpl
+from pluggy._tracing import saferepr
 
 
 hookspec = HookspecMarker("example")
@@ -77,7 +78,7 @@ def test_call_hook(benchmark, plugins, wrappers, nesting):
             self.num = num
 
         def __repr__(self) -> str:
-            return f"<Plugin {self.num}>"
+            return f"<Plugin {saferepr(self.num)}>"
 
         @hookimpl
         def fun(self, hooks, nesting: int) -> None:
@@ -89,7 +90,7 @@ def test_call_hook(benchmark, plugins, wrappers, nesting):
             self.num = num
 
         def __repr__(self) -> str:
-            return f"<PluginWrap {self.num}>"
+            return f"<PluginWrap {saferepr(self.num)}>"
 
         @hookimpl(wrapper=True)
         def fun(self):
