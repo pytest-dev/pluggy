@@ -416,9 +416,11 @@ of the hook thus far, or, if the previous calls raised an exception, it is
 :py:meth:`thrown <python:generator.throw>` the exception.
 
 The function should do one of two things:
-- Return a value, which can be the same value as received from the ``yield``, or
-something else entirely.
+
+- Return a value, which can be the same value as received from the ``yield``, or something else entirely.
+
 - Raise an exception.
+
 The return value or exception propagate to further hook wrappers, and finally
 to the hook caller.
 
