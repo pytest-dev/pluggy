@@ -148,7 +148,7 @@ Features
 --------
 
 - `#282 <https://github.com/pytest-dev/pluggy/issues/282>`_: When registering a hookimpl which is declared as ``hookwrapper=True`` but whose
-  function is not a generator function, a ``PluggyValidationError`` exception is
+  function is not a generator function, a :class:`~pluggy.PluginValidationError` exception is
   now raised.
 
   Previously this problem would cause an error only later, when calling the hook.
@@ -158,7 +158,7 @@ Features
 
   .. code-block:: python
 
-      def my_hook_real_implementation(arg):
+      def my_hook_implementation(arg):
           print("before")
           yield
           print("after")
