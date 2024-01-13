@@ -110,6 +110,13 @@ def test_set_blocked(pm: PluginManager) -> None:
     pm.unregister(name="somename")
     assert pm.is_blocked("somename")
 
+    # Unblock.
+    assert not pm.unblock("someothername")
+    assert pm.unblock("somename")
+    assert not pm.is_blocked("somename")
+    assert not pm.unblock("somename")
+    assert pm.register(A(), "somename")
+
 
 def test_register_mismatch_method(he_pm: PluginManager) -> None:
     class hello:

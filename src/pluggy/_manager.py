@@ -235,6 +235,16 @@ class PluginManager:
         """Return whether the given plugin name is blocked."""
         return name in self._name2plugin and self._name2plugin[name] is None
 
+    def unblock(self, name: str) -> bool:
+        """Unblocks a name.
+
+        Returns whether the name was actually blocked.
+        """
+        if self._name2plugin.get(name, -1) is None:
+            del self._name2plugin[name]
+            return True
+        return False
+
     def add_hookspecs(self, module_or_class: _Namespace) -> None:
         """Add new hook specifications defined in the given ``module_or_class``.
 
