@@ -497,7 +497,8 @@ class HookCaller:
         ), "Cannot directly call a historic hook - use call_historic instead."
         self._verify_all_args_are_provided(kwargs)
         firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
-        return self._hookexec(self.name, self._hookimpls, kwargs, firstresult)
+        # Copy because plugins may register other plugins during iteration (#438).
+        return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
 
     def call_historic(
         self,
@@ -518,7 +519,8 @@ class HookCaller:
         self._call_history.append((kwargs, result_callback))
         # Historizing hooks don't return results.
         # Remember firstresult isn't compatible with historic.
-        res = self._hookexec(self.name, self._hookimpls, kwargs, False)
+        # Copy because plugins may register other plugins during iteration (#438).
+        res = self._hookexec(self.name, self._hookimpls.copy(), kwargs, False)
         if result_callback is None:
             return
         if isinstance(res, list):
