@@ -389,6 +389,13 @@ class HookCaller:
         #: Name of the hook getting called.
         self.name: Final = name
         self._hookexec: Final = hook_execute
+        # The hookimpls list. The caller iterates it *in reverse*. Format:
+        # 1. trylast nonwrappers
+        # 2. nonwrappers
+        # 3. tryfirst nonwrappers
+        # 4. trylast wrappers
+        # 5. wrappers
+        # 6. tryfirst wrappers
         self._hookimpls: Final[list[HookImpl]] = []
         self._call_history: _CallHistory | None = None
         # TODO: Document, or make private.
