@@ -47,3 +47,15 @@ API Reference
 .. autoclass:: pluggy.HookimplOpts()
     :show-inheritance:
     :members:
+
+
+Warnings
+--------
+
+Custom warnings generated in some situations such as improper usage or deprecated features.
+
+.. autoclass:: pluggy.PluggyWarning()
+    :show-inheritance:
+
+.. autoclass:: pluggy.PluggyTeardownRaisedWarning()
+    :show-inheritance:
