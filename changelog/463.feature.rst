@@ -1,2 +1,0 @@
-A warning :class:`~pluggy.PluggyTeardownRaisedWarning` is now issued when an old-style hookwrapper raises an exception during teardown.
-See the warning documentation for more details.

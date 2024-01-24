@@ -21,6 +21,25 @@ Versions follow `Semantic Versioning <https://semver.org/>`_ (``<major>.<minor>.
 
 .. towncrier release notes start
 
+pluggy 1.4.0 (2024-01-24)
+=========================
+
+Features
+--------
+
+- `#463 <https://github.com/pytest-dev/pluggy/issues/463>`_: A warning :class:`~pluggy.PluggyTeardownRaisedWarning` is now issued when an old-style hookwrapper raises an exception during teardown.
+  See the warning documentation for more details.
+
+- `#471 <https://github.com/pytest-dev/pluggy/issues/471>`_: Add :func:`PluginManager.unblock <pluggy.PluginManager.unblock>` method to unblock a plugin by plugin name.
+
+Bug Fixes
+---------
+
+- `#441 <https://github.com/pytest-dev/pluggy/issues/441>`_: Fix :func:`~pluggy.HookCaller.call_extra()` extra methods getting ordered before everything else in some circumstances. Regressed in pluggy 1.1.0.
+
+- `#438 <https://github.com/pytest-dev/pluggy/issues/438>`_: Fix plugins registering other plugins in a hook when the other plugins implement the same hook itself. Regressed in pluggy 1.1.0.
+
+
 pluggy 1.3.0 (2023-08-26)
 =========================
 
