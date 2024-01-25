@@ -60,6 +60,7 @@ def test_keyword_args_with_defaultargs() -> None:
     reslist = MC([f2], dict(x=23))
     assert reslist == [23 + 1]
 
+
 def test_tags_call_error() -> None:
     @hookimpl
     def f(x):

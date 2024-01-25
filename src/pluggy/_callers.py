@@ -70,7 +70,11 @@ def _multicall(
             for hook_impl in reversed(hook_impls):
                 try:
                     args = [caller_kwargs[argname] for argname in hook_impl.argnames]
-                    kwargs = dict((k, v) for k, v in caller_kwargs.items() if k in hook_impl.kwargnames)
+                    kwargs = {
+                        k: v
+                        for k, v in caller_kwargs.items()
+                        if k in hook_impl.kwargnames
+                    }
                 except KeyError:
                     for argname in hook_impl.argnames:
                         if argname not in caller_kwargs:
