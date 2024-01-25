@@ -4,44 +4,31 @@ Call loop machinery
 from __future__ import annotations
 
 import warnings
-from typing import cast
 from typing import Generator
 from typing import Mapping
 from typing import NoReturn
 from typing import Sequence
 from typing import Tuple
 from typing import Union
+from typing import cast
 
 from ._hooks import HookImpl
 from ._result import HookCallError
 from ._result import Result
 from ._warnings import PluggyTeardownRaisedWarning
 
-
 # Need to distinguish between old- and new-style hook wrappers.
 # Wrapping with a tuple is the fastest type-safe way I found to do it.
-Teardown = Union[
-    Tuple[Generator[None, Result[object], None], HookImpl],
-    Generator[None, object, object],
-]
+Teardown = Union[Tuple[Generator[None, Result[object], None], HookImpl], Generator[None, object, object],]
 
 
-def _raise_wrapfail(
-    wrap_controller: (
-        Generator[None, Result[object], None] | Generator[None, object, object]
-    ),
-    msg: str,
-) -> NoReturn:
+def _raise_wrapfail(wrap_controller: (Generator[None, Result[object], None] | Generator[None, object, object]),
+        msg: str, ) -> NoReturn:
     co = wrap_controller.gi_code
-    raise RuntimeError(
-        "wrap_controller at %r %s:%d %s"
-        % (co.co_name, co.co_filename, co.co_firstlineno, msg)
-    )
+    raise RuntimeError("wrap_controller at %r %s:%d %s" % (co.co_name, co.co_filename, co.co_firstlineno, msg))
 
 
-def _warn_teardown_exception(
-    hook_name: str, hook_impl: HookImpl, e: BaseException
-) -> None:
+def _warn_teardown_exception(hook_name: str, hook_impl: HookImpl, e: BaseException) -> None:
     msg = "A plugin raised an exception during an old-style hookwrapper teardown.\n"
     msg += f"Plugin: {hook_impl.plugin_name}, Hook: {hook_name}\n"
     msg += f"{type(e).__name__}: {e}\n"
@@ -49,12 +36,8 @@ def _warn_teardown_exception(
     warnings.warn(PluggyTeardownRaisedWarning(msg), stacklevel=5)
 
 
-def _multicall(
-    hook_name: str,
-    hook_impls: Sequence[HookImpl],
-    caller_kwargs: Mapping[str, object],
-    firstresult: bool,
-) -> object | list[object]:
+def _multicall(hook_name: str, hook_impls: Sequence[HookImpl], caller_kwargs: Mapping[str, object],
+        firstresult: bool, ) -> object | list[object]:
     """Execute a call into multiple python functions/methods and return the
     result(s).
 
@@ -70,17 +53,11 @@ def _multicall(
             for hook_impl in reversed(hook_impls):
                 try:
                     args = [caller_kwargs[argname] for argname in hook_impl.argnames]
-                    kwargs = {
-                        k: v
-                        for k, v in caller_kwargs.items()
-                        if k in hook_impl.kwargnames
-                    }
+                    kwargs = {k: v for k, v in caller_kwargs.items() if k in hook_impl.kwargnames}
                 except KeyError:
                     for argname in hook_impl.argnames:
                         if argname not in caller_kwargs:
-                            raise HookCallError(
-                                f"hook call must provide argument {argname!r}"
-                            )
+                            raise HookCallError(f"hook call must provide argument {argname!r}")
 
                 if hook_impl.hookwrapper:
                     only_new_style_wrappers = False
@@ -147,9 +124,7 @@ def _multicall(
         # Slow path - need to support old-style wrappers.
         else:
             if firstresult:  # first result hooks return a single value
-                outcome: Result[object | list[object]] = Result(
-                    results[0] if results else None, exception
-                )
+                outcome: Result[object | list[object]] = Result(results[0] if results else None, exception)
             else:
                 outcome = Result(results, exception)
 
