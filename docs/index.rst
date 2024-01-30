@@ -308,6 +308,7 @@ the same Python file, for example:
 
         return config
 
+
     @hookimpl(specname="setup_project")
     def setup_2(config, args):
         """Perform additional setup steps"""
