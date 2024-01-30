@@ -291,12 +291,15 @@ To override the default behavior, a *hookimpl* may also be matched to a
 the ``specname`` option.  Continuing the example above, the *hookimpl* function
 does not need to be named ``setup_project``, but if the argument
 ``specname="setup_project"`` is provided to the ``hookimpl`` decorator, it will
-be matched and checked against the ``setup_project`` hookspec:
+be matched and checked against the ``setup_project`` hookspec.
+
+This is useful for registering multiple implementations of the same plugin in
+the same Python file, for example:
 
 .. code-block:: python
 
     @hookimpl(specname="setup_project")
-    def any_plugin_function(config, args):
+    def setup_1(config, args):
         """This hook is used to process the initial config
         and possibly input arguments.
         """
@@ -304,6 +307,13 @@ be matched and checked against the ``setup_project`` hookspec:
             config.process_args(args)
 
         return config
+
+    @hookimpl(specname="setup_project")
+    def setup_2(config, args):
+        """Perform additional setup steps"""
+        # ...
+        return config
+
 
 .. _callorder:
 
