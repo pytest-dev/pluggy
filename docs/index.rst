@@ -162,7 +162,7 @@ documentation and source code:
 * :ref:`pytest <pytest:writing-plugins>`
 * :std:doc:`tox <tox:plugins>`
 * :std:doc:`devpi <devpi:devguide/index>`
-* :std:doc:`kedro <kedro:kedro.framework.hooks.specs>`
+* :std:doc:`kedro <kedro:hooks/introduction>`
 
 For more details and advanced usage please read on.
 
