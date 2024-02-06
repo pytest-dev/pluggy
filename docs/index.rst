@@ -390,7 +390,7 @@ Wrappers
 A *hookimpl* can be marked with the ``"wrapper"`` option, which indicates
 that the function will be called to *wrap* (or surround) all other normal
 *hookimpl* calls. A *hook wrapper* can thus execute some code ahead and after the
-execution of all corresponding non-wrappper *hookimpls*.
+execution of all corresponding non-wrapper *hookimpls*.
 
 Much in the same way as a :py:func:`@contextlib.contextmanager <python:contextlib.contextmanager>`,
 *hook wrappers* must be implemented as generator function with a single ``yield`` in its body:
@@ -449,7 +449,7 @@ Old-style wrappers
 A *hookimpl* can be marked with the ``"hookwrapper"`` option, which indicates
 that the function will be called to *wrap* (or surround) all other normal
 *hookimpl* calls. A *hookwrapper* can thus execute some code ahead and after the
-execution of all corresponding non-wrappper *hookimpls*.
+execution of all corresponding non-wrapper *hookimpls*.
 
 *hookwrappers* must be implemented as generator function with a single ``yield`` in its body:
 
