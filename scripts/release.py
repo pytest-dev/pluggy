@@ -21,7 +21,7 @@ def create_branch(version):
     print(f"{Fore.CYAN}Create {branch_name} branch from upstream main")
     upstream = get_upstream(repo)
     upstream.fetch()
-    release_branch = repo.create_head(branch_name, upstream.refs.main, force=True)
+    release_branch = repo.create_head(branch_name, upstream.refs.ln_release, force=True)
     release_branch.checkout()
     return repo
 
