@@ -40,7 +40,7 @@ html_theme = "alabaster"
 html_theme_options = {
     "logo": "img/plug.png",
     "description": "The pytest plugin system",
-    "github_user": "pytest-dev",
+    "github_user": "SundayZhuozhou",
     "github_repo": "pluggy",
     "github_button": "true",
     "github_banner": "true",

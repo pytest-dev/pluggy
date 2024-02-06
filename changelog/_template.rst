@@ -14,7 +14,7 @@
 {% if definitions[category]['showcontent'] %}
 {% for text, values in sections[section][category]|dictsort(by='value') %}
 {% set issue_joiner = joiner(', ') %}
-- {% for value in values|sort %}{{ issue_joiner() }}`{{ value }} <https://github.com/pytest-dev/pluggy/issues/{{ value[1:] }}>`_{% endfor %}: {{ text }}
+- {% for value in values|sort %}{{ issue_joiner() }}`{{ value }} <https://github.com/SundayZhuozhou/pluggy/issues/{{ value[1:] }}>`_{% endfor %}: {{ text }}
 
 
 {% endfor %}

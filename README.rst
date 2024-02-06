@@ -73,21 +73,21 @@ Running this directly gets us::
 .. |versions| image:: https://img.shields.io/pypi/pyversions/pluggy.svg
     :target: https://pypi.org/pypi/pluggy
 
-.. |github-actions| image:: https://github.com/pytest-dev/pluggy/workflows/main/badge.svg
-    :target: https://github.com/pytest-dev/pluggy/actions
+.. |github-actions| image:: https://github.com/SundayZhuozhou/pluggy/workflows/main/badge.svg
+    :target: https://github.com/SundayZhuozhou/pluggy/actions
 
 .. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/pluggy.svg
     :target: https://anaconda.org/conda-forge/pytest
 
-.. |gitter| image:: https://badges.gitter.im/pytest-dev/pluggy.svg
-    :alt: Join the chat at https://gitter.im/pytest-dev/pluggy
-    :target: https://gitter.im/pytest-dev/pluggy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+.. |gitter| image:: https://badges.gitter.im/SundayZhuozhou/pluggy.svg
+    :alt: Join the chat at https://gitter.im/SundayZhuozhou/pluggy
+    :target: https://gitter.im/SundayZhuozhou/pluggy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
 .. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
 
-.. |codecov| image:: https://codecov.io/gh/pytest-dev/pluggy/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/pytest-dev/pluggy
+.. |codecov| image:: https://codecov.io/gh/SundayZhuozhou/pluggy/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/SundayZhuozhou/pluggy
     :alt: Code coverage Status
 
 .. links

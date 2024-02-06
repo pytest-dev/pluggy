@@ -30,9 +30,9 @@ def get_upstream(repo: Repo) -> Remote:
     """Find upstream repository for pluggy on the remotes"""
     for remote in repo.remotes:
         for url in remote.urls:
-            if url.endswith(("pytest-dev/pluggy.git", "pytest-dev/pluggy")):
+            if url.endswith(("SundayZhuozhou/pluggy.git", "SundayZhuozhou/pluggy")):
                 return remote
-    raise RuntimeError("could not find pytest-dev/pluggy remote")
+    raise RuntimeError("could not find SundayZhuozhou/pluggy remote")
 
 
 def pre_release(version):

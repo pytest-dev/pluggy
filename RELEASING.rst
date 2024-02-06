@@ -18,7 +18,7 @@ Release Procedure
 #. Publish to PyPI by pushing a tag::
 
      git tag X.Y.Z release-X.Y.Z
-     git push git@github.com:pytest-dev/pluggy.git X.Y.Z
+     git push git@github.com:SundayZhuozhou/pluggy.git X.Y.Z
 
    The tag will trigger a new build, which will deploy to PyPI.
 
