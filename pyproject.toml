@@ -7,7 +7,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-write_to = "src/pluggy/_version.py"
+write_to = "src/ln_pluggy/_version.py"
 
 [tool.towncrier]
 package = "ln_pluggy"
