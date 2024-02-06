@@ -99,5 +99,5 @@ class Result(Generic[ResultType]):
             raise exc.with_traceback(exc.__traceback__)
 
 
-# Historical name (pluggy<=1.2), kept for backward compatibility.
+# Historical name (ln_pluggy<=1.2), kept for backward compatibility.
 _Result = Result

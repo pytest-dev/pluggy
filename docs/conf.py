@@ -23,7 +23,7 @@ master_doc = "index"
 
 # General information about the project.
 
-project = "pluggy"
+project = "ln_pluggy"
 copyright = "2016, Holger Krekel"
 author = "Holger Krekel"
 
@@ -41,7 +41,7 @@ html_theme_options = {
     "logo": "img/plug.png",
     "description": "The pytest plugin system",
     "github_user": "SundayZhuozhou",
-    "github_repo": "pluggy",
+    "github_repo": "ln_pluggy",
     "github_button": "true",
     "github_banner": "true",
     "github_type": "star",
@@ -57,21 +57,21 @@ html_static_path = ["_static"]
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "pluggy", "pluggy Documentation", [author], 1)]
+man_pages = [(master_doc, "ln_pluggy", "ln_pluggy Documentation", [author], 1)]
 
 autodoc_member_order = "bysource"
 
 nitpicky = True
 nitpick_ignore = {
     # Don't want to expose this yet (see #428).
-    ("py:class", "pluggy._tracing.TagTracerSub"),
+    ("py:class", "ln_pluggy._tracing.TagTracerSub"),
     # Compat hack, don't want to expose it.
-    ("py:class", "pluggy._manager.DistFacade"),
+    ("py:class", "ln_pluggy._manager.DistFacade"),
     # `types.ModuleType` turns into `module` but then fails to resolve...
     ("py:class", "module"),
     # Just a TypeVar.
-    ("py:obj", "pluggy._result.ResultType"),
-    ("py:class", "pluggy._result.ResultType"),
+    ("py:obj", "ln_pluggy._result.ResultType"),
+    ("py:class", "ln_pluggy._result.ResultType"),
 }
 
 # -- Options for Texinfo output -------------------------------------------
@@ -82,10 +82,10 @@ nitpick_ignore = {
 texinfo_documents = [
     (
         master_doc,
-        "pluggy",
-        "pluggy Documentation",
+        "ln_pluggy",
+        "ln_pluggy Documentation",
         author,
-        "pluggy",
+        "ln_pluggy",
         "One line description of project.",
         "Miscellaneous",
     )

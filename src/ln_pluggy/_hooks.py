@@ -360,7 +360,7 @@ class HookRelay:
             ...
 
 
-# Historical name (pluggy<=1.2), kept for backward compatibility.
+# Historical name (ln_pluggy<=1.2), kept for backward compatibility.
 _HookRelay = HookRelay
 
 
@@ -573,7 +573,7 @@ class HookCaller:
                     result_callback(res[0])
 
 
-# Historical name (pluggy<=1.2), kept for backward compatibility.
+# Historical name (ln_pluggy<=1.2), kept for backward compatibility.
 _HookCaller = HookCaller
 
 

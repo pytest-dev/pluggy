@@ -454,7 +454,7 @@ class PluginManager:
         of HookImpl instances and the keyword arguments for the hook call.
 
         ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
-        same arguments as ``before`` but also a :class:`~pluggy.Result` object
+        same arguments as ``before`` but also a :class:`~ln_pluggy.Result` object
         which represents the result of the overall hook call.
         """
         oldcall = self._inner_hookexec
@@ -507,7 +507,7 @@ class PluginManager:
     def subset_hook_caller(
         self, name: str, remove_plugins: Iterable[_Plugin]
     ) -> HookCaller:
-        """Return a proxy :class:`~pluggy.HookCaller` instance for the named
+        """Return a proxy :class:`~ln_pluggy.HookCaller` instance for the named
         method which manages calls to all registered plugins except the ones
         from remove_plugins."""
         orig: HookCaller = getattr(self.hook, name)

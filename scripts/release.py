@@ -27,12 +27,12 @@ def create_branch(version):
 
 
 def get_upstream(repo: Repo) -> Remote:
-    """Find upstream repository for pluggy on the remotes"""
+    """Find upstream repository for ln_pluggy on the remotes"""
     for remote in repo.remotes:
         for url in remote.urls:
-            if url.endswith(("SundayZhuozhou/pluggy.git", "SundayZhuozhou/pluggy")):
+            if url.endswith(("SundayZhuozhou/ln_pluggy.git", "SundayZhuozhou/ln_pluggy")):
                 return remote
-    raise RuntimeError("could not find SundayZhuozhou/pluggy remote")
+    raise RuntimeError("could not find SundayZhuozhou/ln_pluggy remote")
 
 
 def pre_release(version):
