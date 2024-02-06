@@ -11,7 +11,7 @@ write_to = "src/pluggy/_version.py"
 
 [tool.towncrier]
 package = "pluggy"
-package_dir = "src/pluggy"
+package_dir = "src"
 filename = "CHANGELOG.rst"
 directory = "changelog/"
 title_format = "pluggy {version} ({project_date})"
