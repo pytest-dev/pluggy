@@ -1,6 +1,6 @@
-import pluggy
+import ln_pluggy
 
-hookspec = pluggy.HookspecMarker("eggsample")
+hookspec = ln_pluggy.HookspecMarker("eggsample")
 
 
 @hookspec

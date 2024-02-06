@@ -1,13 +1,13 @@
-``pluggy``
+``ln_pluggy``
 ==========
 **The pytest plugin system**
 
 What is it?
 ***********
-``pluggy`` is the crystallized core of :ref:`plugin management and hook
+``ln_pluggy`` is the crystallized core of :ref:`plugin management and hook
 calling <pytest:writing-plugins>` for :std:doc:`pytest <pytest:index>`.
 It enables `500+ plugins`_ to extend and customize ``pytest``'s default
-behaviour. Even ``pytest`` itself is composed as a set of ``pluggy`` plugins
+behaviour. Even ``pytest`` itself is composed as a set of ``ln_pluggy`` plugins
 which are invoked in sequence according to a well defined set of protocols.
 
 It gives users the ability to extend or modify the behaviour of a
@@ -15,7 +15,7 @@ It gives users the ability to extend or modify the behaviour of a
 The plugin code will run as part of normal program execution, changing or
 enhancing certain aspects of it.
 
-In essence, ``pluggy`` enables function `hooking`_ so you can build
+In essence, ``ln_pluggy`` enables function `hooking`_ so you can build
 "pluggable" systems.
 
 Why is it useful?
@@ -27,13 +27,13 @@ programs/libraries in Python like
 `monkey patching <https://en.wikipedia.org/wiki/Monkey_patch>`_ (e.g. gevent
 or for :std:doc:`writing tests <pytest:how-to/monkeypatch>`).
 These strategies become problematic though when several parties want to
-participate in the modification of the same program. Therefore ``pluggy``
+participate in the modification of the same program. Therefore ``ln_pluggy``
 does not rely on these mechanisms to enable a more structured approach and
 avoid unnecessary exposure of state and behaviour. This leads to a more
 `loosely coupled <https://en.wikipedia.org/wiki/Loose_coupling>`_ relationship
 between ``host`` and ``plugins``.
 
-The ``pluggy`` approach puts the burden on the designer of the
+The ``ln_pluggy`` approach puts the burden on the designer of the
 ``host program`` to think carefully about which objects are really
 needed in a hook implementation. This gives ``plugin`` creators a clear
 framework for how to extend the ``host`` via a well defined set of functions
@@ -49,7 +49,7 @@ Let us start with a short overview of what is involved:
 * ``plugin``: the program implementing (a subset of) the specified hooks and
   participating in program execution when the implementations are invoked
   by the ``host``
-* ``pluggy``: connects ``host`` and ``plugins`` by using ...
+* ``ln_pluggy``: connects ``host`` and ``plugins`` by using ...
 
     - the hook :ref:`specifications <specs>` defining call signatures
       provided by the ``host`` (a.k.a ``hookspecs`` - see :ref:`marking_hooks`)
@@ -72,7 +72,7 @@ Let us start with a short overview of what is involved:
 A toy example
 -------------
 Let us demonstrate the core functionality in one module and show how you can
-start experimenting with pluggy functionality.
+start experimenting with ln_pluggy functionality.
 
 .. literalinclude:: examples/toy-example.py
 
@@ -128,7 +128,7 @@ The host
 
 Let's get cooking - we install the host and see what a program run looks like::
 
-    $ pip install --editable pluggy/docs/examples/eggsample
+    $ pip install --editable ln_pluggy/docs/examples/eggsample
     $ eggsample
 
     Your food. Enjoy some egg, egg, salt, egg, egg, pepper, egg
@@ -147,7 +147,7 @@ The plugin
 Let's get cooking with more cooks - we install the plugin and and see what
 we get::
 
-    $ pip install --editable pluggy/docs/examples/eggsample-spam
+    $ pip install --editable ln_pluggy/docs/examples/eggsample-spam
     $ eggsample
 
     Your food. Enjoy some egg, lovely spam, salt, egg, egg, egg, wonderous spam, egg, pepper
@@ -156,7 +156,7 @@ we get::
 
 More real world examples
 ------------------------
-To see how ``pluggy`` is used in the real world, have a look at these projects
+To see how ``ln_pluggy`` is used in the real world, have a look at these projects
 documentation and source code:
 
 * :ref:`pytest <pytest:writing-plugins>`
@@ -174,23 +174,23 @@ A *plugin* is a :ref:`namespace <python:tut-scopes>` type (currently one of a
 ``class`` or module) which defines a set of *hook* functions.
 
 As mentioned in :ref:`manage`, all *plugins* which specify *hooks*
-are managed by an instance of a :py:class:`pluggy.PluginManager` which
-defines the primary ``pluggy`` API.
+are managed by an instance of a :py:class:`ln_pluggy.PluginManager` which
+defines the primary ``ln_pluggy`` API.
 
-In order for a :py:class:`~pluggy.PluginManager` to detect functions in a namespace
-intended to be *hooks*, they must be decorated using special ``pluggy`` *marks*.
+In order for a :py:class:`~ln_pluggy.PluginManager` to detect functions in a namespace
+intended to be *hooks*, they must be decorated using special ``ln_pluggy`` *marks*.
 
 .. _marking_hooks:
 
 Marking hooks
 -------------
-The :py:class:`~pluggy.HookspecMarker` and :py:class:`~pluggy.HookimplMarker`
+The :py:class:`~ln_pluggy.HookspecMarker` and :py:class:`~ln_pluggy.HookimplMarker`
 decorators are used to *mark* functions for detection by a
-:py:class:`~pluggy.PluginManager`:
+:py:class:`~ln_pluggy.PluginManager`:
 
 .. code-block:: python
 
-    from pluggy import HookspecMarker, HookimplMarker
+    from ln_pluggy import HookspecMarker, HookimplMarker
 
     hookspec = HookspecMarker("project_name")
     hookimpl = HookimplMarker("project_name")
@@ -198,11 +198,11 @@ decorators are used to *mark* functions for detection by a
 
 Each decorator type takes a single ``project_name`` string as its
 lone argument the value of which is used to mark hooks for detection by
-a similarly configured :py:class:`~pluggy.PluginManager` instance.
+a similarly configured :py:class:`~ln_pluggy.PluginManager` instance.
 
 That is, a *mark* type called with ``project_name`` returns an object which
 can be used to decorate functions which will then be detected by a
-:py:class:`~pluggy.PluginManager` which was instantiated with the same
+:py:class:`~ln_pluggy.PluginManager` which was instantiated with the same
 ``project_name`` value.
 
 Furthermore, each *hookimpl* or *hookspec* decorator can configure the
@@ -223,14 +223,14 @@ A hook *implementation* (*hookimpl*) is just a (callback) function
 which has been appropriately marked.
 
 *hookimpls* are loaded from a plugin using the
-:py:meth:`~pluggy.PluginManager.register()` method:
+:py:meth:`~ln_pluggy.PluginManager.register()` method:
 
 *hookimpls* must be hashable.
 
 .. code-block:: python
 
     import sys
-    from pluggy import PluginManager, HookimplMarker
+    from ln_pluggy import PluginManager, HookimplMarker
 
     hookimpl = HookimplMarker("myproject")
 
@@ -276,7 +276,7 @@ then the *hookimpl* should be marked with the ``"optionalhook"`` option:
 Hookspec name matching
 ^^^^^^^^^^^^^^^^^^^^^^
 
-During plugin :ref:`registration <registration>`, pluggy attempts to match each
+During plugin :ref:`registration <registration>`, ln_pluggy attempts to match each
 hook implementation declared by the *plugin* to a hook
 :ref:`specification <specs>` in the *host* program with the **same name** as
 the function being decorated by ``@hookimpl`` (e.g. ``setup_project`` in the
@@ -328,7 +328,7 @@ will be executed *first* or *last* respectively in the hook call loop:
 .. code-block:: python
 
     import sys
-    from pluggy import PluginManager, HookimplMarker
+    from ln_pluggy import PluginManager, HookimplMarker
 
     hookimpl = HookimplMarker("myproject")
 
@@ -485,21 +485,21 @@ execution of all corresponding non-wrappper *hookimpls*.
         if config.use_defaults:
             outcome.force_result(defaults)
 
-The generator is :py:meth:`sent <python:generator.send>` a :py:class:`pluggy.Result` object which can
+The generator is :py:meth:`sent <python:generator.send>` a :py:class:`ln_pluggy.Result` object which can
 be assigned in the ``yield`` expression and used to inspect
 the final result(s) or exceptions returned back to the caller using the
-:py:meth:`~pluggy.Result.get_result` method, override the result
-using the :py:meth:`~pluggy.Result.force_result`, or override
-the exception using the :py:meth:`~pluggy.Result.force_exception`
+:py:meth:`~ln_pluggy.Result.get_result` method, override the result
+using the :py:meth:`~ln_pluggy.Result.force_result`, or override
+the exception using the :py:meth:`~ln_pluggy.Result.force_exception`
 method.
 
 .. note::
     Old-style hook wrappers can **not** return results; they can only modify
-    them using the :py:meth:`~pluggy.Result.force_result` API.
+    them using the :py:meth:`~ln_pluggy.Result.force_result` API.
 
     Old-style Hook wrappers should **not** raise exceptions; this will cause
     further hookwrappers to be skipped. They should use
-    :py:meth:`~pluggy.Result.force_exception` to adjust the
+    :py:meth:`~ln_pluggy.Result.force_exception` to adjust the
     exception.
 
 .. _specs:
@@ -516,13 +516,13 @@ and stored. As such, often you will see a *hookspec* defined with only
 a docstring in its body.
 
 *hookspecs* are loaded using the
-:py:meth:`~pluggy.PluginManager.add_hookspecs()` method and normally
+:py:meth:`~ln_pluggy.PluginManager.add_hookspecs()` method and normally
 should be added before registering corresponding *hookimpls*:
 
 .. code-block:: python
 
     import sys
-    from pluggy import PluginManager, HookspecMarker
+    from ln_pluggy import PluginManager, HookspecMarker
 
     hookspec = HookspecMarker("myproject")
 
@@ -559,7 +559,7 @@ Enforcing spec validation
 By default there is no strict requirement that each *hookimpl* has
 a corresponding *hookspec*. However, if you'd like you enforce this
 behavior you can run a check with the
-:py:meth:`~pluggy.PluginManager.check_pending()` method. If you'd like
+:py:meth:`~ln_pluggy.PluginManager.check_pending()` method. If you'd like
 to enforce requisite *hookspecs* but with certain exceptions for some hooks
 then make sure to mark those hooks as :ref:`optional <optionalhook>`.
 
@@ -628,7 +628,7 @@ Also see the :ref:`pytest:firstresult` section in the ``pytest`` docs.
 Historic hooks
 ^^^^^^^^^^^^^^
 You can mark a *hookspec* as being *historic* meaning that the hook
-can be called with :py:meth:`~pluggy.HookCaller.call_historic()` **before**
+can be called with :py:meth:`~ln_pluggy.HookCaller.call_historic()` **before**
 having been registered:
 
 .. code-block:: python
@@ -653,7 +653,7 @@ Warnings on hook implementation
 
 As projects evolve new hooks may be introduced and/or deprecated.
 
-If a hookspec specifies a ``warn_on_impl``, pluggy will trigger it for any plugin implementing the hook.
+If a hookspec specifies a ``warn_on_impl``, ln_pluggy will trigger it for any plugin implementing the hook.
 
 
 .. code-block:: python
@@ -668,20 +668,20 @@ If a hookspec specifies a ``warn_on_impl``, pluggy will trigger it for any plugi
 
 The Plugin registry
 *******************
-``pluggy`` manages plugins using instances of the
-:py:class:`pluggy.PluginManager`.
+``ln_pluggy`` manages plugins using instances of the
+:py:class:`ln_pluggy.PluginManager`.
 
-A :py:class:`~pluggy.PluginManager` is instantiated with a single
+A :py:class:`~ln_pluggy.PluginManager` is instantiated with a single
 ``str`` argument, the ``project_name``:
 
 .. code-block:: python
 
-    import pluggy
+    import ln_pluggy
 
-    pm = pluggy.PluginManager("my_project_name")
+    pm = ln_pluggy.PluginManager("my_project_name")
 
 
-The ``project_name`` value is used when a :py:class:`~pluggy.PluginManager`
+The ``project_name`` value is used when a :py:class:`~ln_pluggy.PluginManager`
 scans for *hook* functions :ref:`defined on a plugin <define>`.
 This allows for multiple plugin managers from multiple projects
 to define hooks alongside each other.
@@ -690,26 +690,26 @@ to define hooks alongside each other.
 
 Registration
 ------------
-Each :py:class:`~pluggy.PluginManager` maintains a *plugin* registry where each *plugin*
+Each :py:class:`~ln_pluggy.PluginManager` maintains a *plugin* registry where each *plugin*
 contains a set of *hookimpl* definitions. Loading *hookimpl* and *hookspec*
 definitions to populate the registry is described in detail in the section on
 :ref:`define`.
 
 In summary, you pass a plugin namespace object to the
-:py:meth:`~pluggy.PluginManager.register()` and
-:py:meth:`~pluggy.PluginManager.add_hookspecs()` methods to collect
+:py:meth:`~ln_pluggy.PluginManager.register()` and
+:py:meth:`~ln_pluggy.PluginManager.add_hookspecs()` methods to collect
 hook *implementations* and *specifications* from *plugin* namespaces respectively.
 
 You can unregister any *plugin*'s hooks using
-:py:meth:`~pluggy.PluginManager.unregister()` and check if a plugin is
+:py:meth:`~ln_pluggy.PluginManager.unregister()` and check if a plugin is
 registered by passing its name to the
-:py:meth:`~pluggy.PluginManager.is_registered()` method.
+:py:meth:`~ln_pluggy.PluginManager.is_registered()` method.
 
 Loading ``setuptools`` entry points
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 You can automatically load plugins registered through
 :ref:`setuptools entry points <setuptools:entry_points>`
-with the :py:meth:`~pluggy.PluginManager.load_setuptools_entrypoints()`
+with the :py:meth:`~ln_pluggy.PluginManager.load_setuptools_entrypoints()`
 method.
 
 An example use of this is the :ref:`pytest entry point <pytest:pip-installable plugins>`.
@@ -718,8 +718,8 @@ An example use of this is the :ref:`pytest entry point <pytest:pip-installable p
 Blocking
 --------
 You can block any plugin from being registered using
-:py:meth:`~pluggy.PluginManager.set_blocked()` and check if a given
-*plugin* is blocked by name using :py:meth:`~pluggy.PluginManager.is_blocked()`.
+:py:meth:`~ln_pluggy.PluginManager.set_blocked()` and check if a given
+*plugin* is blocked by name using :py:meth:`~ln_pluggy.PluginManager.is_blocked()`.
 
 
 Inspection
@@ -727,12 +727,12 @@ Inspection
 You can use a variety of methods to inspect both the registry
 and particular plugins in it:
 
-- :py:meth:`~pluggy.PluginManager.list_name_plugin()` -
+- :py:meth:`~ln_pluggy.PluginManager.list_name_plugin()` -
   return a list of name-plugin pairs
-- :py:meth:`~pluggy.PluginManager.get_plugins()` - retrieve all plugins
-- :py:meth:`~pluggy.PluginManager.get_canonical_name()`- get a *plugin*'s
+- :py:meth:`~ln_pluggy.PluginManager.get_plugins()` - retrieve all plugins
+- :py:meth:`~ln_pluggy.PluginManager.get_canonical_name()`- get a *plugin*'s
   canonical name (the name it was registered with)
-- :py:meth:`~pluggy.PluginManager.get_plugin()` - retrieve a plugin by its
+- :py:meth:`~ln_pluggy.PluginManager.get_plugin()` - retrieve a plugin by its
   canonical name
 
 
@@ -740,37 +740,37 @@ Parsing mark options
 ^^^^^^^^^^^^^^^^^^^^
 You can retrieve the *options* applied to a particular
 *hookspec* or *hookimpl* as per :ref:`marking_hooks` using the
-:py:meth:`~pluggy.PluginManager.parse_hookspec_opts()` and
-:py:meth:`~pluggy.PluginManager.parse_hookimpl_opts()` respectively.
+:py:meth:`~ln_pluggy.PluginManager.parse_hookspec_opts()` and
+:py:meth:`~ln_pluggy.PluginManager.parse_hookimpl_opts()` respectively.
 
 
 .. _calling:
 
 Calling hooks
 *************
-The core functionality of ``pluggy`` enables an extension provider
+The core functionality of ``ln_pluggy`` enables an extension provider
 to override function calls made at certain points throughout a program.
 
 A particular *hook* is invoked by calling an instance of
-a :py:class:`pluggy.HookCaller` which in turn *loops* through the
+a :py:class:`ln_pluggy.HookCaller` which in turn *loops* through the
 ``1:N`` registered *hookimpls* and calls them in sequence.
 
-Every :py:class:`~pluggy.PluginManager` has a ``hook`` attribute
-which is an instance of :py:class:`pluggy.HookRelay`.
-The :py:class:`~pluggy.HookRelay` itself contains references
-(by hook name) to each registered *hookimpl*'s :py:class:`~pluggy.HookCaller` instance.
+Every :py:class:`~ln_pluggy.PluginManager` has a ``hook`` attribute
+which is an instance of :py:class:`ln_pluggy.HookRelay`.
+The :py:class:`~ln_pluggy.HookRelay` itself contains references
+(by hook name) to each registered *hookimpl*'s :py:class:`~ln_pluggy.HookCaller` instance.
 
 More practically you call a *hook* like so:
 
 .. code-block:: python
 
     import sys
-    import pluggy
+    import ln_pluggy
     import mypluginspec
     import myplugin
     from configuration import config
 
-    pm = pluggy.PluginManager("myproject")
+    pm = ln_pluggy.PluginManager("myproject")
     pm.add_hookspecs(mypluginspec)
     pm.register(myplugin)
 
@@ -785,7 +785,7 @@ assertion should not error:
 
 .. code-block:: python
 
-    from pluggy import PluginManager, HookimplMarker
+    from ln_pluggy import PluginManager, HookimplMarker
 
     hookimpl = HookimplMarker("myproject")
 
@@ -839,7 +839,7 @@ re-raised at the hook invocation point:
 
 .. code-block:: python
 
-    from pluggy import PluginManager, HookimplMarker
+    from ln_pluggy import PluginManager, HookimplMarker
 
     hookimpl = HookimplMarker("myproject")
 
@@ -893,7 +893,7 @@ only useful if you expect that some *hookimpls* may be registered **after** the
 hook is initially invoked.
 
 Historic hooks must be :ref:`specially marked <historic>` and called
-using the :py:meth:`~pluggy.HookCaller.call_historic()` method:
+using the :py:meth:`~ln_pluggy.HookCaller.call_historic()` method:
 
 .. code-block:: python
 
@@ -914,8 +914,8 @@ using the :py:meth:`~pluggy.HookCaller.call_historic()` method:
     # historic callback is invoked here
     pm.register(mylateplugin)
 
-Note that if you :py:meth:`~pluggy.HookCaller.call_historic()`
-the :py:class:`~pluggy.HookCaller` (and thus your calling code)
+Note that if you :py:meth:`~ln_pluggy.HookCaller.call_historic()`
+the :py:class:`~ln_pluggy.HookCaller` (and thus your calling code)
 can not receive results back from the underlying *hookimpl* functions.
 Instead you can provide a *callback* for processing results (like the
 ``callback`` function above) which will be called as each new plugin
@@ -932,33 +932,33 @@ Calling with extras
 -------------------
 You can call a hook with temporarily participating *implementation* functions
 (that aren't in the registry) using the
-:py:meth:`pluggy.HookCaller.call_extra()` method.
+:py:meth:`ln_pluggy.HookCaller.call_extra()` method.
 
 
 Calling with a subset of registered plugins
 -------------------------------------------
 You can make a call using a subset of plugins by asking the
-:py:class:`~pluggy.PluginManager` first for a
-:py:class:`~pluggy.HookCaller` with those plugins removed
-using the :py:meth:`pluggy.PluginManager.subset_hook_caller()` method.
+:py:class:`~ln_pluggy.PluginManager` first for a
+:py:class:`~ln_pluggy.HookCaller` with those plugins removed
+using the :py:meth:`ln_pluggy.PluginManager.subset_hook_caller()` method.
 
-You then can use that :py:class:`~pluggy.HookCaller`
-to make normal, :py:meth:`~pluggy.HookCaller.call_historic`, or
-:py:meth:`~pluggy.HookCaller.call_extra` calls as necessary.
+You then can use that :py:class:`~ln_pluggy.HookCaller`
+to make normal, :py:meth:`~ln_pluggy.HookCaller.call_historic`, or
+:py:meth:`~ln_pluggy.HookCaller.call_extra` calls as necessary.
 
 
 .. _tracing:
 
 Built-in tracing
 ****************
-``pluggy`` comes with some batteries included hook tracing for your
+``ln_pluggy`` comes with some batteries included hook tracing for your
 debugging needs.
 
 
 Call tracing
 ------------
 To enable tracing use the
-:py:meth:`pluggy.PluginManager.enable_tracing()` method which returns an
+:py:meth:`ln_pluggy.PluginManager.enable_tracing()` method which returns an
 undo function to disable the behaviour.
 
 .. code-block:: python
@@ -973,7 +973,7 @@ Call monitoring
 ---------------
 Instead of using the built-in tracing mechanism you can also add your
 own ``before`` and ``after`` monitoring functions using
-:py:class:`pluggy.PluginManager.add_hookcall_monitoring()`.
+:py:class:`ln_pluggy.PluginManager.add_hookcall_monitoring()`.
 
 The expected signature and default implementations for these functions is:
 
@@ -992,12 +992,12 @@ Please see the :doc:`api_reference`.
 
 Development
 ***********
-Great care must taken when hacking on ``pluggy`` since multiple mature
+Great care must taken when hacking on ``ln_pluggy`` since multiple mature
 projects rely on it. Our Github integrated CI process runs the full
 `tox test suite`_ on each commit so be sure your changes can run on
 all required `Python interpreters`_ and ``pytest`` versions.
 
-For development, we suggest to create a virtual environment and install ``pluggy`` in
+For development, we suggest to create a virtual environment and install ``ln_pluggy`` in
 editable mode and ``dev`` dependencies::
 
     $ python3 -m venv .env
@@ -1013,9 +1013,9 @@ will run style checks before each commit::
 Release Policy
 **************
 Pluggy uses `Semantic Versioning`_. Breaking changes are only foreseen for
-Major releases (incremented X in "X.Y.Z").  If you want to use ``pluggy``
+Major releases (incremented X in "X.Y.Z").  If you want to use ``ln_pluggy``
 in your project you should thus use a dependency restriction like
-``"pluggy>=0.1.0,<1.0"`` to avoid surprises.
+``"ln_pluggy>=0.1.0,<1.0"`` to avoid surprises.
 
 
 Table of contents
@@ -1041,11 +1041,11 @@ Table of contents
 .. _callbacks:
     https://en.wikipedia.org/wiki/Callback_(computer_programming)
 .. _tox test suite:
-    https://github.com/SundayZhuozhou/pluggy/blob/main/tox.ini
+    https://github.com/SundayZhuozhou/ln_pluggy/blob/main/tox.ini
 .. _Semantic Versioning:
     https://semver.org/
 .. _Python interpreters:
-    https://github.com/SundayZhuozhou/pluggy/blob/main/tox.ini#L2
+    https://github.com/SundayZhuozhou/ln_pluggy/blob/main/tox.ini#L2
 .. _500+ plugins:
     https://docs.pytest.org/en/latest/reference/plugin_list.html
 .. _pre-commit:

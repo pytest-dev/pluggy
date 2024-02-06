@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from pluggy import HookimplMarker
-from pluggy import HookspecMarker
-from pluggy import PluggyTeardownRaisedWarning
-from pluggy import PluginManager
+from ln_pluggy import HookimplMarker
+from ln_pluggy import HookspecMarker
+from ln_pluggy import PluggyTeardownRaisedWarning
+from ln_pluggy import PluginManager
 
 
 hookspec = HookspecMarker("example")

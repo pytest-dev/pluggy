@@ -4,7 +4,7 @@ import random
 from eggsample import hookspecs
 from eggsample import lib
 
-import pluggy
+import ln_pluggy
 
 condiments_tray = {"pickled walnuts": 13, "steak sauce": 4, "mushy peas": 2}
 
@@ -18,7 +18,7 @@ def main():
 
 
 def get_plugin_manager():
-    pm = pluggy.PluginManager("eggsample")
+    pm = ln_pluggy.PluginManager("eggsample")
     pm.add_hookspecs(hookspecs)
     pm.load_setuptools_entrypoints("eggsample")
     pm.register(lib)

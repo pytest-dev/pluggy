@@ -14,7 +14,7 @@ package = "ln_pluggy"
 package_dir = "src"
 filename = "CHANGELOG.rst"
 directory = "changelog/"
-title_format = "pluggy {version} ({project_date})"
+title_format = "ln_pluggy {version} ({project_date})"
 template = "changelog/_template.rst"
 
   [[tool.towncrier.type]]

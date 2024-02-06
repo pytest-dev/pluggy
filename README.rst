@@ -1,5 +1,5 @@
 ====================================================
-pluggy - A minimalist production ready plugin system
+ln_pluggy - A minimalist production ready plugin system
 ====================================================
 
 |pypi| |conda-forge| |versions| |github-actions| |gitter| |black| |codecov|
@@ -12,7 +12,7 @@ A definitive example
 ====================
 .. code-block:: python
 
-    import pluggy
+    import ln_pluggy
 
     hookspec = pluggy.HookspecMarker("myproject")
     hookimpl = pluggy.HookimplMarker("myproject")
@@ -68,26 +68,26 @@ Running this directly gets us::
 .. badges
 
 .. |pypi| image:: https://img.shields.io/pypi/v/pluggy.svg
-    :target: https://pypi.org/pypi/pluggy
+    :target: https://pypi.org/pypi/ln_pluggy
 
 .. |versions| image:: https://img.shields.io/pypi/pyversions/pluggy.svg
-    :target: https://pypi.org/pypi/pluggy
+    :target: https://pypi.org/pypi/ln_pluggy
 
 .. |github-actions| image:: https://github.com/SundayZhuozhou/pluggy/workflows/main/badge.svg
-    :target: https://github.com/SundayZhuozhou/pluggy/actions
+    :target: https://github.com/SundayZhuozhou/ln_pluggy/actions
 
-.. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/pluggy.svg
+.. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/ln_pluggy.svg
     :target: https://anaconda.org/conda-forge/pytest
 
-.. |gitter| image:: https://badges.gitter.im/SundayZhuozhou/pluggy.svg
-    :alt: Join the chat at https://gitter.im/SundayZhuozhou/pluggy
-    :target: https://gitter.im/SundayZhuozhou/pluggy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+.. |gitter| image:: https://badges.gitter.im/SundayZhuozhou/ln_pluggy.svg
+    :alt: Join the chat at https://gitter.im/SundayZhuozhou/ln_pluggy
+    :target: https://gitter.im/SundayZhuozhou/ln_pluggy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
 .. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
 
-.. |codecov| image:: https://codecov.io/gh/SundayZhuozhou/pluggy/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/SundayZhuozhou/pluggy
+.. |codecov| image:: https://codecov.io/gh/SundayZhuozhou/ln_pluggy/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/SundayZhuozhou/ln_pluggy
     :alt: Code coverage Status
 
 .. links
@@ -98,4 +98,4 @@ Running this directly gets us::
 .. _devpi:
     http://doc.devpi.net
 .. _read the docs:
-   https://pluggy.readthedocs.io/en/latest/
+   https://ln_pluggy.readthedocs.io/en/latest/

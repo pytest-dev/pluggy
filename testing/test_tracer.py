@@ -2,7 +2,7 @@ from typing import List
 
 import pytest
 
-from pluggy._tracing import TagTracer
+from ln_pluggy._tracing import TagTracer
 
 
 @pytest.fixture

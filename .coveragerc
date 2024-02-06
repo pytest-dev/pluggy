@@ -1,17 +1,17 @@
 [run]
 include =
-  pluggy/*
+  ln_pluggy/*
   testing/*
-  */lib/python*/site-packages/pluggy/*
-  */pypy*/site-packages/pluggy/*
-  *\Lib\site-packages\pluggy\*
+  */lib/python*/site-packages/ln_pluggy/*
+  */pypy*/site-packages/ln_pluggy/*
+  *\Lib\site-packages\ln_pluggy\*
 branch = 1
 
 [paths]
-source = pluggy/
-  */lib/python*/site-packages/pluggy/
-  */pypy*/site-packages/pluggy/
-  *\Lib\site-packages\pluggy\
+source = ln_pluggy/
+  */lib/python*/site-packages/ln_pluggy/
+  */pypy*/site-packages/ln_pluggy/
+  *\Lib\site-packages\ln_pluggy\
 
 [report]
 exclude_lines =

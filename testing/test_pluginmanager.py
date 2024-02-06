@@ -7,11 +7,11 @@ from typing import List
 
 import pytest
 
-from pluggy import HookCallError
-from pluggy import HookimplMarker
-from pluggy import HookspecMarker
-from pluggy import PluginManager
-from pluggy import PluginValidationError
+from ln_pluggy import HookCallError
+from ln_pluggy import HookimplMarker
+from ln_pluggy import HookspecMarker
+from ln_pluggy import PluginManager
+from ln_pluggy import PluginValidationError
 
 
 hookspec = HookspecMarker("example")

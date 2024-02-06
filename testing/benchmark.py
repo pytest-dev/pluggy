@@ -3,11 +3,11 @@ Benchmarking and performance tests.
 """
 import pytest
 
-from pluggy import HookimplMarker
-from pluggy import HookspecMarker
-from pluggy import PluginManager
-from pluggy._callers import _multicall
-from pluggy._hooks import HookImpl
+from ln_pluggy import HookimplMarker
+from ln_pluggy import HookspecMarker
+from ln_pluggy import PluginManager
+from ln_pluggy._callers import _multicall
+from ln_pluggy._hooks import HookImpl
 
 
 hookspec = HookspecMarker("example")

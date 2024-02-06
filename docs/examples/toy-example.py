@@ -1,7 +1,7 @@
-import pluggy
+import ln_pluggy
 
-hookspec = pluggy.HookspecMarker("myproject")
-hookimpl = pluggy.HookimplMarker("myproject")
+hookspec = ln_pluggy.HookspecMarker("myproject")
+hookimpl = ln_pluggy.HookimplMarker("myproject")
 
 
 class MySpec:
@@ -31,7 +31,7 @@ class Plugin_2:
 
 
 # create a manager and add the spec
-pm = pluggy.PluginManager("myproject")
+pm = ln_pluggy.PluginManager("myproject")
 pm.add_hookspecs(MySpec)
 # register plugins
 pm.register(Plugin_1())

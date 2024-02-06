@@ -4,8 +4,8 @@ from typing import Callable
 from typing import cast
 from typing import TypeVar
 
-from pluggy._hooks import varnames
-from pluggy._manager import _formatdef
+from ln_pluggy._hooks import varnames
+from ln_pluggy._manager import _formatdef
 
 
 def test_varnames() -> None:

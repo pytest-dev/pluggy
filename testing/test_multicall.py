@@ -7,11 +7,11 @@ from typing import Union
 
 import pytest
 
-from pluggy import HookCallError
-from pluggy import HookimplMarker
-from pluggy import HookspecMarker
-from pluggy._callers import _multicall
-from pluggy._hooks import HookImpl
+from ln_pluggy import HookCallError
+from ln_pluggy import HookimplMarker
+from ln_pluggy import HookspecMarker
+from ln_pluggy._callers import _multicall
+from ln_pluggy._hooks import HookImpl
 
 
 hookspec = HookspecMarker("example")

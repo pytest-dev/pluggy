@@ -6,12 +6,12 @@ from typing import TypeVar
 
 import pytest
 
-from pluggy import HookimplMarker
-from pluggy import HookspecMarker
-from pluggy import PluginManager
-from pluggy import PluginValidationError
-from pluggy._hooks import HookCaller
-from pluggy._hooks import HookImpl
+from ln_pluggy import HookimplMarker
+from ln_pluggy import HookspecMarker
+from ln_pluggy import PluginManager
+from ln_pluggy import PluginValidationError
+from ln_pluggy._hooks import HookCaller
+from ln_pluggy._hooks import HookImpl
 
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")

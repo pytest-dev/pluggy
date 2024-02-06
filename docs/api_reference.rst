@@ -5,18 +5,18 @@
 API Reference
 =============
 
-.. autoclass:: pluggy.PluginManager
+.. autoclass:: ln_pluggy.PluginManager
     :members:
 
-.. autoclass:: pluggy.PluginValidationError
+.. autoclass:: ln_pluggy.PluginValidationError
     :show-inheritance:
     :members:
 
-.. autodecorator:: pluggy.HookspecMarker
+.. autodecorator:: ln_pluggy.HookspecMarker
 
-.. autodecorator:: pluggy.HookimplMarker
+.. autodecorator:: ln_pluggy.HookimplMarker
 
-.. autoclass:: pluggy.HookRelay()
+.. autoclass:: ln_pluggy.HookRelay()
     :members:
 
     .. data:: <hook name>
@@ -25,26 +25,26 @@ API Reference
 
         The caller for the hook with the given name.
 
-.. autoclass:: pluggy.HookCaller()
+.. autoclass:: ln_pluggy.HookCaller()
     :members:
     :special-members: __call__
 
-.. autoclass:: pluggy.HookCallError()
+.. autoclass:: ln_pluggy.HookCallError()
     :show-inheritance:
     :members:
 
-.. autoclass:: pluggy.Result()
+.. autoclass:: ln_pluggy.Result()
     :show-inheritance:
     :members:
 
-.. autoclass:: pluggy.HookImpl()
+.. autoclass:: ln_pluggy.HookImpl()
     :members:
 
-.. autoclass:: pluggy.HookspecOpts()
+.. autoclass:: ln_pluggy.HookspecOpts()
     :show-inheritance:
     :members:
 
-.. autoclass:: pluggy.HookimplOpts()
+.. autoclass:: ln_pluggy.HookimplOpts()
     :show-inheritance:
     :members:
 
@@ -54,8 +54,8 @@ Warnings
 
 Custom warnings generated in some situations such as improper usage or deprecated features.
 
-.. autoclass:: pluggy.PluggyWarning()
+.. autoclass:: ln_pluggy.PluggyWarning()
     :show-inheritance:
 
-.. autoclass:: pluggy.PluggyTeardownRaisedWarning()
+.. autoclass:: ln_pluggy.PluggyTeardownRaisedWarning()
     :show-inheritance:

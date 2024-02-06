@@ -2,7 +2,7 @@ Release Procedure
 -----------------
 
 #. Dependening on the magnitude of the changes in the release, consider testing
-   some of the large downstream users of pluggy against the upcoming release.
+   some of the large downstream users of ln_pluggy against the upcoming release.
    You can do so using the scripts in the ``downstream/`` directory.
 
 #. From a clean work tree, execute::
@@ -18,10 +18,10 @@ Release Procedure
 #. Publish to PyPI by pushing a tag::
 
      git tag X.Y.Z release-X.Y.Z
-     git push git@github.com:SundayZhuozhou/pluggy.git X.Y.Z
+     git push git@github.com:SundayZhuozhou/ln_pluggy.git X.Y.Z
 
    The tag will trigger a new build, which will deploy to PyPI.
 
-#. Make sure it is `available on PyPI <https://pypi.org/project/pluggy>`_.
+#. Make sure it is `available on PyPI <https://pypi.org/project/ln_pluggy>`_.
 
 #. Merge the PR into ``main``, either manually or using GitHub's web interface.
