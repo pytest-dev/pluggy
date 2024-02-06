@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 write_to = "src/pluggy/_version.py"
 
 [tool.towncrier]
-package = "pluggy"
+package = "ln_pluggy"
 package_dir = "src"
 filename = "CHANGELOG.rst"
 directory = "changelog/"
