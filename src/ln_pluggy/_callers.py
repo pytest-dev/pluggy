@@ -70,6 +70,7 @@ def _multicall(
             for hook_impl in reversed(hook_impls):
                 try:
                     args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+                    kwargs = {k: v for k, v in caller_kwargs.items() if k in hook_impl.kwargnames}
                 except KeyError:
                     for argname in hook_impl.argnames:
                         if argname not in caller_kwargs:
@@ -82,7 +83,7 @@ def _multicall(
                     try:
                         # If this cast is not valid, a type error is raised below,
                         # which is the desired response.
-                        res = hook_impl.function(*args)
+                        res = hook_impl.function(*args, **kwargs)
                         wrapper_gen = cast(Generator[None, Result[object], None], res)
                         next(wrapper_gen)  # first yield
                         teardowns.append((wrapper_gen, hook_impl))
@@ -92,14 +93,14 @@ def _multicall(
                     try:
                         # If this cast is not valid, a type error is raised below,
                         # which is the desired response.
-                        res = hook_impl.function(*args)
+                        res = hook_impl.function(*args, **kwargs)
                         function_gen = cast(Generator[None, object, object], res)
                         next(function_gen)  # first yield
                         teardowns.append(function_gen)
                     except StopIteration:
                         _raise_wrapfail(function_gen, "did not yield")
                 else:
-                    res = hook_impl.function(*args)
+                    res = hook_impl.function(*args, **kwargs)
                     if res is not None:
                         results.append(res)
                         if firstresult:  # halt further impl calls
