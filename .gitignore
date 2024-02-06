@@ -67,3 +67,6 @@ pip-wheel-metadata/
 
 # pytest-benchmark
 .benchmarks/
+
+# pycharm
+.idea/
