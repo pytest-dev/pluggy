@@ -1,16 +1,21 @@
 ====================================================
-ln_pluggy - A minimalist production ready plugin system
+pluggy - A minimalist production ready plugin system
 ====================================================
 
+|pypi| |conda-forge| |versions| |github-actions| |gitter| |black| |codecov|
+
+This is the core framework used by the `pytest`_, `tox`_, and `devpi`_ projects.
+
+Please `read the docs`_ to learn more!
 
 A definitive example
---------------------
+====================
 .. code-block:: python
 
-    import ln_pluggy
+    import pluggy
 
-    hookspec = ln_pluggy.HookspecMarker("myproject")
-    hookimpl = ln_pluggy.HookimplMarker("myproject")
+    hookspec = pluggy.HookspecMarker("myproject")
+    hookimpl = pluggy.HookimplMarker("myproject")
 
 
     class MySpec:
@@ -40,7 +45,7 @@ A definitive example
 
 
     # create a manager and add the spec
-    pm = ln_pluggy.PluginManager("myproject")
+    pm = pluggy.PluginManager("myproject")
     pm.add_hookspecs(MySpec)
 
     # register plugins
@@ -60,3 +65,37 @@ Running this directly gets us::
     [-1, 3]
 
 
+.. badges
+
+.. |pypi| image:: https://img.shields.io/pypi/v/pluggy.svg
+    :target: https://pypi.org/pypi/pluggy
+
+.. |versions| image:: https://img.shields.io/pypi/pyversions/pluggy.svg
+    :target: https://pypi.org/pypi/pluggy
+
+.. |github-actions| image:: https://github.com/pytest-dev/pluggy/workflows/main/badge.svg
+    :target: https://github.com/pytest-dev/pluggy/actions
+
+.. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/pluggy.svg
+    :target: https://anaconda.org/conda-forge/pytest
+
+.. |gitter| image:: https://badges.gitter.im/pytest-dev/pluggy.svg
+    :alt: Join the chat at https://gitter.im/pytest-dev/pluggy
+    :target: https://gitter.im/pytest-dev/pluggy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+
+.. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/ambv/black
+
+.. |codecov| image:: https://codecov.io/gh/pytest-dev/pluggy/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/pytest-dev/pluggy
+    :alt: Code coverage Status
+
+.. links
+.. _pytest:
+    http://pytest.org
+.. _tox:
+    https://tox.readthedocs.org
+.. _devpi:
+    http://doc.devpi.net
+.. _read the docs:
+   https://pluggy.readthedocs.io/en/latest/
