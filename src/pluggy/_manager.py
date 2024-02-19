@@ -291,7 +291,7 @@ class PluginManager:
 
     def get_plugins(self) -> set[Any]:
         """Return a set of all registered plugin objects."""
-        return set(self._name2plugin.values())
+        return {x for x in self._name2plugin.values() if x is not None}
 
     def is_registered(self, plugin: _Plugin) -> bool:
         """Return whether the plugin is already registered."""

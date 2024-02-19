@@ -100,15 +100,19 @@ def test_set_blocked(pm: PluginManager) -> None:
     assert name is not None
     assert pm.is_registered(a1)
     assert not pm.is_blocked(name)
+    assert pm.get_plugins() == {a1}
+
     pm.set_blocked(name)
     assert pm.is_blocked(name)
     assert not pm.is_registered(a1)
+    assert pm.get_plugins() == set()
 
     pm.set_blocked("somename")
     assert pm.is_blocked("somename")
     assert not pm.register(A(), "somename")
     pm.unregister(name="somename")
     assert pm.is_blocked("somename")
+    assert pm.get_plugins() == set()
 
     # Unblock.
     assert not pm.unblock("someothername")

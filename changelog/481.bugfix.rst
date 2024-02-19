@@ -1,0 +1,1 @@
+``PluginManager.get_plugins()`` no longer returns ``None`` for blocked plugins.
