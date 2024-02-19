@@ -1,6 +1,7 @@
 """
 ``PluginManager`` unit and public API testing.
 """
+
 import importlib.metadata
 from typing import Any
 from typing import List

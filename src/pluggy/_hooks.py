@@ -1,6 +1,7 @@
 """
 Internal hook annotation, representation and calling machinery.
 """
+
 from __future__ import annotations
 
 import inspect
