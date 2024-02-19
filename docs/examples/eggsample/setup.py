@@ -1,6 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
+
 setup(
     name="eggsample",
     install_requires="pluggy>=0.3,<1.0",

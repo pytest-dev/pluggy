@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import inspect
 import types
-import warnings
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -11,6 +10,7 @@ from typing import Iterable
 from typing import Mapping
 from typing import Sequence
 from typing import TYPE_CHECKING
+import warnings
 
 from . import _tracing
 from ._callers import _multicall
@@ -25,6 +25,7 @@ from ._hooks import HookRelay
 from ._hooks import HookspecOpts
 from ._hooks import normalize_hookimpl_opts
 from ._result import Result
+
 
 if TYPE_CHECKING:
     # importtlib.metadata import is slow, defer it.

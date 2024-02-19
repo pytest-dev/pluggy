@@ -6,6 +6,20 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+
+[tool.ruff.lint]
+select = [
+    "I",  # isort
+]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+combine-as-imports = true
+force-sort-within-sections = true
+order-by-type = false
+known-local-folder = ["pluggy"]
+lines-after-imports = 2
+
 [tool.setuptools_scm]
 write_to = "src/pluggy/_version.py"
 

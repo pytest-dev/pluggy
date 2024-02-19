@@ -1,6 +1,7 @@
 from importlib import metadata
 from typing import TYPE_CHECKING
 
+
 if TYPE_CHECKING:
     import sphinx.application
 
@@ -104,8 +105,9 @@ intersphinx_mapping = {
 
 def configure_logging(app: "sphinx.application.Sphinx") -> None:
     """Configure Sphinx's WarningHandler to handle (expected) missing include."""
-    import sphinx.util.logging
     import logging
+
+    import sphinx.util.logging
 
     class WarnLogFilter(logging.Filter):
         def filter(self, record: logging.LogRecord) -> bool:
