@@ -1,6 +1,7 @@
 """
 Internal hook annotation, representation and calling machinery.
 """
+
 from __future__ import annotations
 
 import inspect
@@ -91,8 +92,7 @@ class HookspecMarker:
         firstresult: bool = False,
         historic: bool = False,
         warn_on_impl: Warning | None = None,
-    ) -> _F:
-        ...
+    ) -> _F: ...
 
     @overload  # noqa: F811
     def __call__(  # noqa: F811
@@ -101,8 +101,7 @@ class HookspecMarker:
         firstresult: bool = ...,
         historic: bool = ...,
         warn_on_impl: Warning | None = ...,
-    ) -> Callable[[_F], _F]:
-        ...
+    ) -> Callable[[_F], _F]: ...
 
     def __call__(  # noqa: F811
         self,
@@ -172,8 +171,7 @@ class HookimplMarker:
         trylast: bool = ...,
         specname: str | None = ...,
         wrapper: bool = ...,
-    ) -> _F:
-        ...
+    ) -> _F: ...
 
     @overload  # noqa: F811
     def __call__(  # noqa: F811
@@ -185,8 +183,7 @@ class HookimplMarker:
         trylast: bool = ...,
         specname: str | None = ...,
         wrapper: bool = ...,
-    ) -> Callable[[_F], _F]:
-        ...
+    ) -> Callable[[_F], _F]: ...
 
     def __call__(  # noqa: F811
         self,
@@ -356,8 +353,7 @@ class HookRelay:
 
     if TYPE_CHECKING:
 
-        def __getattr__(self, name: str) -> HookCaller:
-            ...
+        def __getattr__(self, name: str) -> HookCaller: ...
 
 
 # Historical name (pluggy<=1.2), kept for backward compatibility.
