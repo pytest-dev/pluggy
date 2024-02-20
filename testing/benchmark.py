@@ -1,6 +1,7 @@
 """
 Benchmarking and performance tests.
 """
+
 import pytest
 
 from pluggy import HookimplMarker

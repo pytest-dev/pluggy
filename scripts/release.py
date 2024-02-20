@@ -1,6 +1,7 @@
 """
 Release script.
 """
+
 import argparse
 from subprocess import check_call
 import sys
