@@ -4,6 +4,7 @@ from pluggy import HookimplMarker
 from pluggy import HookspecMarker
 from pluggy import PluginManager
 
+
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
 

@@ -6,6 +6,7 @@ from eggsample import lib
 
 import pluggy
 
+
 condiments_tray = {"pickled walnuts": 13, "steak sauce": 4, "mushy peas": 2}
 
 

@@ -13,6 +13,7 @@ from pluggy import PluginValidationError
 from pluggy._hooks import HookCaller
 from pluggy._hooks import HookImpl
 
+
 hookspec = HookspecMarker("example")
 hookimpl = HookimplMarker("example")
 
