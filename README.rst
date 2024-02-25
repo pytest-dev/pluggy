@@ -12,7 +12,7 @@ A definitive example
 ====================
 .. code-block:: python
 
-    import pluggy
+    import ln_pluggy as pluggy
 
     hookspec = pluggy.HookspecMarker("myproject")
     hookimpl = pluggy.HookimplMarker("myproject")
