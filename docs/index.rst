@@ -6,7 +6,7 @@ What is it?
 ***********
 ``pluggy`` is the crystallized core of :ref:`plugin management and hook
 calling <pytest:writing-plugins>` for :std:doc:`pytest <pytest:index>`.
-It enables `500+ plugins`_ to extend and customize ``pytest``'s default
+It enables `1400+ plugins`_ to extend and customize ``pytest``'s default
 behaviour. Even ``pytest`` itself is composed as a set of ``pluggy`` plugins
 which are invoked in sequence according to a well defined set of protocols.
 
@@ -1046,7 +1046,7 @@ Table of contents
     https://semver.org/
 .. _Python interpreters:
     https://github.com/pytest-dev/pluggy/blob/main/tox.ini#L2
-.. _500+ plugins:
+.. _1400+ plugins:
     https://docs.pytest.org/en/latest/reference/plugin_list.html
 .. _pre-commit:
     https://pre-commit.com/
