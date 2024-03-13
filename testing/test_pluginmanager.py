@@ -181,8 +181,7 @@ def test_register_both_wrapper_and_hookwrapper(he_pm: PluginManager) -> None:
 def test_register(pm: PluginManager) -> None:
     class MyPlugin:
         @hookimpl
-        def he_method1(self):
-            ...
+        def he_method1(self): ...
 
     my = MyPlugin()
     pm.register(my)
@@ -256,8 +255,7 @@ def test_register_historic(pm: PluginManager) -> None:
 def test_historic_with_subset_hook_caller(pm: PluginManager) -> None:
     class Hooks:
         @hookspec(historic=True)
-        def he_method1(self, arg):
-            ...
+        def he_method1(self, arg): ...
 
     pm.add_hookspecs(Hooks)
 
@@ -520,33 +518,27 @@ def test_get_hookimpls(pm: PluginManager) -> None:
 def test_get_hookcallers(pm: PluginManager) -> None:
     class Hooks:
         @hookspec
-        def he_method1(self):
-            ...
+        def he_method1(self): ...
 
         @hookspec
-        def he_method2(self):
-            ...
+        def he_method2(self): ...
 
     pm.add_hookspecs(Hooks)
 
     class Plugin1:
         @hookimpl
-        def he_method1(self):
-            ...
+        def he_method1(self): ...
 
         @hookimpl
-        def he_method2(self):
-            ...
+        def he_method2(self): ...
 
     class Plugin2:
         @hookimpl
-        def he_method1(self):
-            ...
+        def he_method1(self): ...
 
     class Plugin3:
         @hookimpl
-        def he_method2(self):
-            ...
+        def he_method2(self): ...
 
     plugin1 = Plugin1()
     pm.register(plugin1)

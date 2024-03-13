@@ -212,20 +212,17 @@ def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [m1]
 
     @addmeth()
-    def m2() -> None:
-        ...
+    def m2() -> None: ...
 
     assert funcs(hc.get_hookimpls()) == [m2, m1]
 
     @addmeth(trylast=True)
-    def m3() -> None:
-        ...
+    def m3() -> None: ...
 
     assert funcs(hc.get_hookimpls()) == [m3, m2, m1]
 
     @addmeth(hookwrapper=True)
-    def m4() -> None:
-        ...
+    def m4() -> None: ...
 
     assert funcs(hc.get_hookimpls()) == [m3, m2, m1, m4]
 
@@ -236,14 +233,12 @@ def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [m3, m2, m1, m4, m5]
 
     @addmeth(tryfirst=True)
-    def m6() -> None:
-        ...
+    def m6() -> None: ...
 
     assert funcs(hc.get_hookimpls()) == [m3, m2, m6, m1, m4, m5]
 
     @addmeth()
-    def m7() -> None:
-        ...
+    def m7() -> None: ...
 
     assert funcs(hc.get_hookimpls()) == [m3, m2, m7, m6, m1, m4, m5]
 
@@ -254,20 +249,17 @@ def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [m3, m2, m7, m6, m1, m4, m8, m5]
 
     @addmeth(trylast=True)
-    def m9() -> None:
-        ...
+    def m9() -> None: ...
 
     assert funcs(hc.get_hookimpls()) == [m9, m3, m2, m7, m6, m1, m4, m8, m5]
 
     @addmeth(tryfirst=True)
-    def m10() -> None:
-        ...
+    def m10() -> None: ...
 
     assert funcs(hc.get_hookimpls()) == [m9, m3, m2, m7, m6, m10, m1, m4, m8, m5]
 
     @addmeth(hookwrapper=True, trylast=True)
-    def m11() -> None:
-        ...
+    def m11() -> None: ...
 
     assert funcs(hc.get_hookimpls()) == [m9, m3, m2, m7, m6, m10, m11, m1, m4, m8, m5]
 
@@ -291,8 +283,7 @@ def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
     ]
 
     @addmeth()
-    def m13() -> None:
-        ...
+    def m13() -> None: ...
 
     assert funcs(hc.get_hookimpls()) == [
         m9,
