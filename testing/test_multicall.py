@@ -50,8 +50,15 @@ def test_keyword_args_with_defaultargs() -> None:
     def f(x, z=1):
         return x + z
 
-    reslist = MC([f], dict(x=23, y=24))
-    assert reslist == [24]
+    @hookimpl
+    def f2(x, y=1):
+        return x + y
+
+    reslist = MC([f, f2], dict(x=23, y=24))
+    assert reslist == [23 + 24, 23 + 1]
+
+    reslist = MC([f2], dict(x=23))
+    assert reslist == [23 + 1]
 
 
 def test_tags_call_error() -> None:
