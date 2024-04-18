@@ -659,10 +659,33 @@ If a hookspec specifies a ``warn_on_impl``, pluggy will trigger it for any plugi
 .. code-block:: python
 
     @hookspec(
-        warn_on_impl=DeprecationWarning("oldhook is deprecated and will be removed soon")
+        warn_on_impl=DeprecationWarning("old_hook is deprecated and will be removed soon")
     )
-    def oldhook():
+    def old_hook():
         pass
+
+
+If you don't want to deprecate implementing the entire hook, but just specific
+parameters of it, you can specify ``warn_on_impl_args``, a dict mapping
+parameter names to warnings. The warnings will trigger whenever any plugin
+implements the hook requesting one of the specified parameters.
+
+.. code-block:: python
+
+    @hookspec(
+        warn_on_impl_args={
+            "lousy_arg": DeprecationWarning(
+                "The lousy_arg parameter of refreshed_hook is deprecated and will be removed soon; "
+                "use awesome_arg instead"
+            ),
+        },
+    )
+    def refreshed_hook(lousy_arg, awesome_arg):
+        pass
+
+.. versionadded:: 1.5
+   The ``warn_on_impl_args`` parameter.
+
 
 .. _manage:
 
