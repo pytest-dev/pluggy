@@ -120,7 +120,8 @@ jobs:
   deploy:
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') && github.repository == 'pytest-dev/pluggy'
     runs-on: ubuntu-latest
-
+    permissions:
+      id-token: write
     steps:
       - uses: actions/checkout@v3
         with:
@@ -140,6 +141,3 @@ jobs:
 
       - name: Publish package
         uses: pypa/gh-action-pypi-publish@v1.8.6
-        with:
-          user: __token__
-          password: ${{ secrets.pypi_token }}
