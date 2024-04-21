@@ -21,6 +21,24 @@ Versions follow `Semantic Versioning <https://semver.org/>`_ (``<major>.<minor>.
 
 .. towncrier release notes start
 
+pluggy 1.5.0 (2024-04-19)
+=========================
+
+Features
+--------
+
+- `#178 <https://github.com/pytest-dev/pluggy/issues/178>`_: Add support for deprecating specific hook parameters, or more generally, for issuing a warning whenever a hook implementation requests certain parameters.
+
+  See :ref:`warn_on_impl` for details.
+
+
+
+Bug Fixes
+---------
+
+- `#481 <https://github.com/pytest-dev/pluggy/issues/481>`_: ``PluginManager.get_plugins()`` no longer returns ``None`` for blocked plugins.
+
+
 pluggy 1.4.0 (2024-01-24)
 =========================
 
