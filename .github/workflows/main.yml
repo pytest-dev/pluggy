@@ -91,7 +91,7 @@ jobs:
         fetch-depth: 0
 
     - name: Set up Python ${{ matrix.python }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python }}
 
@@ -127,7 +127,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -140,4 +140,4 @@ jobs:
         run: python -m build --sdist --wheel --outdir dist/
 
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@v1.8.6
+        uses: pypa/gh-action-pypi-publish@v1.8.14

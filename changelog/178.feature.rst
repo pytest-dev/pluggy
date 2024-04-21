@@ -1,3 +1,0 @@
-Add support for deprecating specific hook parameters, or more generally, for issuing a warning whenever a hook implementation requests certain parameters.
-
-See :ref:`warn_on_impl` for details.
