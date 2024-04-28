@@ -136,7 +136,7 @@ def _multicall(
                 _raise_wrapfail(teardown, "has second yield")  # type: ignore[arg-type]
 
             if exception is not None:
-                raise exception.with_traceback(exception.__traceback__)
+                raise exception
             else:
                 return result
 

@@ -97,7 +97,7 @@ class Result(Generic[ResultType]):
         if exc is None:
             return cast(ResultType, self._result)
         else:
-            raise exc.with_traceback(exc.__traceback__)
+            raise exc
 
 
 # Historical name (pluggy<=1.2), kept for backward compatibility.
