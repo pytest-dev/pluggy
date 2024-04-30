@@ -1,0 +1,1 @@
+Fix a regression in pluggy 1.1.0 where using :func:`result.get_result() <pluggy.Result.get_result>` on the same failed :class:`~pluggy.Result` causes the exception's traceback to get longer and longer.
