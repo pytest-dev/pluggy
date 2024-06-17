@@ -140,4 +140,4 @@ jobs:
         run: python -m build --sdist --wheel --outdir dist/
 
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@v1.8.14
+        uses: pypa/gh-action-pypi-publish@v1.9.0
