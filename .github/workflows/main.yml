@@ -114,10 +114,12 @@ jobs:
 
     - name: Test without coverage
       if: "! matrix.use_coverage"
+      shell: bash
       run: "tox run -e ${{ matrix.tox_env }}  --installpkg dist/*.whl"
 
     - name: Test with coverage
       if: "matrix.use_coverage"
+      shell: bash
       run: "tox run -e ${{ matrix.tox_env }}-coverage --installpkg dist/*.whl"
 
     - name: Upload coverage
