@@ -9,6 +9,7 @@ it's deferred to avoid import-time dependency on importlib_metadata
 
 
 """
+
 from __future__ import annotations
 
 import importlib.metadata

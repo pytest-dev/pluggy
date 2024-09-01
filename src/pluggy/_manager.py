@@ -29,12 +29,7 @@ from ._result import Result
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
-    from ._hooks import HookimplOpts
-    from ._hooks import HookspecOpts
-
-    from ._hooks import _HookImplFunction
-    from ._hooks import _Namespace
-
+    from importlib.metadata import Distribution
     from typing import Any
     from typing import Callable
     from typing import Final
@@ -42,7 +37,11 @@ if TYPE_CHECKING:
     from typing import Mapping
     from typing import Sequence
     from typing import TypeAlias
-    from importlib.metadata import Distribution
+
+    from ._hooks import _HookImplFunction
+    from ._hooks import _Namespace
+    from ._hooks import HookimplOpts
+    from ._hooks import HookspecOpts
     from ._importlib_metadata import DistFacade
 
 _BeforeTrace: TypeAlias = "Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]"
