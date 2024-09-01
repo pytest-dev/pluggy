@@ -7,6 +7,7 @@ from __future__ import annotations
 import sys
 import warnings
 
+
 _Plugin = object
 
 TYPE_CHECKING = False
@@ -383,10 +384,9 @@ class HookRelay:
 
     _CallHistory = List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
 
+
 # Historical name (pluggy<=1.2), kept for backward compatibility.
 _HookRelay = HookRelay
-
-
 
 
 class HookCaller:

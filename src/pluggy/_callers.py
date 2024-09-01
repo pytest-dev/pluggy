@@ -7,9 +7,10 @@ from __future__ import annotations
 import warnings
 
 from ._hooks import HookImpl
-from ._result import _raise_wrapfail
 from ._result import HookCallError
 from ._result import Result
+from ._warnings import PluggyTeardownRaisedWarning
+
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
@@ -21,24 +22,16 @@ if TYPE_CHECKING:
     from typing import Tuple
     from typing import Union
 
-
     # Need to distinguish between old- and new-style hook wrappers.
     # Wrapping with a tuple is the fastest type-safe way I found to do it.
     Teardown = Union[
         Tuple[Generator[None, Result[object], None], HookImpl],
-    Generator[None, object, object],
-]
+        Generator[None, object, object],
+    ]
 else:
 
     def cast(t, v):
         return v
-
-from ._hooks import HookImpl
-from ._result import HookCallError
-from ._result import Result
-from ._warnings import PluggyTeardownRaisedWarning
-
-
 
 
 def _raise_wrapfail(
