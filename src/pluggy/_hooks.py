@@ -30,7 +30,6 @@ if TYPE_CHECKING:
     from typing import Sequence
     from typing import Tuple
     from typing import TYPE_CHECKING
-    from typing import TypedDict
     from typing import TypeVar
     from typing import Union
 
@@ -46,41 +45,8 @@ if TYPE_CHECKING:
     _HookImplFunction = Callable[..., Union[_T, Generator[None, Result[_T], None]]]
     _CallHistory = List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
 
-    class HookspecOpts(TypedDict):
-        """Options for a hook specification."""
-
-        #: Whether the hook is :ref:`first result only <firstresult>`.
-        firstresult: bool
-        #: Whether the hook is :ref:`historic <historic>`.
-        historic: bool
-        #: Whether the hook :ref:`warns when implemented <warn_on_impl>`.
-        warn_on_impl: Warning | None
-        #: Whether the hook warns when :ref:`certain arguments are requested
-        #: <warn_on_impl>`.
-        #:
-        #: .. versionadded:: 1.5
-        warn_on_impl_args: Mapping[str, Warning] | None
-
-    class HookimplOpts(TypedDict):
-        """Options for a hook implementation."""
-
-        #: Whether the hook implementation is a :ref:`wrapper <hookwrapper>`.
-        wrapper: bool
-        #: Whether the hook implementation is an :ref:`old-style wrapper
-        #: <old_style_hookwrappers>`.
-        hookwrapper: bool
-        #: Whether validation against a hook specification is :ref:`optional
-        #: <optionalhook>`.
-        optionalhook: bool
-        #: Whether to try to order this hook implementation :ref:`first
-        #: <callorder>`.
-        tryfirst: bool
-        #: Whether to try to order this hook implementation :ref:`last
-        #: <callorder>`.
-        trylast: bool
-        #: The name of the hook specification to match, see :ref:`specname`.
-        specname: str | None
-
+    from ._types import HookimplOpts
+    from ._types import HookspecOpts
 else:
 
     def final(func: _F) -> _F:
@@ -385,8 +351,6 @@ class HookRelay:
     if TYPE_CHECKING:
 
         def __getattr__(self, name: str) -> HookCaller: ...
-
-    _CallHistory = List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
 
 
 # Historical name (pluggy<=1.2), kept for backward compatibility.

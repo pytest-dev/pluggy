@@ -40,9 +40,9 @@ if TYPE_CHECKING:
 
     from ._hooks import _HookImplFunction
     from ._hooks import _Namespace
-    from ._hooks import HookimplOpts
-    from ._hooks import HookspecOpts
     from ._importlib_metadata import DistFacade
+    from ._types import HookimplOpts
+    from ._types import HookspecOpts
 
 _BeforeTrace: TypeAlias = "Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]"
 _AfterTrace: TypeAlias = (
