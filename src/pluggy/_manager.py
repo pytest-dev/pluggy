@@ -70,7 +70,7 @@ class DistFacade:
         name: str = self.metadata["name"]
         return name
 
-    def __getattr__(self, attr: str, default=None):
+    def __getattr__(self, attr: str, default: Any | None = None) -> Any:
         return getattr(self._dist, attr, default)
 
     def __dir__(self) -> list[str]:
@@ -138,14 +138,14 @@ class PluginManager:
             if self._name2plugin.get(plugin_name, -1) is None:
                 return None  # blocked plugin, return None to indicate no registration
             raise ValueError(
-                "Plugin name already registered: %s=%s\n%s"
-                % (plugin_name, plugin, self._name2plugin)
+                "Plugin name already registered: "
+                f"{plugin_name}={plugin}\n{self._name2plugin}"
             )
 
         if plugin in self._name2plugin.values():
             raise ValueError(
-                "Plugin already registered under a different name: %s=%s\n%s"
-                % (plugin_name, plugin, self._name2plugin)
+                "Plugin already registered under a different name: "
+                f"{plugin_name}={plugin}\n{self._name2plugin}"
             )
 
         # XXX if an error happens we should make sure no state has been
@@ -329,8 +329,8 @@ class PluginManager:
         if hook.is_historic() and (hookimpl.hookwrapper or hookimpl.wrapper):
             raise PluginValidationError(
                 hookimpl.plugin,
-                "Plugin %r\nhook %r\nhistoric incompatible with yield/wrapper/hookwrapper"
-                % (hookimpl.plugin_name, hook.name),
+                f"Plugin {hookimpl.plugin_name!r}\nhook {hook.name!r}\n"
+                "historic incompatible with yield/wrapper/hookwrapper",
             )
 
         assert hook.spec is not None
@@ -342,15 +342,10 @@ class PluginManager:
         if notinspec:
             raise PluginValidationError(
                 hookimpl.plugin,
-                "Plugin %r for hook %r\nhookimpl definition: %s\n"
-                "Argument(s) %s are declared in the hookimpl but "
-                "can not be found in the hookspec"
-                % (
-                    hookimpl.plugin_name,
-                    hook.name,
-                    _formatdef(hookimpl.function),
-                    notinspec,
-                ),
+                f"Plugin {hookimpl.plugin_name!r} for hook {hook.name!r}\n"
+                f"hookimpl definition: {_formatdef(hookimpl.function)}\n"
+                f"Argument(s) {notinspec} are declared in the hookimpl but "
+                "can not be found in the hookspec",
             )
 
         if hook.spec.warn_on_impl_args:
@@ -364,18 +359,18 @@ class PluginManager:
         ) and not inspect.isgeneratorfunction(hookimpl.function):
             raise PluginValidationError(
                 hookimpl.plugin,
-                "Plugin %r for hook %r\nhookimpl definition: %s\n"
+                f"Plugin {hookimpl.plugin_name!r} for hook {hook.name!r}\n"
+                f"hookimpl definition: {_formatdef(hookimpl.function)}\n"
                 "Declared as wrapper=True or hookwrapper=True "
-                "but function is not a generator function"
-                % (hookimpl.plugin_name, hook.name, _formatdef(hookimpl.function)),
+                "but function is not a generator function",
             )
 
         if hookimpl.wrapper and hookimpl.hookwrapper:
             raise PluginValidationError(
                 hookimpl.plugin,
-                "Plugin %r for hook %r\nhookimpl definition: %s\n"
-                "The wrapper=True and hookwrapper=True options are mutually exclusive"
-                % (hookimpl.plugin_name, hook.name, _formatdef(hookimpl.function)),
+                f"Plugin {hookimpl.plugin_name!r} for hook {hook.name!r}\n"
+                f"hookimpl definition: {_formatdef(hookimpl.function)}\n"
+                "The wrapper=True and hookwrapper=True options are mutually exclusive",
             )
 
     def check_pending(self) -> None:
@@ -390,8 +385,7 @@ class PluginManager:
                         if not hookimpl.optionalhook:
                             raise PluginValidationError(
                                 hookimpl.plugin,
-                                "unknown hook %r in plugin %r"
-                                % (name, hookimpl.plugin),
+                                f"unknown hook {name!r} in plugin {hookimpl.plugin!r}",
                             )
 
     def load_setuptools_entrypoints(self, group: str, name: str | None = None) -> int:

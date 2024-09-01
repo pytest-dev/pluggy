@@ -489,8 +489,8 @@ class HookCaller:
                         if argname not in kwargs.keys()
                     )
                     warnings.warn(
-                        "Argument(s) {} which are declared in the hookspec "
-                        "cannot be found in this hook call".format(notincall),
+                        f"Argument(s) {notincall} which are declared in the hookspec "
+                        "cannot be found in this hook call",
                         stacklevel=2,
                     )
                     break

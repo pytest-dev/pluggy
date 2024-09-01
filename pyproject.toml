@@ -27,8 +27,9 @@ package-data = {"pluggy" = ["py.typed"]}
 
 
 [tool.ruff.lint]
-select = [
-    "I",  # isort
+extend-select = [
+  "I",  # isort
+  "UP",
 ]
 
 [tool.ruff.lint.isort]
