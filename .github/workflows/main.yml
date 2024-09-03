@@ -143,4 +143,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@v1.10.0
         with:
           attestations: true
-
