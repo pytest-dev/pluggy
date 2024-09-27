@@ -191,11 +191,16 @@ class PluginManager:
         # pydantic model fields are like attrs and also can never be hookimpls
         plugin_is_pydantic_obj = hasattr(plugin, "__pydantic_core_schema__")
         if plugin_is_pydantic_obj and name in getattr(plugin, "model_fields", {}):
-            # pydantic models mess with the class and attr __signature__
-            # so inspect.isroutine(...) throws exceptions and cant be used
             return None
 
-        method: object = getattr(plugin, name)
+        method: object
+        try:
+            method = getattr(plugin, name)
+        except AttributeError:
+            # AttributeError: '__signature__' attribute of 'Plugin' is class-only
+            # can happen for some special objects (e.g. proxies, pydantic, etc.)
+            method = getattr(type(plugin), name)  # use class sig instead
+
         if not inspect.isroutine(method):
             return None
         try:
