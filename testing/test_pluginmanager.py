@@ -4,6 +4,7 @@
 
 import importlib.metadata
 from typing import Any
+from typing import Dict
 from typing import List
 
 import pytest
@@ -121,6 +122,36 @@ def test_set_blocked(pm: PluginManager) -> None:
     assert not pm.is_blocked("somename")
     assert not pm.unblock("somename")
     assert pm.register(A(), "somename")
+
+
+def test_register_skips_properties(he_pm: PluginManager) -> None:
+    class ClassWithProperties:
+        property_was_executed: bool = False
+
+        @property
+        def some_func(self):
+            self.property_was_executed = True
+            return None
+
+    test_plugin = ClassWithProperties()
+    he_pm.register(test_plugin)
+    assert not test_plugin.property_was_executed
+
+
+def test_register_skips_pydantic_fields(he_pm: PluginManager) -> None:
+    class PydanticModelClass:
+        # stub to make object look like a pydantic model
+        model_fields: Dict[str, bool] = {"some_attr": True}
+
+        def __pydantic_core_schema__(self): ...
+
+        @hookimpl
+        def some_attr(self): ...
+
+    test_plugin = PydanticModelClass()
+    he_pm.register(test_plugin)
+    with pytest.raises(AttributeError):
+        he_pm.hook.some_attr.get_hookimpls()
 
 
 def test_register_mismatch_method(he_pm: PluginManager) -> None:
