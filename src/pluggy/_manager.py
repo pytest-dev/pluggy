@@ -46,6 +46,17 @@ def _warn_for_function(warning: Warning, function: Callable[..., object]) -> Non
     )
 
 
+def _attr_is_property(obj: Any, name: str) -> bool:
+    """Check if a given attr is a @property on a module, class, or object"""
+    if inspect.ismodule(obj):
+        return False  # modules can never have @property methods
+
+    base_class = obj if inspect.isclass(obj) else type(obj)
+    if isinstance(getattr(base_class, name, None), property):
+        return True
+    return False
+
+
 class PluginValidationError(Exception):
     """Plugin failed validation.
 
@@ -182,23 +193,16 @@ class PluginManager:
         options for items decorated with :class:`HookimplMarker`.
         """
 
-        # IMPORTANT: @property methods can have side effects, and are never hookimpl
-        # if attr is a property, skip it in advance
-        plugin_class = plugin if inspect.isclass(plugin) else type(plugin)
-        if isinstance(getattr(plugin_class, name, None), property):
-            return None
-
-        # pydantic model fields are like attrs and also can never be hookimpls
-        plugin_is_pydantic_obj = hasattr(plugin, "__pydantic_core_schema__")
-        if plugin_is_pydantic_obj and name in getattr(plugin, "model_fields", {}):
+        if _attr_is_property(plugin, name):
+            # @property methods can have side effects, and are never hookimpls
             return None
 
         method: object
         try:
             method = getattr(plugin, name)
         except AttributeError:
-            # AttributeError: '__signature__' attribute of 'Plugin' is class-only
-            # can happen for some special objects (e.g. proxies, pydantic, etc.)
+            # AttributeError: '__signature__' attribute of 'plugin' is class-only
+            # can happen if plugin is a proxy object wrapping a class/module
             method = getattr(type(plugin), name)  # use class sig instead
 
         if not inspect.isroutine(method):
@@ -305,7 +309,17 @@ class PluginManager:
         customize how hook specifications are picked up. By default, returns the
         options for items decorated with :class:`HookspecMarker`.
         """
-        method = getattr(module_or_class, name)
+        if _attr_is_property(module_or_class, name):
+            # @property methods can have side effects, and are never hookspecs
+            return None
+
+        method: object
+        try:
+            method = getattr(module_or_class, name)
+        except AttributeError:
+            # AttributeError: '__signature__' attribute of <m_or_c> is class-only
+            # can happen if module_or_class is a proxy obj wrapping a class/module
+            method = getattr(type(module_or_class), name)  # use class sig instead
         opts: HookspecOpts | None = getattr(method, self.project_name + "_spec", None)
         return opts
 
