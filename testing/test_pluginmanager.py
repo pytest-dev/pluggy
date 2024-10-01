@@ -132,6 +132,9 @@ def test_register_ignores_properties(he_pm: PluginManager) -> None:
             self.property_was_executed = True  # pragma: no cover
             return None  # pragma: no cover
 
+    # test registering it as a class
+    he_pm.register(ClassWithProperties)
+    # test registering it as an instance
     test_plugin = ClassWithProperties()
     he_pm.register(test_plugin)
     assert not test_plugin.property_was_executed
