@@ -46,7 +46,7 @@ def _warn_for_function(warning: Warning, function: Callable[..., object]) -> Non
     )
 
 
-def _attr_is_property(obj: Any, name: str) -> bool:
+def _attr_is_property(obj: object, name: str) -> bool:
     """Check if a given attr is a @property on a module, class, or object"""
     if inspect.ismodule(obj):
         return False  # modules can never have @property methods
