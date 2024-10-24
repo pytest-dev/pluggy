@@ -202,8 +202,9 @@ class PluginManager:
             method = getattr(plugin, name)
         except AttributeError:
             # AttributeError: '__signature__' attribute of 'plugin' is class-only
-            # can happen if plugin is a proxy object wrapping a class/module
-            method = getattr(type(plugin), name)  # use class sig instead
+            # can be raised when trying to access some descriptor/proxied fields
+            # https://github.com/pytest-dev/pluggy/pull/536#discussion_r1786431032
+            return None
 
         if not inspect.isroutine(method):
             return None
@@ -318,8 +319,9 @@ class PluginManager:
             method = getattr(module_or_class, name)
         except AttributeError:
             # AttributeError: '__signature__' attribute of <m_or_c> is class-only
-            # can happen if module_or_class is a proxy obj wrapping a class/module
-            method = getattr(type(module_or_class), name)  # use class sig instead
+            # can be raised when trying to access some descriptor/proxied fields
+            # https://github.com/pytest-dev/pluggy/pull/536#discussion_r1786431032
+            return None
         opts: HookspecOpts | None = getattr(method, self.project_name + "_spec", None)
         return opts
 
