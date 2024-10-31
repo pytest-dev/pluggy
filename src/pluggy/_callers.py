@@ -119,7 +119,19 @@ def _multicall(
             for teardown in reversed(teardowns):
                 try:
                     if exception is not None:
-                        teardown.throw(exception)  # type: ignore[union-attr]
+                        try:
+                            teardown.throw(exception)  # type: ignore[union-attr]
+                        except RuntimeError as re:
+                            # StopIteration from generator causes RuntimeError
+                            # even for coroutine usage - see #544
+                            if (
+                                isinstance(exception, StopIteration)
+                                and re.__cause__ is exception
+                            ):
+                                teardown.close()  # type: ignore[union-attr]
+                                continue
+                            else:
+                                raise
                     else:
                         teardown.send(result)  # type: ignore[union-attr]
                     # Following is unreachable for a well behaved hook wrapper.
@@ -164,7 +176,19 @@ def _multicall(
                 else:
                     try:
                         if outcome._exception is not None:
-                            teardown.throw(outcome._exception)
+                            try:
+                                teardown.throw(outcome._exception)
+                            except RuntimeError as re:
+                                # StopIteration from generator causes RuntimeError
+                                # even for coroutine usage - see #544
+                                if (
+                                    isinstance(outcome._exception, StopIteration)
+                                    and re.__cause__ is outcome._exception
+                                ):
+                                    teardown.close()
+                                    continue
+                                else:
+                                    raise
                         else:
                             teardown.send(outcome._result)
                         # Following is unreachable for a well behaved hook wrapper.
