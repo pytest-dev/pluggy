@@ -38,7 +38,7 @@ def run_legacy_hookwrapper(
     try:
         teardown.send(result)
     except StopIteration:
-        return result.get_result()
+        pass
     except BaseException as e:
         _warn_teardown_exception(hook_name, hook_impl, e)
         raise
@@ -46,6 +46,7 @@ def run_legacy_hookwrapper(
         _raise_wrapfail(teardown, "has second yield")
     finally:
         teardown.close()
+    return result.get_result()
 
 
 def _raise_wrapfail(
