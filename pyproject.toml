@@ -1,15 +1,55 @@
 [build-system]
 requires = [
   # sync with setup.py until we discard non-pep-517/518
-  "setuptools>=45.0",
-  "setuptools-scm[toml]>=6.2.3",
+  "setuptools>=65.0",
+  "setuptools-scm[toml]>=8.0",
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "pluggy"
+license = {text = "MIT"}
+authors = [{name = "Holger Krekel", email = "holger@merlinux.eu"}]
+classifiers = [
+  "Development Status :: 6 - Mature",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: MacOS :: MacOS X",
+  "Topic :: Software Development :: Testing",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Utilities",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+description = "plugin and hook calling mechanisms for python"
+readme = {file = "README.rst", content-type = "text/x-rst"}
+requires-python = ">=3.8"
+
+dynamic = ["version"]
+[project.optional-dependencies]
+dev = ["pre-commit", "tox"]
+testing = ["pytest", "pytest-benchmark"]
+
+[tool.setuptools]
+packages = ["pluggy"]
+package-dir =  {""="src"}
+package-data = {"pluggy" = ["py.typed"]}
+
 
 [tool.ruff.lint]
-select = [
-    "I",  # isort
+extend-select = [
+  "I",  # isort
+  "UP",
 ]
 
 [tool.ruff.lint.isort]
@@ -21,7 +61,7 @@ known-local-folder = ["pluggy"]
 lines-after-imports = 2
 
 [tool.setuptools_scm]
-write_to = "src/pluggy/_version.py"
+version_file = "src/pluggy/_version.py"
 
 [tool.towncrier]
 package = "pluggy"

@@ -3,7 +3,7 @@ name: main
 on:
   push:
     branches:
-      - main
+      - "*"
     tags:
       - "*"
 
@@ -20,7 +20,7 @@ jobs:
       matrix:
         name: [
           "windows-py38",
-          "windows-py311",
+          "windows-py313",
           "windows-pypy3",
 
           "ubuntu-py38-pytestmain",
@@ -29,6 +29,7 @@ jobs:
           "ubuntu-py310",
           "ubuntu-py311",
           "ubuntu-py312",
+          "ubuntu-py313",
           "ubuntu-pypy3",
           "ubuntu-benchmark",
         ]
@@ -38,10 +39,10 @@ jobs:
             python: "3.8"
             os: windows-latest
             tox_env: "py38"
-          - name: "windows-py311"
-            python: "3.10"
+          - name: "windows-py313"
+            python: "3.13"
             os: windows-latest
-            tox_env: "py311"
+            tox_env: "py313"
           - name: "windows-pypy3"
             python: "pypy3.9"
             os: windows-latest
@@ -71,9 +72,14 @@ jobs:
             tox_env: "py311"
             use_coverage: true
           - name: "ubuntu-py312"
-            python: "3.12-dev"
+            python: "3.12"
             os: ubuntu-latest
             tox_env: "py312"
+            use_coverage: true
+          - name: "ubuntu-py313"
+            python: "3.13"
+            os: ubuntu-latest
+            tox_env: "py313"
             use_coverage: true
           - name: "ubuntu-pypy3"
             python: "pypy3.9"
@@ -94,6 +100,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python }}
+        allow-prereleases: true
 
     - name: Install dependencies
       run: |
@@ -140,4 +147,6 @@ jobs:
         run: python -m build --sdist --wheel --outdir dist/
 
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@v1.8.14
+        uses: pypa/gh-action-pypi-publish@v1.11.0
+        with:
+          attestations: true
