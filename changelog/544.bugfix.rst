@@ -1,0 +1,6 @@
+Correctly pass :class:`StopIteration` trough hook wrappers.
+
+Raising a :class:`StopIteration` in a generator triggers a :class:`RuntimeError`.
+
+If the :class:`RuntimeError` of a generator has the passed in :class:`StopIteration` as cause
+resume with that :class:`StopIteration` as normal exception instead of failing with the :class:`RuntimeError`.

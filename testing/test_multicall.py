@@ -416,6 +416,36 @@ def test_unwind_inner_wrapper_teardown_exc() -> None:
     ]
 
 
+@pytest.mark.parametrize("has_hookwrapper", [True, False])
+def test_wrapper_stopiteration_passtrough(has_hookwrapper: bool) -> None:
+    out = []
+
+    @hookimpl(wrapper=True)
+    def wrap():
+        out.append("wrap")
+        try:
+            yield
+        finally:
+            out.append("wrap done")
+
+    @hookimpl(wrapper=not has_hookwrapper, hookwrapper=has_hookwrapper)
+    def wrap_path2():
+        yield
+
+    @hookimpl
+    def stop():
+        out.append("stop")
+        raise StopIteration
+
+    with pytest.raises(StopIteration):
+        try:
+            MC([stop, wrap, wrap_path2], {})
+        finally:
+            out.append("finally")
+
+    assert out == ["wrap", "stop", "wrap done", "finally"]
+
+
 def test_suppress_inner_wrapper_teardown_exc() -> None:
     out = []
 
