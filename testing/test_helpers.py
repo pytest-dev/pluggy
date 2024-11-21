@@ -53,6 +53,46 @@ def test_varnames_class() -> None:
     assert varnames(F) == ((), ())
 
 
+def test_varnames_catch_all() -> None:
+    """
+    Adding coverage for special cases.  According to the code in varnames(), we should handle
+    several unusual exception-throwing scenarios.
+    """
+
+    class NoInitMeta(type):
+        def __getattribute__(self, item):
+            if item == "__init__":
+                raise AttributeError(
+                    "Testing a class where we can't look at the __init__ attr"
+                )
+            else:
+                return object.__getattribute__(self, item)
+
+    class NoInit(metaclass=NoInitMeta):
+        """A class that throws AttributeError for '__init__'"""
+
+    class CantCallMe:
+        def __getattribute__(self, item):
+            if item == "__call__":
+                raise ValueError("Don't look at me")
+            else:
+                return object.__getattribute__(self, item)
+
+        def __call__(self, *args, **kwargs):
+            pass
+
+    def has_weird_signature():
+        pass
+
+    setattr(
+        has_weird_signature, "__signature__", "inspect will fail b/c this is a string"
+    )
+
+    assert varnames(NoInit) == ((), ())
+    assert varnames(CantCallMe()) == ((), ())
+    assert varnames(has_weird_signature) == ((), ())
+
+
 def test_varnames_keyword_only() -> None:
     def f1(x, *, y) -> None:
         pass

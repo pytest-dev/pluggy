@@ -249,17 +249,35 @@ def test_wrapper_too_many_yield() -> None:
     assert out == ["cleanup", "finally"]
 
 
+@pytest.mark.parametrize(
+    "wrapper_style_new", [True, False], ids=["new-style", "old-style"]
+)
 @pytest.mark.parametrize("exc", [ValueError, SystemExit])
-def test_hookwrapper_exception(exc: "Type[BaseException]") -> None:
+def test_hookwrapper_exception(exc: "Type[BaseException]", wrapper_style_new) -> None:
     out = []
 
-    @hookimpl(hookwrapper=True)
+    if wrapper_style_new:
+        as_wrapper = hookimpl(wrapper=True)
+    else:
+        as_wrapper = hookimpl(hookwrapper=True)
+
+    @as_wrapper
     def m1():
         out.append("m1 init")
-        result = yield
-        assert isinstance(result.exception, exc)
-        assert result.excinfo[0] == exc
-        out.append("m1 finish")
+
+        if wrapper_style_new:
+            try:
+                _ = yield
+                pytest.fail("yield is expected to raise an exception here")
+            except BaseException as e:
+                assert isinstance(e, exc)
+                out.append("m1 finish")
+                raise e
+        else:
+            result = yield
+            assert isinstance(result.exception, exc)
+            assert result.excinfo[0] == exc
+            out.append("m1 finish")
 
     @hookimpl
     def m2():
@@ -343,6 +361,75 @@ def test_wrapper_exception(exc: "Type[BaseException]") -> None:
     with pytest.raises(exc):
         MC([m2, m1], {})
     assert out == ["m1 init", "m2 init", "m1 finish"]
+
+
+@pytest.mark.parametrize("raise_exception_at", ["exc-before", "exc-after"])
+@pytest.mark.parametrize(
+    "has_second_yield", [True, False], ids=["with-second-yield", "no-second-yield"]
+)
+@pytest.mark.parametrize(
+    "wrapper_style_new", [True, False], ids=["new-style", "old-style"]
+)
+@pytest.mark.parametrize(
+    "hook_throws", [True, False], ids=["hook-throws", "hook-returns"]
+)
+def test_wrapper_raises_exception(
+    wrapper_style_new, raise_exception_at, has_second_yield, hook_throws
+):
+    out = []
+    if wrapper_style_new:
+        as_wrapper = hookimpl(wrapper=True)
+    else:
+        as_wrapper = hookimpl(hookwrapper=True)
+
+    @as_wrapper
+    def m1():
+        out.append("m1 init")
+        if raise_exception_at == "exc-before":
+            raise ValueError("Raising early exception")
+
+        _ = yield
+
+        if raise_exception_at == "exc-after":
+            raise ValueError("Raising late exception")
+
+        out.append("should not see this")
+
+    @hookimpl(wrapper=True)
+    def m2():
+        out.append("m2 init")
+        if raise_exception_at == "exc-before":
+            raise ValueError("m2: Raising early exception")
+
+        _ = yield
+
+        if has_second_yield:
+            _ = yield
+
+        if raise_exception_at == "exc-after":
+            raise ValueError("m2: Raising late exception")
+
+        out.append("m2 should not see this")
+
+    @hookimpl
+    def m3():
+        if hook_throws:
+            raise ValueError("Hook failed!")
+        else:
+            return 123
+
+    if has_second_yield and raise_exception_at == "exc-after" and not hook_throws:
+        expect_exception: Type[Exception] = RuntimeError
+    else:
+        expect_exception = ValueError
+
+    with pytest.raises(expect_exception):
+        MC([m3, m2, m1], {})
+
+    if raise_exception_at == "exc-before":
+        assert out == ["m1 init"]
+    else:
+        assert out == ["m1 init", "m2 init"]
 
 
 def test_wrapper_exception_chaining() -> None:
