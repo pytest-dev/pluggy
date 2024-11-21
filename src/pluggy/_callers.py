@@ -4,13 +4,6 @@ Call loop machinery
 
 from __future__ import annotations
 
-from typing import cast
-from typing import Generator
-from typing import Mapping
-from typing import NoReturn
-from typing import Sequence
-from typing import Tuple
-from typing import Union
 import warnings
 
 from ._hooks import HookImpl
@@ -19,12 +12,26 @@ from ._result import Result
 from ._warnings import PluggyTeardownRaisedWarning
 
 
-# Need to distinguish between old- and new-style hook wrappers.
-# Wrapping with a tuple is the fastest type-safe way I found to do it.
-Teardown = Union[
-    Tuple[Generator[None, Result[object], None], HookImpl],
-    Generator[None, object, object],
-]
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from typing import cast
+    from typing import Generator
+    from typing import Mapping
+    from typing import NoReturn
+    from typing import Sequence
+    from typing import Tuple
+    from typing import Union
+
+    # Need to distinguish between old- and new-style hook wrappers.
+    # Wrapping with a tuple is the fastest type-safe way I found to do it.
+    Teardown = Union[
+        Tuple[Generator[None, Result[object], None], HookImpl],
+        Generator[None, object, object],
+    ]
+else:
+
+    def cast(t, v):
+        return v
 
 
 def _raise_wrapfail(
@@ -84,7 +91,7 @@ def _multicall(
                         # If this cast is not valid, a type error is raised below,
                         # which is the desired response.
                         res = hook_impl.function(*args)
-                        wrapper_gen = cast(Generator[None, Result[object], None], res)
+                        wrapper_gen = cast("Generator[None, Result[object], None]", res)
                         next(wrapper_gen)  # first yield
                         teardowns.append((wrapper_gen, hook_impl))
                     except StopIteration:
@@ -94,7 +101,7 @@ def _multicall(
                         # If this cast is not valid, a type error is raised below,
                         # which is the desired response.
                         res = hook_impl.function(*args)
-                        function_gen = cast(Generator[None, object, object], res)
+                        function_gen = cast("Generator[None, object, object]", res)
                         next(function_gen)  # first yield
                         teardowns.append(function_gen)
                     except StopIteration:
