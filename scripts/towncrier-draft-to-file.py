@@ -2,7 +2,7 @@ from subprocess import call
 import sys
 
 
-def main():
+def main() -> int:
     """
     Platform agnostic wrapper script for towncrier.
     Fixes the issue (pytest#7251) where windows users are unable to natively
