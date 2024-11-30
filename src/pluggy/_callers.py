@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from collections.abc import Mapping
+from collections.abc import Sequence
 from typing import cast
 from typing import NoReturn
-from typing import Sequence
 import warnings
 
 from ._hooks import HookImpl
@@ -50,9 +50,7 @@ def run_legacy_hookwrapper(
 
 
 def _raise_wrapfail(
-    wrap_controller: (
-        Generator[None, Result[object], None] | Generator[None, object, object]
-    ),
+    wrap_controller: Generator[None, object, object],
     msg: str,
 ) -> NoReturn:
     co = wrap_controller.gi_code  # type: ignore[union-attr]
