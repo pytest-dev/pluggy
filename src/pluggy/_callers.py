@@ -50,9 +50,7 @@ def run_legacy_hookwrapper(
 
 
 def _raise_wrapfail(
-    wrap_controller: (
-        Generator[None, Result[object], None] | Generator[None, object, object]
-    ),
+    wrap_controller: Generator[None, object, object],
     msg: str,
 ) -> NoReturn:
     co = wrap_controller.gi_code
