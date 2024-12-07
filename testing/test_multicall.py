@@ -1,8 +1,6 @@
+from collections.abc import Mapping
+from collections.abc import Sequence
 from typing import Callable
-from typing import List
-from typing import Mapping
-from typing import Sequence
-from typing import Type
 from typing import Union
 
 import pytest
@@ -22,7 +20,7 @@ def MC(
     methods: Sequence[Callable[..., object]],
     kwargs: Mapping[str, object],
     firstresult: bool = False,
-) -> Union[object, List[object]]:
+) -> Union[object, list[object]]:
     caller = _multicall
     hookfuncs = []
     for method in methods:
@@ -250,7 +248,7 @@ def test_wrapper_too_many_yield() -> None:
 
 
 @pytest.mark.parametrize("exc", [ValueError, SystemExit])
-def test_hookwrapper_exception(exc: "Type[BaseException]") -> None:
+def test_hookwrapper_exception(exc: type[BaseException]) -> None:
     out = []
 
     @hookimpl(hookwrapper=True)
@@ -320,7 +318,7 @@ def test_hookwrapper_force_exception() -> None:
 
 
 @pytest.mark.parametrize("exc", [ValueError, SystemExit])
-def test_wrapper_exception(exc: "Type[BaseException]") -> None:
+def test_wrapper_exception(exc: type[BaseException]) -> None:
     out = []
 
     @hookimpl(wrapper=True)
