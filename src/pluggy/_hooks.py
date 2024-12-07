@@ -4,21 +4,19 @@ Internal hook annotation, representation and calling machinery.
 
 from __future__ import annotations
 
+from collections.abc import Generator
+from collections.abc import Mapping
+from collections.abc import Sequence
+from collections.abc import Set
 import inspect
 import sys
 from types import ModuleType
-from typing import AbstractSet
 from typing import Any
 from typing import Callable
 from typing import Final
 from typing import final
-from typing import Generator
-from typing import List
-from typing import Mapping
 from typing import Optional
 from typing import overload
-from typing import Sequence
-from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import TypedDict
 from typing import TypeVar
@@ -34,7 +32,7 @@ _Namespace = Union[ModuleType, type]
 _Plugin = object
 _HookExec = Callable[
     [str, Sequence["HookImpl"], Mapping[str, object], bool],
-    Union[object, List[object]],
+    Union[object, list[object]],
 ]
 _HookImplFunction = Callable[..., Union[_T, Generator[None, Result[_T], None]]]
 
@@ -376,7 +374,7 @@ class HookRelay:
 _HookRelay = HookRelay
 
 
-_CallHistory = List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
+_CallHistory = list[tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
 
 
 class HookCaller:
@@ -608,7 +606,7 @@ class _SubsetHookCaller(HookCaller):
         "_remove_plugins",
     )
 
-    def __init__(self, orig: HookCaller, remove_plugins: AbstractSet[_Plugin]) -> None:
+    def __init__(self, orig: HookCaller, remove_plugins: Set[_Plugin]) -> None:
         self._orig = orig
         self._remove_plugins = remove_plugins
         self.name = orig.name  # type: ignore[misc]
