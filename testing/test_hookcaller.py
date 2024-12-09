@@ -1,7 +1,6 @@
+from collections.abc import Generator
+from collections.abc import Sequence
 from typing import Callable
-from typing import Generator
-from typing import List
-from typing import Sequence
 from typing import TypeVar
 
 import pytest
@@ -63,7 +62,7 @@ def addmeth(hc: HookCaller) -> AddMeth:
     return AddMeth(hc)
 
 
-def funcs(hookmethods: Sequence[HookImpl]) -> List[Callable[..., object]]:
+def funcs(hookmethods: Sequence[HookImpl]) -> list[Callable[..., object]]:
     return [hookmethod.function for hookmethod in hookmethods]
 
 
