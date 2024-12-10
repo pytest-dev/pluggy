@@ -34,8 +34,7 @@ def _raise_wrapfail(
 ) -> NoReturn:
     co = wrap_controller.gi_code
     raise RuntimeError(
-        "wrap_controller at %r %s:%d %s"
-        % (co.co_name, co.co_filename, co.co_firstlineno, msg)
+        f"wrap_controller at {co.co_name!r} {co.co_filename}:{co.co_firstlineno} {msg}"
     )
 
 
