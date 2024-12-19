@@ -1,5 +1,3 @@
-from typing import List
-
 import pytest
 
 from pluggy._tracing import TagTracer
@@ -13,7 +11,7 @@ def rootlogger() -> TagTracer:
 def test_simple(rootlogger: TagTracer) -> None:
     log = rootlogger.get("pytest")
     log("hello")
-    out: List[str] = []
+    out: list[str] = []
     rootlogger.setwriter(out.append)
     log("world")
     assert len(out) == 1

@@ -4,7 +4,6 @@
 
 import importlib.metadata
 from typing import Any
-from typing import List
 
 import pytest
 
@@ -623,7 +622,7 @@ def test_load_setuptools_instantiation(monkeypatch, pm: PluginManager) -> None:
 
 
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
-    out: List[Any] = []
+    out: list[Any] = []
 
     class api1:
         @hookimpl
@@ -676,7 +675,7 @@ def test_hook_tracing(he_pm: PluginManager) -> None:
             raise ValueError()
 
     he_pm.register(api1())
-    out: List[Any] = []
+    out: list[Any] = []
     he_pm.trace.root.setwriter(out.append)
     undo = he_pm.enable_tracing()
     try:
