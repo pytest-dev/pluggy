@@ -1,6 +1,5 @@
 [build-system]
 requires = [
-  # sync with setup.py until we discard non-pep-517/518
   "setuptools>=65.0",
   "setuptools-scm[toml]>=8.0",
 ]
@@ -9,7 +8,8 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pluggy"
 license = {text = "MIT"}
-authors = [{name = "Holger Krekel", email = "holger@merlinux.eu"}]
+authors = [{name = "Holger Krekel"}]
+maintainers = [{name="pytest core team", email="core@pytest.org"}]
 classifiers = [
   "Development Status :: 6 - Mature",
   "Intended Audience :: Developers",
