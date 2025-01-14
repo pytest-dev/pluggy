@@ -502,9 +502,9 @@ class HookCaller:
         Returns the result(s) of calling all registered plugins, see
         :ref:`calling`.
         """
-        assert (
-            not self.is_historic()
-        ), "Cannot directly call a historic hook - use call_historic instead."
+        assert not self.is_historic(), (
+            "Cannot directly call a historic hook - use call_historic instead."
+        )
         self._verify_all_args_are_provided(kwargs)
         firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
         # Copy because plugins may register other plugins during iteration (#438).
@@ -543,9 +543,9 @@ class HookCaller:
         """Call the hook with some additional temporarily participating
         methods using the specified ``kwargs`` as call parameters, see
         :ref:`call_extra`."""
-        assert (
-            not self.is_historic()
-        ), "Cannot directly call a historic hook - use call_historic instead."
+        assert not self.is_historic(), (
+            "Cannot directly call a historic hook - use call_historic instead."
+        )
         self._verify_all_args_are_provided(kwargs)
         opts: HookimplOpts = {
             "wrapper": False,
