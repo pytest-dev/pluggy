@@ -1,5 +1,8 @@
 version: 2
 
+sphinx:
+  configuration: docs/conf.py
+
 python:
    install:
      # Without this, sphinx can't find pluggy's version.
