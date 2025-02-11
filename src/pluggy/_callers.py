@@ -32,7 +32,7 @@ def _raise_wrapfail(
     ),
     msg: str,
 ) -> NoReturn:
-    co = wrap_controller.gi_code
+    co = wrap_controller.gi_code  # type: ignore[union-attr]
     raise RuntimeError(
         f"wrap_controller at {co.co_name!r} {co.co_filename}:{co.co_firstlineno} {msg}"
     )
