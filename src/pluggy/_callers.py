@@ -22,9 +22,14 @@ from ._warnings import PluggyTeardownRaisedWarning
 Teardown = Generator[None, object, object]
 
 
-def run_legacy_hookwrapper(
+def run_old_style_hookwrapper(
     hook_impl: HookImpl, hook_name: str, args: Sequence[object]
 ) -> Teardown:
+    """
+    backward compatibility wrapper to run a old style hookwrapper as a wrapper
+    """
+
+
     teardown: Teardown = cast(Teardown, hook_impl.function(*args))
     try:
         next(teardown)
@@ -100,7 +105,7 @@ def _multicall(
                     try:
                         # If this cast is not valid, a type error is raised below,
                         # which is the desired response.
-                        function_gen = run_legacy_hookwrapper(
+                        function_gen = run_old_style_hookwrapper(
                             hook_impl, hook_name, args
                         )
 
