@@ -483,7 +483,8 @@ class HookCaller:
                     notincall = ", ".join(
                         repr(argname)
                         for argname in self.spec.argnames
-                        # Avoid self.spec.argnames - kwargs.keys() - doesn't preserve order.
+                        # Avoid self.spec.argnames - kwargs.keys()
+                        # it doesn't preserve order.
                         if argname not in kwargs.keys()
                     )
                     warnings.warn(
