@@ -17,12 +17,12 @@ from typing import Final
 from typing import final
 from typing import Optional
 from typing import overload
-from typing import TYPE_CHECKING
 from typing import TypedDict
 from typing import TypeVar
 from typing import Union
 import warnings
 
+from ._hookrelay import HookRelay
 from ._result import Result
 
 
@@ -30,11 +30,13 @@ _T = TypeVar("_T")
 _F = TypeVar("_F", bound=Callable[..., object])
 _Namespace = Union[ModuleType, type]
 _Plugin = object
-_HookExec = Callable[
-    [str, Sequence["HookImpl"], Mapping[str, object], bool],
-    Union[object, list[object]],
+
+type _HookExec = Callable[
+    [str, Sequence[HookImpl], Mapping[str, object], bool],
+    Union[object, list[object]]
 ]
-_HookImplFunction = Callable[..., Union[_T, Generator[None, Result[_T], None]]]
+
+type _HookImplFunction[T] = Callable[..., Union[T, Generator[None, Result[T], None]]]
 
 
 class HookspecOpts(TypedDict):
@@ -355,21 +357,6 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     return args, kwargs
 
 
-@final
-class HookRelay:
-    """Hook holder object for performing 1:N hook calls where N is the number
-    of registered plugins."""
-
-    __slots__ = ("__dict__",)
-
-    def __init__(self) -> None:
-        """:meta private:"""
-
-    if TYPE_CHECKING:
-
-        def __getattr__(self, name: str) -> HookCaller: ...
-
-
 # Historical name (pluggy<=1.2), kept for backward compatibility.
 _HookRelay = HookRelay
 
@@ -388,6 +375,8 @@ class HookCaller:
         "_call_history",
     )
 
+
+    _call_history: _CallHistory | None
     def __init__(
         self,
         name: str,
@@ -407,7 +396,7 @@ class HookCaller:
         # 5. wrappers
         # 6. tryfirst wrappers
         self._hookimpls: Final[list[HookImpl]] = []
-        self._call_history: _CallHistory | None = None
+        self._call_history = None
         # TODO: Document, or make private.
         self.spec: HookSpec | None = None
         if specmodule_or_class is not None:
