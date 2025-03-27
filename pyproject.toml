@@ -48,8 +48,14 @@ package-data = {"pluggy" = ["py.typed"]}
 [tool.ruff.lint]
 extend-select = [
   "I",  # isort
-  "UP",
+  "F","E", "W",
+  "UP", "ANN",
 ]
+extend-ignore = ["ANN101", "ANN102", "ANN401"]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"testing/*.py" = ["ANN001", "ANN002", "ANN003",  "ANN201", "ANN202","ANN204" ,]
+"docs/*.py" = ["ANN001", "ANN002", "ANN003",  "ANN201", "ANN202","ANN204" ,]
 
 [tool.ruff.lint.isort]
 force-single-line = true
