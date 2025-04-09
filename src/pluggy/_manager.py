@@ -188,7 +188,7 @@ class PluginManager:
             res: HookimplOpts | None = getattr(
                 method, self.project_name + "_impl", None
             )
-        except Exception: #pragma: no cover
+        except Exception:  # pragma: no cover
             res = {}  # type: ignore[assignment] #pragma: no cover
         if res is not None and not isinstance(res, dict):
             # false positive

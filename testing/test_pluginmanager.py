@@ -757,3 +757,18 @@ def test_register_while_calling(
         result = []
         pm.hook.configure.call_historic(result.append)
         assert result == [4, 5, 3, 2, 1, 6]
+
+
+def test_check_pending_nonspec_hook(
+    pm: PluginManager,
+) -> None:
+    hookimpl = HookimplMarker("example")
+
+    class Plugin:
+        @hookimpl
+        def a_hook(self, param):
+            pass
+
+    pm.register(Plugin())
+    with pytest.raises(HookCallError, match="hook call must provide argument 'param'"):
+        pm.hook.a_hook()
