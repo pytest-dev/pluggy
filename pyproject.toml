@@ -51,7 +51,7 @@ extend-select = [
   "F","E", "W",
   "UP", "ANN",
 ]
-extend-ignore = ["ANN101", "ANN102", "ANN401"]
+extend-ignore = ["ANN401"]
 
 [tool.ruff.lint.extend-per-file-ignores]
 "testing/*.py" = ["ANN001", "ANN002", "ANN003",  "ANN201", "ANN202","ANN204" ,]
