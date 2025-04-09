@@ -133,7 +133,7 @@ def test_firstresult_definition(pm: PluginManager) -> None:
     class Plugin1:
         @hookimpl
         def hello(self, arg):
-            return arg + 1
+            return arg + 1  # pragma: no cover
 
     class Plugin2:
         @hookimpl

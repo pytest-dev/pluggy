@@ -1,3 +1,5 @@
+from importlib.metadata import distribution
+
 import pytest
 
 from pluggy import HookimplMarker
@@ -20,7 +22,7 @@ def test_parse_hookimpl_override() -> None:
 
     class Plugin:
         def x1meth(self):
-            pass
+            pass  # pragma: no cover
 
         @hookimpl(hookwrapper=True, tryfirst=True)
         def x1meth2(self):
@@ -33,15 +35,15 @@ def test_parse_hookimpl_override() -> None:
     class Spec:
         @hookspec
         def x1meth(self):
-            pass
+            pass  # pragma: no cover
 
         @hookspec
         def x1meth2(self):
-            pass
+            pass  # pragma: no cover
 
         @hookspec
         def x1meth3(self):
-            pass
+            pass  # pragma: no cover
 
     pm = MyPluginManager(hookspec.project_name)
     pm.register(Plugin())
@@ -75,12 +77,12 @@ def test_warn_when_deprecated_specified(recwarn) -> None:
     class Spec:
         @hookspec(warn_on_impl=warning)
         def foo(self):
-            pass
+            pass  # pragma: no cover
 
     class Plugin:
         @hookimpl
         def foo(self):
-            pass
+            pass  # pragma: no cover
 
     pm = PluginManager(hookspec.project_name)
     pm.add_hookspecs(Spec)
@@ -136,10 +138,12 @@ def test_plugin_getattr_raises_errors() -> None:
             raise Exception("can't touch me")
 
     class Module:
-        pass
+        x: DontTouchMe
 
     module = Module()
-    module.x = DontTouchMe()  # type: ignore[attr-defined]
+    module.x = DontTouchMe()
+    with pytest.raises(Exception, match="touch me"):
+        module.x.broken
 
     pm = PluginManager(hookspec.project_name)
     # register() would raise an error
@@ -154,11 +158,11 @@ def test_not_all_arguments_are_provided_issues_a_warning(pm: PluginManager) -> N
     class Spec:
         @hookspec
         def hello(self, arg1, arg2):
-            pass
+            pass  # pragma: no cover
 
         @hookspec(historic=True)
         def herstory(self, arg1, arg2):
-            pass
+            pass  # pragma: no cover
 
     pm.add_hookspecs(Spec)
 
@@ -189,3 +193,12 @@ def test_repr() -> None:
     assert repr(pm.hook.myhook.get_hookimpls()[0]) == (
         f"<HookImpl plugin_name={pname!r}, plugin={plugin!r}>"
     )
+
+
+def test_dist_facade_list_attributes() -> None:
+    from pluggy._manager import DistFacade
+
+    fc = DistFacade(distribution("pluggy"))
+    res = dir(fc)
+    assert res == sorted(res)
+    assert set(res) - set(dir(fc._dist)) == {"_dist", "project_name"}

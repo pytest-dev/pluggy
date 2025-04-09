@@ -188,11 +188,11 @@ class PluginManager:
             res: HookimplOpts | None = getattr(
                 method, self.project_name + "_impl", None
             )
-        except Exception:
-            res = {}  # type: ignore[assignment]
+        except Exception: #pragma: no cover
+            res = {}  # type: ignore[assignment] #pragma: no cover
         if res is not None and not isinstance(res, dict):
             # false positive
-            res = None  # type:ignore[unreachable]
+            res = None  # type:ignore[unreachable] #pragma: no cover
         return res
 
     def unregister(

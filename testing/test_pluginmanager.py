@@ -65,9 +65,11 @@ def test_register_dynamic_attr(he_pm: PluginManager) -> None:
         def __getattr__(self, name):
             if name[0] != "_":
                 return 42
-            raise AttributeError()
+            raise AttributeError(name)
 
     a = A()
+    a.test
+
     he_pm.register(a)
     assert not he_pm.get_hookcallers(a)
 
@@ -126,7 +128,7 @@ def test_register_mismatch_method(he_pm: PluginManager) -> None:
     class hello:
         @hookimpl
         def he_method_notexists(self):
-            pass
+            pass  # pragma: no cover
 
     plugin = hello()
 
@@ -140,7 +142,7 @@ def test_register_mismatch_arg(he_pm: PluginManager) -> None:
     class hello:
         @hookimpl
         def he_method1(self, qlwkje):
-            pass
+            pass  # pragma: no cover
 
     plugin = hello()
 
@@ -180,7 +182,7 @@ def test_register_both_wrapper_and_hookwrapper(he_pm: PluginManager) -> None:
 def test_register(pm: PluginManager) -> None:
     class MyPlugin:
         @hookimpl
-        def he_method1(self): ...
+        def he_method1(self): ...  # pragma: no cover
 
     my = MyPlugin()
     pm.register(my)
@@ -210,8 +212,7 @@ def test_register_unknown_hooks(pm: PluginManager) -> None:
 
     class Hooks:
         @hookspec
-        def he_method1(self, arg):
-            pass
+        def he_method1(self, arg): ...
 
     pm.add_hookspecs(Hooks)
     # assert not pm._unverified_hooks
@@ -224,8 +225,7 @@ def test_register_unknown_hooks(pm: PluginManager) -> None:
 def test_register_historic(pm: PluginManager) -> None:
     class Hooks:
         @hookspec(historic=True)
-        def he_method1(self, arg):
-            pass
+        def he_method1(self, arg): ...
 
     pm.add_hookspecs(Hooks)
 
@@ -373,7 +373,7 @@ def test_register_historic_incompat_hookwrapper(pm: PluginManager) -> None:
     class Plugin:
         @hookimpl(hookwrapper=True)
         def he_method1(self, arg):
-            out.append(arg)
+            out.append(arg)  # pragma: no cover
 
     with pytest.raises(PluginValidationError):
         pm.register(Plugin())
@@ -390,7 +390,7 @@ def test_register_historic_incompat_wrapper(pm: PluginManager) -> None:
     class Plugin:
         @hookimpl(wrapper=True)
         def he_method1(self, arg):
-            yield
+            yield  # pragma: no cover
 
     with pytest.raises(PluginValidationError):
         pm.register(Plugin())
@@ -425,6 +425,9 @@ def test_call_with_too_few_args(pm: PluginManager) -> None:
             0 / 0
 
     pm.register(Plugin1())
+    with pytest.raises(ZeroDivisionError):
+        pm.hook.he_method1(arg="works")
+
     with pytest.raises(HookCallError):
         with pytest.warns(UserWarning):
             pm.hook.he_method1()
