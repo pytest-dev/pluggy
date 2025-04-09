@@ -37,7 +37,7 @@ requires-python = ">=3.9"
 dynamic = ["version"]
 [project.optional-dependencies]
 dev = ["pre-commit", "tox"]
-testing = ["pytest", "pytest-benchmark"]
+testing = ["pytest", "pytest-benchmark", "coverage"]
 
 [tool.setuptools]
 packages = ["pluggy"]
