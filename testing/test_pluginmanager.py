@@ -201,6 +201,18 @@ def test_register(pm: PluginManager) -> None:
         pm.unregister(my)
 
 
+def test_unregister_blocked(pm: PluginManager) -> None:
+    class Plugin:
+        pass
+
+    p = Plugin()
+    pm.set_blocked("error")
+    pm.register(p, "error")
+    # bloked plugins can be unregistred many times atm
+    pm.unregister(p, "error")
+    pm.unregister(p, "error")
+
+
 def test_register_unknown_hooks(pm: PluginManager) -> None:
     class Plugin1:
         @hookimpl
