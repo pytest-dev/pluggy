@@ -30,5 +30,6 @@ exclude_lines =
     ^\s*\.\.\.\s*$
     # ignore coverage on ruff line continued
      ^\s*def.*:\ \.\.\.\s*$
+     .*: ...$
     # ignore coverage on pass lines
     ^\s*passs*$

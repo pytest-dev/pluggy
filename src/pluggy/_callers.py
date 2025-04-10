@@ -93,25 +93,20 @@ def _multicall(
             for hook_impl in reversed(hook_impls):
                 try:
                     args = [caller_kwargs[argname] for argname in hook_impl.argnames]
-                except KeyError:
-                    for argname in hook_impl.argnames:
+                except KeyError as e:
+                    # coverage bug - this is tested
+                    for argname in hook_impl.argnames:  # pragma: no cover
                         if argname not in caller_kwargs:
                             raise HookCallError(
                                 f"hook call must provide argument {argname!r}"
-                            )
+                            ) from e
 
                 if hook_impl.hookwrapper:
-                    try:
-                        # If this cast is not valid, a type error is raised below,
-                        # which is the desired response.
-                        function_gen = run_old_style_hookwrapper(
-                            hook_impl, hook_name, args
-                        )
+                    function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
 
-                        next(function_gen)  # first yield
-                        teardowns.append(function_gen)
-                    except StopIteration:
-                        _raise_wrapfail(function_gen, "did not yield")
+                    next(function_gen)  # first yield
+                    teardowns.append(function_gen)
+
                 elif hook_impl.wrapper:
                     try:
                         # If this cast is not valid, a type error is raised below,

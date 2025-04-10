@@ -2,6 +2,7 @@ from importlib.metadata import distribution
 
 import pytest
 
+import pluggy
 from pluggy import HookimplMarker
 from pluggy import HookspecMarker
 from pluggy import PluginManager
@@ -202,3 +203,44 @@ def test_dist_facade_list_attributes() -> None:
     res = dir(fc)
     assert res == sorted(res)
     assert set(res) - set(dir(fc._dist)) == {"_dist", "project_name"}
+
+
+def test_hookimpl_disallow_invalid_combination() -> None:
+    decorator = hookspec(historic=True, firstresult=True)
+    with pytest.raises(ValueError, match="cannot have a historic firstresult hook"):
+        decorator(any)
+
+
+def test_hook_nonspec_call(pm: PluginManager) -> None:
+    class Plugin:
+        @hookimpl
+        def a_hook(self, passed: str, missing: int) -> None:
+            pass
+
+    pm.register(Plugin())
+    with pytest.raises(
+        pluggy.HookCallError, match="hook call must provide argument 'missing'"
+    ):
+        pm.hook.a_hook(passed="a")
+    pm.hook.a_hook(passed="a", missing="ok")
+
+
+def test_wrapper_runtimeerror_passtrough(pm: PluginManager) -> None:
+    """
+    ensure runtime-error passes trough a wrapper in case of exceptions
+    """
+
+    class Fail:
+        @hookimpl
+        def fail_late(self):
+            raise RuntimeError("this is personal")
+
+    class Plugin:
+        @hookimpl(wrapper=True)
+        def fail_late(self):
+            yield
+
+    pm.register(Plugin())
+    pm.register(Fail())
+    with pytest.raises(RuntimeError, match="this is personal"):
+        pm.hook.fail_late()
