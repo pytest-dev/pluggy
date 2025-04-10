@@ -300,12 +300,12 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     if inspect.isclass(func):
         try:
             func = func.__init__
-        except AttributeError:
+        except AttributeError:  # pragma: no cover - pypy special case
             return (), ()
     elif not inspect.isroutine(func):  # callable object?
         try:
             func = getattr(func, "__call__", func)
-        except Exception:
+        except Exception:  # pragma: no cover - pypy special case
             return (), ()
 
     try:
@@ -313,7 +313,7 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
         sig = inspect.signature(
             func.__func__ if inspect.ismethod(func) else func  # type:ignore[arg-type]
         )
-    except TypeError:
+    except TypeError:  # pragma: no cover
         return (), ()
 
     _valid_param_kinds = (
@@ -345,7 +345,7 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     # pypy3 uses "obj" instead of "self" for default dunder methods
     if not _PYPY:
         implicit_names: tuple[str, ...] = ("self",)
-    else:
+    else:  # pragma: no cover
         implicit_names = ("self", "obj")
     if args:
         qualname: str = getattr(func, "__qualname__", "")
