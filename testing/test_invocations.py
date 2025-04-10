@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from typing import Any
 
 import pytest
 
@@ -133,7 +134,7 @@ def test_firstresult_definition(pm: PluginManager) -> None:
     class Plugin1:
         @hookimpl
         def hello(self, arg):
-            return arg + 1
+            return arg + 1  # pragma: no cover
 
     class Plugin2:
         @hookimpl
@@ -326,3 +327,43 @@ def test_non_wrapper_generator(pm: PluginManager) -> None:
     pm.register(Plugin3())
     res = pm.hook.hello()
     assert [y for x in res for y in x] == [2, 3, 1]
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        pytest.param(hookimpl(wrapper=True), id="wrapper"),
+        pytest.param(hookimpl(hookwrapper=True), id="legacy-wrapper"),
+    ],
+)
+def test_wrappers_yield_twice_fails(pm: PluginManager, kind: Any) -> None:
+    class Plugin:
+        @kind
+        def wrap(self):
+            yield
+            yield
+
+    pm.register(Plugin())
+    with pytest.raises(
+        RuntimeError, match="wrap_controller at 'wrap'.* has second yield"
+    ):
+        pm.hook.wrap()
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        pytest.param(hookimpl(wrapper=True), id="wrapper"),
+        pytest.param(hookimpl(hookwrapper=True), id="legacy-wrapper"),
+    ],
+)
+def test_wrappers_yield_never_fails(pm: PluginManager, kind: Any) -> None:
+    class Plugin:
+        @kind
+        def wrap(self):
+            if False:
+                yield  # type: ignore[unreachable]
+
+    pm.register(Plugin())
+    with pytest.raises(RuntimeError, match="wrap_controller at 'wrap'.* did not yield"):
+        pm.hook.wrap()

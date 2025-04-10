@@ -14,7 +14,7 @@ def he_pm(request, pm: PluginManager) -> PluginManager:
     class Hooks:
         @hookspec
         def he_method1(self, arg: int) -> int:
-            return arg + 1
+            return arg + 1  # pragma: no cover
 
     pm.add_hookspecs(request.param(Hooks))
     return pm
