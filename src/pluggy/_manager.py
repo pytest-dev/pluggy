@@ -378,15 +378,16 @@ class PluginManager:
         hook specification are optional, otherwise raise
         :exc:`PluginValidationError`."""
         for name in self.hook.__dict__:
-            if name[0] != "_":
-                hook: HookCaller = getattr(self.hook, name)
-                if not hook.has_spec():
-                    for hookimpl in hook.get_hookimpls():
-                        if not hookimpl.optionalhook:
-                            raise PluginValidationError(
-                                hookimpl.plugin,
-                                f"unknown hook {name!r} in plugin {hookimpl.plugin!r}",
-                            )
+            if name[0] == "_":
+                continue
+            hook: HookCaller = getattr(self.hook, name)
+            if not hook.has_spec():
+                for hookimpl in hook.get_hookimpls():
+                    if not hookimpl.optionalhook:
+                        raise PluginValidationError(
+                            hookimpl.plugin,
+                            f"unknown hook {name!r} in plugin {hookimpl.plugin!r}",
+                        )
 
     def load_setuptools_entrypoints(self, group: str, name: str | None = None) -> int:
         """Load modules from querying the specified setuptools ``group``.

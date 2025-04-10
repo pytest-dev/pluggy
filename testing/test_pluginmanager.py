@@ -771,6 +771,31 @@ def test_register_while_calling(
         assert result == [4, 5, 3, 2, 1, 6]
 
 
+def test_check_pending_skips_underscore(pm: PluginManager) -> None:
+    # todo: determine what we want to do with the namespace
+    class Plugin:
+        @hookimpl
+        def _problem(self):
+            pass
+
+    pm.register(Plugin())
+    pm.hook._problem()
+    pm.check_pending()
+
+
+def test_check_pending_optionalhook(
+    pm: PluginManager,
+) -> None:
+    class Plugin:
+        @hookimpl(optionalhook=True)
+        def a_hook(self, param):
+            pass
+
+    pm.register(Plugin())
+    pm.hook.a_hook(param=1)
+    pm.check_pending()
+
+
 def test_check_pending_nonspec_hook(
     pm: PluginManager,
 ) -> None:
@@ -784,3 +809,8 @@ def test_check_pending_nonspec_hook(
     pm.register(Plugin())
     with pytest.raises(HookCallError, match="hook call must provide argument 'param'"):
         pm.hook.a_hook()
+
+    with pytest.raises(
+        PluginValidationError, match="unknown hook 'a_hook' in plugin .*"
+    ):
+        pm.check_pending()
