@@ -10,15 +10,15 @@ from pluggy._manager import _formatdef
 
 def test_varnames() -> None:
     def f(x) -> None:
-        i = 3  # noqa
+        i = 3  # noqa #pragma: no cover
 
     class A:
         def f(self, y) -> None:
-            pass
+            pass  # pragma: no cover
 
     class B:
         def __call__(self, z) -> None:
-            pass
+            pass  # pragma: no cover
 
     assert varnames(f) == (("x",), ())
     assert varnames(A().f) == (("y",), ())
@@ -96,7 +96,7 @@ def test_varnames_decorator() -> None:
     def my_decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
+            return func(*args, **kwargs)  # pragma: no cover
 
         return cast(F, wrapper)
 

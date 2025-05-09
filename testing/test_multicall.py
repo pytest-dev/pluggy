@@ -55,7 +55,7 @@ def test_keyword_args_with_defaultargs() -> None:
 def test_tags_call_error() -> None:
     @hookimpl
     def f(x):
-        return x
+        return x  # pragma: no cover
 
     with pytest.raises(HookCallError):
         MC([f], {})
@@ -331,7 +331,7 @@ def test_wrapper_exception(exc: type[BaseException]) -> None:
             raise
         finally:
             out.append("m1 finish")
-        return result
+        return result  # pragma: no cover
 
     @hookimpl
     def m2():
@@ -358,7 +358,7 @@ def test_wrapper_exception_chaining() -> None:
     @hookimpl(wrapper=True)
     def m3():
         yield
-        return 10
+        return 10  # pragma: no cover
 
     @hookimpl(wrapper=True)
     def m4():
@@ -384,7 +384,7 @@ def test_unwind_inner_wrapper_teardown_exc() -> None:
         out.append("m1 init")
         try:
             yield
-            out.append("m1 unreachable")
+            out.append("m1 unreachable")  # pragma: no cover
         except BaseException:
             out.append("m1 teardown")
             raise
@@ -459,7 +459,7 @@ def test_suppress_inner_wrapper_teardown_exc() -> None:
         out.append("m2 init")
         try:
             yield
-            out.append("m2 unreachable")
+            out.append("m2 unreachable")  # pragma: no cover
         except ValueError:
             out.append("m2 suppress")
             return 22

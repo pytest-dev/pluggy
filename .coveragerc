@@ -1,6 +1,7 @@
 [run]
 include =
   pluggy/*
+  src/pluggy/*
   testing/*
   */lib/python*/site-packages/pluggy/*
   */pypy*/site-packages/pluggy/*
@@ -27,3 +28,8 @@ exclude_lines =
 
     # Ignore coverage on lines solely with `...`
     ^\s*\.\.\.\s*$
+    # ignore coverage on ruff line continued
+     ^\s*def.*:\ \.\.\.\s*$
+     .*: ...$
+    # ignore coverage on pass lines
+    ^\s*passs*$
