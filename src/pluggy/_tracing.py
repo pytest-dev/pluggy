@@ -7,9 +7,9 @@ from __future__ import annotations
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from typing import Any
     from typing import Callable
-    from typing import Sequence
     from typing import Tuple
     from typing import TypeAlias
 

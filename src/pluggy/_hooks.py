@@ -16,18 +16,17 @@ _Plugin = object
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
+    from collections.abc import Generator
+    from collections.abc import Mapping
+    from collections.abc import Sequence
     from types import ModuleType
-    from typing import AbstractSet
     from typing import Any
     from typing import Callable
     from typing import Final
     from typing import final
-    from typing import Generator
     from typing import List
-    from typing import Mapping
     from typing import Optional
     from typing import overload
-    from typing import Sequence
     from typing import Tuple
     from typing import TYPE_CHECKING
     from typing import TypeVar
@@ -43,7 +42,7 @@ if TYPE_CHECKING:
         Union[object, list[object]],
     ]
     _HookImplFunction = Callable[..., Union[_T, Generator[None, Result[_T], None]]]
-    _CallHistory = List[Tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
+    _CallHistory = list[tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
 
     from ._types import HookimplOpts
     from ._types import HookspecOpts

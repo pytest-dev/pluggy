@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from typing import Type
     from typing import TypeVar
 
-    _ExcInfo = Tuple[Type[BaseException], BaseException, Optional[TracebackType]]
+    _ExcInfo = tuple[type[BaseException], BaseException, Optional[TracebackType]]
     ResultType = TypeVar("ResultType")
 else:
     from ._hooks import final

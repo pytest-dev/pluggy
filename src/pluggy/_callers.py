@@ -14,13 +14,11 @@ from ._warnings import PluggyTeardownRaisedWarning
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
+    from collections.abc import Generator
+    from collections.abc import Mapping
+    from collections.abc import Sequence
     from typing import cast
-    from typing import Generator
-    from typing import Mapping
     from typing import NoReturn
-    from typing import Sequence
-    from typing import Tuple
-    from typing import Union
 
 # Need to distinguish between old- and new-style hook wrappers.
 # Wrapping with a tuple is the fastest type-safe way I found to do it.
