@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+<<<<<<< HEAD
 from collections.abc import Iterable
 from collections.abc import Mapping
 from collections.abc import Sequence
@@ -10,33 +11,48 @@ from typing import Callable
 from typing import cast
 from typing import Final
 from typing import TYPE_CHECKING
+=======
+import types
+>>>>>>> 24f5da0 (cleanups)
 import warnings
 
 from . import _tracing
 from ._callers import _multicall
-from ._hooks import _HookImplFunction
-from ._hooks import _Namespace
 from ._hooks import _Plugin
 from ._hooks import _SubsetHookCaller
 from ._hooks import HookCaller
 from ._hooks import HookImpl
-from ._hooks import HookimplOpts
 from ._hooks import HookRelay
-from ._hooks import HookspecOpts
 from ._hooks import normalize_hookimpl_opts
 from ._result import Result
 
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
-    # importtlib.metadata import is slow, defer it.
-    import importlib.metadata
+    from importlib.metadata import Distribution
+    from typing import Any
+    from typing import Callable
+    from typing import Final
+    from typing import Iterable
+    from typing import Mapping
+    from typing import Sequence
+    from typing import TypeAlias
 
+    from ._hooks import _HookImplFunction
+    from ._hooks import _Namespace
+    from ._importlib_metadata import DistFacade
+    from ._types import HookimplOpts
+    from ._types import HookspecOpts
 
-_BeforeTrace = Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]
-_AfterTrace = Callable[[Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None]
+_BeforeTrace: TypeAlias = "Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]"
+_AfterTrace: TypeAlias = (
+    "Callable[[Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None]"
+)
 
 
 def _warn_for_function(warning: Warning, function: Callable[..., object]) -> None:
+    from typing import cast
+
     func = cast(types.FunctionType, function)
     warnings.warn_explicit(
         warning,
@@ -57,24 +73,6 @@ class PluginValidationError(Exception):
         super().__init__(message)
         #: The plugin which failed validation.
         self.plugin = plugin
-
-
-class DistFacade:
-    """Emulate a pkg_resources Distribution"""
-
-    def __init__(self, dist: importlib.metadata.Distribution) -> None:
-        self._dist = dist
-
-    @property
-    def project_name(self) -> str:
-        name: str = self.metadata["name"]
-        return name
-
-    def __getattr__(self, attr: str, default: Any | None = None) -> Any:
-        return getattr(self._dist, attr, default)
-
-    def __dir__(self) -> list[str]:
-        return sorted(dir(self._dist) + ["_dist", "project_name"])
 
 
 class PluginManager:
@@ -98,7 +96,7 @@ class PluginManager:
         #: The project name.
         self.project_name: Final = project_name
         self._name2plugin: Final[dict[str, _Plugin]] = {}
-        self._plugin_distinfo: Final[list[tuple[_Plugin, DistFacade]]] = []
+        self._plugin_dist_metadata: Final[list[tuple[_Plugin, Distribution]]] = []
         #: The "hook relay", used to call a hook on all registered plugins.
         #: See :ref:`calling`.
         self.hook: Final = HookRelay()
@@ -182,6 +180,8 @@ class PluginManager:
         options for items decorated with :class:`HookimplMarker`.
         """
         method: object = getattr(plugin, name)
+        import inspect
+
         if not inspect.isroutine(method):
             return None
         try:
@@ -347,6 +347,7 @@ class PluginManager:
                 f"Argument(s) {notinspec} are declared in the hookimpl but "
                 "can not be found in the hookspec",
             )
+        import inspect
 
         if hook.spec.warn_on_impl_args:
             for hookimpl_argname in hookimpl.argnames:
@@ -390,7 +391,11 @@ class PluginManager:
                         )
 
     def load_setuptools_entrypoints(self, group: str, name: str | None = None) -> int:
-        """Load modules from querying the specified setuptools ``group``.
+        """legacy alias for load_importlib_entrypoints"""
+        return self.load_importlib_entrypoints(group, name)
+
+    def load_importlib_entrypoints(self, group: str, name: str | None = None) -> int:
+        """Load modules for the given importlib_metadata entrypoint ``group``.
 
         :param group:
             Entry point group to load plugins.
@@ -400,29 +405,25 @@ class PluginManager:
         :return:
             The number of plugins loaded by this call.
         """
-        import importlib.metadata
+        from ._importlib_metadata import load_importlib_entrypoints
 
-        count = 0
-        for dist in list(importlib.metadata.distributions()):
-            for ep in dist.entry_points:
-                if (
-                    ep.group != group
-                    or (name is not None and ep.name != name)
-                    # already registered
-                    or self.get_plugin(ep.name)
-                    or self.is_blocked(ep.name)
-                ):
-                    continue
-                plugin = ep.load()
-                self.register(plugin, name=ep.name)
-                self._plugin_distinfo.append((plugin, DistFacade(dist)))
-                count += 1
-        return count
+        return load_importlib_entrypoints(self, group, name)
 
     def list_plugin_distinfo(self) -> list[tuple[_Plugin, DistFacade]]:
         """Return a list of (plugin, distinfo) pairs for all
-        setuptools-registered plugins."""
-        return list(self._plugin_distinfo)
+        setuptools-registered plugins.
+
+        (soft deprecated)
+        """
+        from ._importlib_metadata import DistFacade
+
+        return [
+            (plugin, DistFacade(metadata))
+            for plugin, metadata in self._plugin_dist_metadata
+        ]
+
+    def list_plugin_distributions(self) -> list[tuple[_Plugin, Distribution]]:
+        return self._plugin_dist_metadata[:]
 
     def list_name_plugin(self) -> list[tuple[str, _Plugin]]:
         """Return a list of (name, plugin) pairs for all registered plugins."""
@@ -520,4 +521,6 @@ class PluginManager:
 
 
 def _formatdef(func: Callable[..., object]) -> str:
+    import inspect
+
     return f"{func.__name__}{inspect.signature(func)}"
