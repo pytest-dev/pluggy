@@ -4,13 +4,18 @@ Tracing utils
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any
-from typing import Callable
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from typing import Any
+    from typing import Callable
+    from typing import Tuple
+    from typing import TypeAlias
 
 
-_Writer = Callable[[str], object]
-_Processor = Callable[[tuple[str, ...], tuple[Any, ...]], object]
+_Writer: TypeAlias = "Callable[[str], object]"
+_Processor: TypeAlias = "Callable[[Tuple[str, ...], Tuple[Any, ...]], object]"
 
 
 class TagTracer:
