@@ -37,7 +37,7 @@ Bug Fixes
 - `#504 <https://github.com/pytest-dev/pluggy/issues/504>`_: Fix a regression in pluggy 1.1.0 where using :func:`result.get_result() <pluggy.Result.get_result>` on the same failed :class:`~pluggy.Result` causes the exception's traceback to get longer and longer.
 
 
-- `#544 <https://github.com/pytest-dev/pluggy/issues/544>`_: Correctly pass :class:`StopIteration` trough hook wrappers.
+- `#544 <https://github.com/pytest-dev/pluggy/issues/544>`_: Correctly pass :class:`StopIteration` through hook wrappers.
 
   Raising a :class:`StopIteration` in a generator triggers a :class:`RuntimeError`.
 
@@ -45,7 +45,7 @@ Bug Fixes
   resume with that :class:`StopIteration` as normal exception instead of failing with the :class:`RuntimeError`.
 
 
-- `#573 <https://github.com/pytest-dev/pluggy/issues/573>`_: Fix python 3.14 SyntaxWrror by rearranging code.
+- `#573 <https://github.com/pytest-dev/pluggy/issues/573>`_: Fix python 3.14 SyntaxError by rearranging code.
 
 
 pluggy 1.5.0 (2024-04-19)
