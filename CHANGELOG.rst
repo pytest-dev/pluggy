@@ -21,6 +21,33 @@ Versions follow `Semantic Versioning <https://semver.org/>`_ (``<major>.<minor>.
 
 .. towncrier release notes start
 
+pluggy 1.6.0 (2025-05-15)
+=========================
+
+Deprecations and Removals
+-------------------------
+
+- `#556 <https://github.com/pytest-dev/pluggy/issues/556>`_: Python 3.8 is no longer supported.
+
+
+
+Bug Fixes
+---------
+
+- `#504 <https://github.com/pytest-dev/pluggy/issues/504>`_: Fix a regression in pluggy 1.1.0 where using :func:`result.get_result() <pluggy.Result.get_result>` on the same failed :class:`~pluggy.Result` causes the exception's traceback to get longer and longer.
+
+
+- `#544 <https://github.com/pytest-dev/pluggy/issues/544>`_: Correctly pass :class:`StopIteration` through hook wrappers.
+
+  Raising a :class:`StopIteration` in a generator triggers a :class:`RuntimeError`.
+
+  If the :class:`RuntimeError` of a generator has the passed in :class:`StopIteration` as cause
+  resume with that :class:`StopIteration` as normal exception instead of failing with the :class:`RuntimeError`.
+
+
+- `#573 <https://github.com/pytest-dev/pluggy/issues/573>`_: Fix python 3.14 SyntaxError by rearranging code.
+
+
 pluggy 1.5.0 (2024-04-19)
 =========================
 
