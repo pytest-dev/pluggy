@@ -99,7 +99,7 @@ intersphinx_mapping = {
     "setuptools": ("https://setuptools.pypa.io/en/latest", None),
     "tox": ("https://tox.wiki/en/latest", None),
     "devpi": ("https://devpi.net/docs/devpi/devpi/stable/+doc/", None),
-    "kedro": ("https://docs.kedro.org/en/latest/", None),
+    "kedro": ("https://docs.kedro.org/en/stable/", None),
 }
 
 
