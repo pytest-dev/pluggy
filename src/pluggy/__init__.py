@@ -6,6 +6,7 @@ __all__ = [
     "HookCallError",
     "HookspecOpts",
     "HookimplOpts",
+    "HookimplConfiguration",
     "HookImpl",
     "HookRelay",
     "HookspecMarker",
@@ -16,6 +17,7 @@ __all__ = [
 ]
 from ._hooks import HookCaller
 from ._hooks import HookImpl
+from ._hooks import HookimplConfiguration
 from ._hooks import HookimplMarker
 from ._hooks import HookimplOpts
 from ._hooks import HookRelay

@@ -10,6 +10,7 @@ from pluggy import HookimplMarker
 from pluggy import HookspecMarker
 from pluggy._callers import _multicall
 from pluggy._hooks import HookImpl
+from pluggy._hooks import HookimplConfiguration
 
 
 hookspec = HookspecMarker("example")
@@ -24,7 +25,9 @@ def MC(
     caller = _multicall
     hookfuncs = []
     for method in methods:
-        f = HookImpl(None, "<temp>", method, method.example_impl)  # type: ignore[attr-defined]
+        f = HookImpl(
+            None, "<temp>", method, HookimplConfiguration.from_opts(method.example_impl)
+        )
         hookfuncs.append(f)
     return caller("foo", hookfuncs, kwargs, firstresult)
 
