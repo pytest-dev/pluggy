@@ -136,17 +136,6 @@ class HookimplConfiguration:
         #: The name of the hook specification to match, see :ref:`specname`.
         self.specname: Final = specname
 
-    def to_opts(self) -> HookimplOpts:
-        """Convert to HookimplOpts for backward compatibility."""
-        return {
-            "wrapper": self.wrapper,
-            "hookwrapper": self.hookwrapper,
-            "optionalhook": self.optionalhook,
-            "tryfirst": self.tryfirst,
-            "trylast": self.trylast,
-            "specname": self.specname,
-        }
-
     @classmethod
     def from_opts(cls, opts: HookimplOpts) -> HookimplConfiguration:
         """Create from HookimplOpts for backward compatibility."""
@@ -734,7 +723,6 @@ class HookImpl:
         "argnames",
         "kwargnames",
         "plugin",
-        "opts",
         "plugin_name",
         "wrapper",
         "hookwrapper",
@@ -764,9 +752,6 @@ class HookImpl:
         #: The :class:`HookimplConfiguration` used to configure this hook
         #: implementation.
         self.hookimpl_config: Final = hook_impl_config
-        #: The :class:`HookimplOpts` used to configure this hook implementation
-        #: (deprecated).
-        self.opts: Final = hook_impl_config.to_opts()
         #: The name of the plugin which defined this hook implementation.
         self.plugin_name: Final = plugin_name
         #: Whether the hook implementation is a :ref:`wrapper <hookwrapper>`.
