@@ -255,15 +255,6 @@ name = "pluggy"
 source = { editable = "." }
 
 [package.dev-dependencies]
-default = [
-    { name = "coverage" },
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-benchmark" },
-    { name = "ruff" },
-    { name = "tox" },
-]
 dev = [
     { name = "mypy" },
     { name = "pre-commit" },
@@ -279,15 +270,6 @@ testing = [
 [package.metadata]
 
 [package.metadata.requires-dev]
-default = [
-    { name = "coverage" },
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-benchmark" },
-    { name = "ruff" },
-    { name = "tox" },
-]
 dev = [
     { name = "mypy" },
     { name = "pre-commit" },
