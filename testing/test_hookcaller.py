@@ -11,7 +11,6 @@ from pluggy import PluginManager
 from pluggy import PluginValidationError
 from pluggy._hooks import HookCaller
 from pluggy._hooks import HookImpl
-from pluggy._hooks import HookimplConfiguration
 
 
 hookspec = HookspecMarker("example")
@@ -55,7 +54,7 @@ class AddMeth:
                     None,
                     "<temp>",
                     func,
-                    HookimplConfiguration.from_opts(func.example_impl),
+                    hookimpl.get_hookconfig(func),
                 ),
             )
             return func

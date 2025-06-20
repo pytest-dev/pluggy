@@ -365,6 +365,17 @@ class HookimplMarker:
         else:
             return setattr_hookimpl_opts(function)
 
+    def get_hookconfig(self, func: Callable[..., object]) -> HookimplConfiguration:
+        """Extract hook implementation configuration from a decorated function.
+
+        :param func: A function decorated with this HookimplMarker
+        :return: HookimplConfiguration object containing the hook implementation options
+        :raises AttributeError: If the function is not decorated with this marker
+        """
+        attr_name = self.project_name + "_impl"
+        opts: HookimplOpts = getattr(func, attr_name)
+        return HookimplConfiguration.from_opts(opts)
+
 
 def normalize_hookimpl_opts(opts: HookimplOpts) -> None:
     opts.setdefault("tryfirst", False)
