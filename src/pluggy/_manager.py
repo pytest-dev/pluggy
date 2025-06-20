@@ -155,22 +155,63 @@ class PluginManager:
 
         # register matching hook implementations of the plugin
         for name in dir(plugin):
-            hookimpl_opts = self.parse_hookimpl_opts(plugin, name)
-            if hookimpl_opts is not None:
-                normalize_hookimpl_opts(hookimpl_opts)
+            hookimpl_config = self._parse_hookimpl(plugin, name)
+            if hookimpl_config is not None:
                 method: _HookImplFunction[object] = getattr(plugin, name)
-                hookimpl_config = HookimplConfiguration.from_opts(hookimpl_opts)
                 hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_config)
-                name = hookimpl_opts.get("specname") or name
-                hook: HookCaller | None = getattr(self.hook, name, None)
+                hook_name = hookimpl_config.specname or name
+                hook: HookCaller | None = getattr(self.hook, hook_name, None)
                 if hook is None:
-                    hook = HookCaller(name, self._hookexec)
-                    setattr(self.hook, name, hook)
+                    hook = HookCaller(hook_name, self._hookexec)
+                    setattr(self.hook, hook_name, hook)
                 elif hook.has_spec():
                     self._verify_hook(hook, hookimpl)
                     hook._maybe_apply_history(hookimpl)
                 hook._add_hookimpl(hookimpl)
         return plugin_name
+
+    def _parse_hookimpl(
+        self, plugin: _Plugin, name: str
+    ) -> HookimplConfiguration | None:
+        """Internal method to parse hook implementation configuration.
+
+        This method uses the new HookimplConfiguration type internally.
+        Falls back to the legacy parse_hookimpl_opts method for compatibility.
+
+        :param plugin: The plugin object to inspect
+        :param name: The attribute name to check for hook implementation
+        :returns: HookimplConfiguration if found, None otherwise
+        """
+        try:
+            method: object = getattr(plugin, name)
+        except Exception:  # pragma: no cover
+            return None
+
+        if not inspect.isroutine(method):
+            return None
+
+        try:
+            # Try to get hook implementation configuration directly
+            impl_attr = getattr(method, self.project_name + "_impl", None)
+        except Exception:  # pragma: no cover
+            impl_attr = None
+
+        if impl_attr is not None:
+            # Check if it's already a HookimplConfiguration (new style)
+            if isinstance(impl_attr, HookimplConfiguration):
+                return impl_attr
+            # Handle legacy dict-based configuration
+            elif isinstance(impl_attr, dict):
+                return HookimplConfiguration.from_opts(impl_attr)  # type: ignore
+
+        # Fall back to legacy parse_hookimpl_opts for compatibility
+        # (e.g. pytest override)
+        legacy_opts = self.parse_hookimpl_opts(plugin, name)
+        if legacy_opts is not None:
+            normalize_hookimpl_opts(legacy_opts)
+            return HookimplConfiguration.from_opts(legacy_opts)
+
+        return None
 
     def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
         """Try to obtain a hook implementation from an item with the given name
@@ -179,23 +220,15 @@ class PluginManager:
         :returns:
             The parsed hookimpl options, or None to skip the given item.
 
-        This method can be overridden by ``PluginManager`` subclasses to
-        customize how hook implementation are picked up. By default, returns the
-        options for items decorated with :class:`HookimplMarker`.
+        .. deprecated::
+            Customizing hook implementation parsing by overriding this method is
+            deprecated. This method is only kept as a compatibility shim for
+            legacy projects like pytest. New code should use the standard
+            :class:`HookimplMarker` decorators.
         """
-        method: object = getattr(plugin, name)
-        if not inspect.isroutine(method):
-            return None
-        try:
-            res: HookimplOpts | None = getattr(
-                method, self.project_name + "_impl", None
-            )
-        except Exception:  # pragma: no cover
-            res = {}  # type: ignore[assignment] #pragma: no cover
-        if res is not None and not isinstance(res, dict):
-            # false positive
-            res = None  # type:ignore[unreachable] #pragma: no cover
-        return res
+        # Compatibility shim - only overridden by legacy projects like pytest
+        # Modern hook implementations are handled by _parse_hookimpl
+        return None
 
     def unregister(
         self, plugin: _Plugin | None = None, name: str | None = None

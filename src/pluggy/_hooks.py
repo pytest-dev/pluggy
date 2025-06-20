@@ -338,15 +338,15 @@ class HookimplMarker:
         """
 
         def setattr_hookimpl_opts(func: _F) -> _F:
-            opts: HookimplOpts = {
-                "wrapper": wrapper,
-                "hookwrapper": hookwrapper,
-                "optionalhook": optionalhook,
-                "tryfirst": tryfirst,
-                "trylast": trylast,
-                "specname": specname,
-            }
-            setattr(func, self.project_name + "_impl", opts)
+            config = HookimplConfiguration(
+                wrapper=wrapper,
+                hookwrapper=hookwrapper,
+                optionalhook=optionalhook,
+                tryfirst=tryfirst,
+                trylast=trylast,
+                specname=specname,
+            )
+            setattr(func, self.project_name + "_impl", config)
             return func
 
         if function is None:
@@ -362,8 +362,8 @@ class HookimplMarker:
         :raises AttributeError: If the function is not decorated with this marker
         """
         attr_name = self.project_name + "_impl"
-        opts: HookimplOpts = getattr(func, attr_name)
-        return HookimplConfiguration.from_opts(opts)
+        config: HookimplConfiguration = getattr(func, attr_name)
+        return config
 
 
 def normalize_hookimpl_opts(opts: HookimplOpts) -> None:

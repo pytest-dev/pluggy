@@ -337,7 +337,7 @@ def test_hookimpl(name: str, val: bool) -> None:
         pass
 
     if val:
-        assert he_myhook1.example_impl.get(name)
+        assert getattr(he_myhook1.example_impl, name)
     else:
         assert not hasattr(he_myhook1, name)
 
