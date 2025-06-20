@@ -20,7 +20,7 @@ It provides hook specification and implementation mechanisms through a plugin ma
 ### Code Quality
 - `ruff check` - Run linting with Ruff
 - `ruff format` - Format code with Ruff
-- `mypy src/` - Type checking with mypy
+- `uv run mypy src/` - Type checking with mypy
 - `pre-commit run --all-files` - Run all pre-commit hooks
 
 ### Documentation
