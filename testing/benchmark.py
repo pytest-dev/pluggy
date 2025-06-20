@@ -11,6 +11,7 @@ from pluggy import HookspecMarker
 from pluggy import PluginManager
 from pluggy._callers import _multicall
 from pluggy._hooks import HookImpl
+from pluggy._hooks import HookimplConfiguration
 
 
 hookspec = HookspecMarker("example")
@@ -42,7 +43,12 @@ def test_hook_and_wrappers_speed(benchmark, hooks, wrappers) -> None:
         hook_name = "foo"
         hook_impls = []
         for method in hooks + wrappers:
-            f = HookImpl(None, "<temp>", method, method.example_impl)
+            f = HookImpl(
+                None,
+                "<temp>",
+                method,
+                HookimplConfiguration.from_opts(method.example_impl),
+            )
             hook_impls.append(f)
         caller_kwargs = {"arg1": 1, "arg2": 2, "arg3": 3}
         firstresult = False

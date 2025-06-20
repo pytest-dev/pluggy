@@ -20,6 +20,7 @@ from ._hooks import _Plugin
 from ._hooks import _SubsetHookCaller
 from ._hooks import HookCaller
 from ._hooks import HookImpl
+from ._hooks import HookimplConfiguration
 from ._hooks import HookimplOpts
 from ._hooks import HookRelay
 from ._hooks import HookspecOpts
@@ -158,7 +159,8 @@ class PluginManager:
             if hookimpl_opts is not None:
                 normalize_hookimpl_opts(hookimpl_opts)
                 method: _HookImplFunction[object] = getattr(plugin, name)
-                hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
+                hookimpl_config = HookimplConfiguration.from_opts(hookimpl_opts)
+                hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_config)
                 name = hookimpl_opts.get("specname") or name
                 hook: HookCaller | None = getattr(self.hook, name, None)
                 if hook is None:
