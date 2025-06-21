@@ -27,6 +27,9 @@ class Result(Generic[ResultType]):
     <hookwrappers>`."""
 
     __slots__ = ("_result", "_exception", "_traceback")
+    _result: ResultType | None
+    _exception: BaseException | None
+    _traceback: TracebackType | None
 
     def __init__(
         self,

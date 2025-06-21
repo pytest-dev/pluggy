@@ -100,9 +100,10 @@ class HookspecMarker:
     """
 
     __slots__ = ("_project_spec",)
+    _project_spec: Final[_project.ProjectSpec]
 
     def __init__(self, project_name_or_spec: str | _project.ProjectSpec) -> None:
-        self._project_spec: Final = (
+        self._project_spec = (
             _project.ProjectSpec(project_name_or_spec)
             if isinstance(project_name_or_spec, str)
             else project_name_or_spec
@@ -194,9 +195,10 @@ class HookimplMarker:
     """
 
     __slots__ = ("_project_spec",)
+    _project_spec: Final[_project.ProjectSpec]
 
     def __init__(self, project_name_or_spec: str | _project.ProjectSpec) -> None:
-        self._project_spec: Final = (
+        self._project_spec = (
             _project.ProjectSpec(project_name_or_spec)
             if isinstance(project_name_or_spec, str)
             else project_name_or_spec
@@ -322,6 +324,14 @@ class HookSpec:
         "warn_on_impl",
         "warn_on_impl_args",
     )
+    namespace: _Namespace
+    function: Callable[..., object]
+    name: str
+    argnames: tuple[str, ...]
+    kwargnames: tuple[str, ...]
+    config: HookspecConfiguration
+    warn_on_impl: Warning | None
+    warn_on_impl_args: Mapping[str, Warning] | None
 
     def __init__(
         self, namespace: _Namespace, name: str, config: HookspecConfiguration

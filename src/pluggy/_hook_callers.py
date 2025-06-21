@@ -93,6 +93,7 @@ class HookRelay:
     of registered plugins."""
 
     __slots__ = ("__dict__",)
+    __dict__: dict[str, HookCaller]
 
     def __init__(self) -> None:
         """:meta private:"""
@@ -123,6 +124,11 @@ class HistoricHookCaller:
         "_hookimpls",
         "_call_history",
     )
+    name: Final[str]
+    spec: Final[HookSpec]
+    _hookexec: Final[_HookExec]
+    _hookimpls: Final[list[HookImpl]]
+    _call_history: Final[_CallHistory]
 
     def __init__(
         self,
@@ -134,13 +140,13 @@ class HistoricHookCaller:
         """:meta private:"""
         assert spec_config.historic, "HistoricHookCaller requires historic=True"
         #: Name of the hook getting called.
-        self.name: Final = name
-        self._hookexec: Final = hook_execute
+        self.name = name
+        self._hookexec = hook_execute
         # The hookimpls list for historic hooks (no wrappers supported)
-        self._hookimpls: Final[list[HookImpl]] = []
-        self._call_history: Final[_CallHistory] = []
+        self._hookimpls = []
+        self._call_history = []
         # TODO: Document, or make private.
-        self.spec: Final = HookSpec(specmodule_or_class, name, spec_config)
+        self.spec = HookSpec(specmodule_or_class, name, spec_config)
 
     def has_spec(self) -> bool:
         return True  # HistoricHookCaller always has a spec
@@ -258,6 +264,10 @@ class NormalHookCaller:
         "_hookexec",
         "_hookimpls",
     )
+    name: Final[str]
+    spec: HookSpec | None
+    _hookexec: Final[_HookExec]
+    _hookimpls: Final[list[HookImpl]]
 
     def __init__(
         self,
@@ -268,8 +278,8 @@ class NormalHookCaller:
     ) -> None:
         """:meta private:"""
         #: Name of the hook getting called.
-        self.name: Final = name
-        self._hookexec: Final = hook_execute
+        self.name = name
+        self._hookexec = hook_execute
         # The hookimpls list. The caller iterates it *in reverse*. Format:
         # 1. trylast nonwrappers
         # 2. nonwrappers
@@ -277,7 +287,7 @@ class NormalHookCaller:
         # 4. trylast wrappers
         # 5. wrappers
         # 6. tryfirst wrappers
-        self._hookimpls: Final[list[HookImpl]] = []
+        self._hookimpls = []
         # TODO: Document, or make private.
         self.spec: HookSpec | None = None
         if specmodule_or_class is not None:
@@ -440,6 +450,8 @@ class SubsetHookCaller:
         "_orig",
         "_remove_plugins",
     )
+    _orig: HookCaller
+    _remove_plugins: Set[_Plugin]
 
     def __init__(self, orig: HookCaller, remove_plugins: Set[_Plugin]) -> None:
         self._orig = orig
@@ -579,6 +591,17 @@ class HookImpl:
         "trylast",
         "hookimpl_config",
     )
+    function: Final[_HookImplFunction[object]]
+    argnames: Final[tuple[str, ...]]
+    kwargnames: Final[tuple[str, ...]]
+    plugin: Final[_Plugin]
+    plugin_name: Final[str]
+    wrapper: Final[bool]
+    hookwrapper: Final[bool]
+    optionalhook: Final[bool]
+    tryfirst: Final[bool]
+    trylast: Final[bool]
+    hookimpl_config: Final[HookimplConfiguration]
 
     def __init__(
         self,
@@ -589,33 +612,33 @@ class HookImpl:
     ) -> None:
         """:meta private:"""
         #: The hook implementation function.
-        self.function: Final = function
+        self.function = function
         argnames, kwargnames = varnames(self.function)
         #: The positional parameter names of ``function```.
-        self.argnames: Final = argnames
+        self.argnames = argnames
         #: The keyword parameter names of ``function```.
-        self.kwargnames: Final = kwargnames
+        self.kwargnames = kwargnames
         #: The plugin which defined this hook implementation.
-        self.plugin: Final = plugin
+        self.plugin = plugin
         #: The :class:`HookimplConfiguration` used to configure this hook
         #: implementation.
-        self.hookimpl_config: Final = hook_impl_config
+        self.hookimpl_config = hook_impl_config
         #: The name of the plugin which defined this hook implementation.
-        self.plugin_name: Final = plugin_name
+        self.plugin_name = plugin_name
         #: Whether the hook implementation is a :ref:`wrapper <hookwrapper>`.
-        self.wrapper: Final = hook_impl_config.wrapper
+        self.wrapper = hook_impl_config.wrapper
         #: Whether the hook implementation is an :ref:`old-style wrapper
         #: <old_style_hookwrappers>`.
-        self.hookwrapper: Final = hook_impl_config.hookwrapper
+        self.hookwrapper = hook_impl_config.hookwrapper
         #: Whether validation against a hook specification is :ref:`optional
         #: <optionalhook>`.
-        self.optionalhook: Final = hook_impl_config.optionalhook
+        self.optionalhook = hook_impl_config.optionalhook
         #: Whether to try to order this hook implementation :ref:`first
         #: <callorder>`.
-        self.tryfirst: Final = hook_impl_config.tryfirst
+        self.tryfirst = hook_impl_config.tryfirst
         #: Whether to try to order this hook implementation :ref:`last
         #: <callorder>`.
-        self.trylast: Final = hook_impl_config.trylast
+        self.trylast = hook_impl_config.trylast
 
     def __repr__(self) -> str:
         return f"<HookImpl plugin_name={self.plugin_name!r}, plugin={self.plugin!r}>"
