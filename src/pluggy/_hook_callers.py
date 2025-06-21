@@ -532,7 +532,9 @@ class SubsetHookCaller:
         if self.spec:
             self.spec.verify_all_args_are_provided(kwargs)
         firstresult = self.spec.config.firstresult if self.spec else False
+        # Get the hookexec from the original
         hookexec = getattr(self._orig, "_hookexec")
+        return hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
 
         normal_impls = self._get_filtered(self._orig._normal_hookimpls)
         wrapper_impls = self._get_filtered(self._orig._wrapper_hookimpls)
@@ -557,7 +559,9 @@ class SubsetHookCaller:
         if self.spec:
             self.spec.verify_all_args_are_provided(kwargs)
 
-        self._orig._call_history.append((kwargs, result_callback))
+        # If the original is a HistoricHookCaller, add to its history
+        if hasattr(self._orig, "_call_history"):
+            self._orig._call_history.append((kwargs, result_callback))
 
         # Execute with filtered hookimpls (historic hooks don't support wrappers)
         hookexec = getattr(self._orig, "_hookexec")
@@ -610,6 +614,7 @@ class SubsetHookCaller:
 _SubsetHookCaller = SubsetHookCaller
 
 
+@final
 class HookImpl:
     """Base class for hook implementations in a :class:`HookCaller`."""
 
