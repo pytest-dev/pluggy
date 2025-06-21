@@ -76,6 +76,62 @@ class HookimplOpts(TypedDict):
 
 
 @final
+class HookspecConfiguration:
+    """Configuration class for hook specifications.
+
+    This class is intended to replace HookspecOpts in future versions.
+    It provides a more structured and extensible way to configure hook specifications.
+    """
+
+    __slots__ = (
+        "firstresult",
+        "historic",
+        "warn_on_impl",
+        "warn_on_impl_args",
+    )
+
+    def __init__(
+        self,
+        firstresult: bool = False,
+        historic: bool = False,
+        warn_on_impl: Warning | None = None,
+        warn_on_impl_args: Mapping[str, Warning] | None = None,
+    ) -> None:
+        """Initialize hook specification configuration.
+
+        :param firstresult:
+            Whether the hook is :ref:`first result only <firstresult>`.
+        :param historic:
+            Whether the hook is :ref:`historic <historic>`.
+        :param warn_on_impl:
+            Whether the hook :ref:`warns when implemented <warn_on_impl>`.
+        :param warn_on_impl_args:
+            Whether the hook warns when :ref:`certain arguments are requested
+            <warn_on_impl>`.
+        """
+        if historic and firstresult:
+            raise ValueError("cannot have a historic firstresult hook")
+        #: Whether the hook is :ref:`first result only <firstresult>`.
+        self.firstresult: Final = firstresult
+        #: Whether the hook is :ref:`historic <historic>`.
+        self.historic: Final = historic
+        #: Whether the hook :ref:`warns when implemented <warn_on_impl>`.
+        self.warn_on_impl: Final = warn_on_impl
+        #: Whether the hook warns when :ref:`certain arguments are requested
+        #: <warn_on_impl>`.
+        self.warn_on_impl_args: Final = warn_on_impl_args
+
+    def __repr__(self) -> str:
+        attrs = []
+        for slot in self.__slots__:
+            value = getattr(self, slot)
+            if value:
+                attrs.append(f"{slot}={value!r}")
+        attrs_str = ", ".join(attrs)
+        return f"HookspecConfiguration({attrs_str})"
+
+
+@final
 class HookimplConfiguration:
     """Configuration class for hook implementations.
 
@@ -226,21 +282,30 @@ class HookspecMarker:
         """
 
         def setattr_hookspec_opts(func: _F) -> _F:
-            if historic and firstresult:
-                raise ValueError("cannot have a historic firstresult hook")
-            opts: HookspecOpts = {
-                "firstresult": firstresult,
-                "historic": historic,
-                "warn_on_impl": warn_on_impl,
-                "warn_on_impl_args": warn_on_impl_args,
-            }
-            setattr(func, self.project_name + "_spec", opts)
+            config = HookspecConfiguration(
+                firstresult=firstresult,
+                historic=historic,
+                warn_on_impl=warn_on_impl,
+                warn_on_impl_args=warn_on_impl_args,
+            )
+            setattr(func, self.project_name + "_spec", config)
             return func
 
         if function is not None:
             return setattr_hookspec_opts(function)
         else:
             return setattr_hookspec_opts
+
+    def _get_hookconfig(self, func: Callable[..., object]) -> HookspecConfiguration:
+        """Extract hook specification configuration from a decorated function.
+
+        :param func: A function decorated with this HookspecMarker
+        :return: HookspecConfiguration object containing the hook specification options
+        :raises AttributeError: If the function is not decorated with this marker
+        """
+        attr_name = self.project_name + "_spec"
+        config: HookspecConfiguration = getattr(func, attr_name)
+        return config
 
 
 @final
@@ -486,7 +551,7 @@ class HookCaller:
         name: str,
         hook_execute: _HookExec,
         specmodule_or_class: _Namespace | None = None,
-        spec_opts: HookspecOpts | None = None,
+        spec_config: HookspecConfiguration | None = None,
     ) -> None:
         """:meta private:"""
         #: Name of the hook getting called.
@@ -504,8 +569,8 @@ class HookCaller:
         # TODO: Document, or make private.
         self.spec: HookSpec | None = None
         if specmodule_or_class is not None:
-            assert spec_opts is not None
-            self.set_specification(specmodule_or_class, spec_opts)
+            assert spec_config is not None
+            self.set_specification(specmodule_or_class, spec_config=spec_config)
 
     # TODO: Document, or make private.
     def has_spec(self) -> bool:
@@ -515,15 +580,39 @@ class HookCaller:
     def set_specification(
         self,
         specmodule_or_class: _Namespace,
-        spec_opts: HookspecOpts,
+        _spec_opts_or_config: HookspecOpts | HookspecConfiguration | None = None,
+        *,
+        spec_opts: HookspecOpts | None = None,
+        spec_config: HookspecConfiguration | None = None,
     ) -> None:
         if self.spec is not None:
             raise ValueError(
                 f"Hook {self.spec.name!r} is already registered "
                 f"within namespace {self.spec.namespace}"
             )
-        self.spec = HookSpec(specmodule_or_class, self.name, spec_opts)
-        if spec_opts.get("historic"):
+
+        # Handle the dual parameter - set the appropriate typed parameter
+        if _spec_opts_or_config is not None:
+            assert spec_opts is None and spec_config is None, (
+                "Cannot provide both positional and keyword spec arguments"
+            )
+
+            if isinstance(_spec_opts_or_config, dict):
+                spec_opts = _spec_opts_or_config
+            else:
+                spec_config = _spec_opts_or_config
+
+        # Require exactly one of the typed parameters to be set
+        if spec_opts is not None:
+            assert spec_config is None, "Cannot provide both spec_opts and spec_config"
+            final_config = HookspecConfiguration(**spec_opts)
+        elif spec_config is not None:
+            final_config = spec_config
+        else:
+            raise TypeError("Must provide either spec_opts or spec_config")
+
+        self.spec = HookSpec(specmodule_or_class, self.name, final_config)
+        if final_config.historic:
             self._call_history = []
 
     def is_historic(self) -> bool:
@@ -600,7 +689,7 @@ class HookCaller:
             "Cannot directly call a historic hook - use call_historic instead."
         )
         self._verify_all_args_are_provided(kwargs)
-        firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
+        firstresult = self.spec.config.firstresult if self.spec else False
         # Copy because plugins may register other plugins during iteration (#438).
         return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
 
@@ -655,7 +744,7 @@ class HookCaller:
             ):
                 i -= 1
             hookimpls.insert(i + 1, hookimpl)
-        firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
+        firstresult = self.spec.config.firstresult if self.spec else False
         return self._hookexec(self.name, hookimpls, kwargs, firstresult)
 
     def _maybe_apply_history(self, method: HookImpl) -> None:
@@ -786,16 +875,18 @@ class HookSpec:
         "name",
         "argnames",
         "kwargnames",
-        "opts",
+        "config",
         "warn_on_impl",
         "warn_on_impl_args",
     )
 
-    def __init__(self, namespace: _Namespace, name: str, opts: HookspecOpts) -> None:
+    def __init__(
+        self, namespace: _Namespace, name: str, config: HookspecConfiguration
+    ) -> None:
         self.namespace = namespace
         self.function: Callable[..., object] = getattr(namespace, name)
         self.name = name
         self.argnames, self.kwargnames = varnames(self.function)
-        self.opts = opts
-        self.warn_on_impl = opts.get("warn_on_impl")
-        self.warn_on_impl_args = opts.get("warn_on_impl_args")
+        self.config = config
+        self.warn_on_impl = config.warn_on_impl
+        self.warn_on_impl_args = config.warn_on_impl_args

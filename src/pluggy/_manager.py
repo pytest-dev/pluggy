@@ -24,6 +24,7 @@ from ._hooks import HookImpl
 from ._hooks import HookimplConfiguration
 from ._hooks import HookimplOpts
 from ._hooks import HookRelay
+from ._hooks import HookspecConfiguration
 from ._hooks import HookspecOpts
 from ._result import Result
 
@@ -213,6 +214,39 @@ class PluginManager:
 
         return None
 
+    def _parse_hookspec(
+        self, module_or_class: _Namespace, name: str
+    ) -> HookspecConfiguration | None:
+        """Internal method to parse hook specification configuration.
+
+        :param module_or_class: The module or class to inspect
+        :param name: The attribute name to check for hook specification
+        :returns: HookspecConfiguration if found, None otherwise
+        """
+        try:
+            method: object = getattr(module_or_class, name)
+        except Exception:  # pragma: no cover
+            return None
+
+        if not inspect.isroutine(method):
+            return None
+
+        try:
+            # Get hook specification configuration directly
+            spec_attr = getattr(method, self.project_name + "_spec", None)
+        except Exception:  # pragma: no cover
+            spec_attr = None
+
+        if isinstance(spec_attr, HookspecConfiguration):
+            return spec_attr
+
+        # Fall back to legacy parse_hookspec_opts for compatibility
+        legacy_opts = self.parse_hookspec_opts(module_or_class, name)
+        if legacy_opts is not None:
+            return HookspecConfiguration(**legacy_opts)
+
+        return None
+
     def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
         """Try to obtain a hook implementation from an item with the given name
         in the given plugin which is being searched for hook impls.
@@ -289,15 +323,15 @@ class PluginManager:
         """
         names = []
         for name in dir(module_or_class):
-            spec_opts = self.parse_hookspec_opts(module_or_class, name)
-            if spec_opts is not None:
+            spec_config = self._parse_hookspec(module_or_class, name)
+            if spec_config is not None:
                 hc: HookCaller | None = getattr(self.hook, name, None)
                 if hc is None:
-                    hc = HookCaller(name, self._hookexec, module_or_class, spec_opts)
+                    hc = HookCaller(name, self._hookexec, module_or_class, spec_config)
                     setattr(self.hook, name, hc)
                 else:
                     # Plugins registered this hook without knowing the spec.
-                    hc.set_specification(module_or_class, spec_opts)
+                    hc.set_specification(module_or_class, spec_config)
                     for hookfunction in hc.get_hookimpls():
                         self._verify_hook(hc, hookfunction)
                 names.append(name)
@@ -317,13 +351,15 @@ class PluginManager:
             The parsed hookspec options for defining a hook, or None to skip the
             given item.
 
-        This method can be overridden by ``PluginManager`` subclasses to
-        customize how hook specifications are picked up. By default, returns the
-        options for items decorated with :class:`HookspecMarker`.
+        .. deprecated::
+            Customizing hook specification parsing by overriding this method is
+            deprecated. This method is only kept as a compatibility shim for
+            legacy projects. New code should use the standard
+            :class:`HookspecMarker` decorators.
         """
-        method = getattr(module_or_class, name)
-        opts: HookspecOpts | None = getattr(method, self.project_name + "_spec", None)
-        return opts
+        # Compatibility shim - only overridden by legacy projects
+        # Modern hook specifications are handled by _parse_hookspec
+        return None
 
     def get_plugins(self) -> set[Any]:
         """Return a set of all registered plugin objects."""
