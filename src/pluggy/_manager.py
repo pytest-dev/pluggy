@@ -25,7 +25,6 @@ from ._hooks import HookimplConfiguration
 from ._hooks import HookimplOpts
 from ._hooks import HookRelay
 from ._hooks import HookspecOpts
-from ._hooks import normalize_hookimpl_opts
 from ._result import Result
 
 
@@ -185,9 +184,6 @@ class PluginManager:
     ) -> HookimplConfiguration | None:
         """Internal method to parse hook implementation configuration.
 
-        This method uses the new HookimplConfiguration type internally.
-        Falls back to the legacy parse_hookimpl_opts method for compatibility.
-
         :param plugin: The plugin object to inspect
         :param name: The attribute name to check for hook implementation
         :returns: HookimplConfiguration if found, None otherwise
@@ -201,25 +197,19 @@ class PluginManager:
             return None
 
         try:
-            # Try to get hook implementation configuration directly
+            # Get hook implementation configuration directly
             impl_attr = getattr(method, self.project_name + "_impl", None)
         except Exception:  # pragma: no cover
             impl_attr = None
 
-        if impl_attr is not None:
-            # Check if it's already a HookimplConfiguration (new style)
-            if isinstance(impl_attr, HookimplConfiguration):
-                return impl_attr
-            # Handle legacy dict-based configuration
-            elif isinstance(impl_attr, dict):
-                return HookimplConfiguration.from_opts(impl_attr)  # type: ignore
+        if isinstance(impl_attr, HookimplConfiguration):
+            return impl_attr
 
         # Fall back to legacy parse_hookimpl_opts for compatibility
         # (e.g. pytest override)
         legacy_opts = self.parse_hookimpl_opts(plugin, name)
         if legacy_opts is not None:
-            normalize_hookimpl_opts(legacy_opts)
-            return HookimplConfiguration.from_opts(legacy_opts)
+            return HookimplConfiguration(**legacy_opts)
 
         return None
 

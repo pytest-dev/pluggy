@@ -137,11 +137,6 @@ class HookimplConfiguration:
         #: The name of the hook specification to match, see :ref:`specname`.
         self.specname: Final = specname
 
-    @classmethod
-    def from_opts(cls, opts: HookimplOpts) -> HookimplConfiguration:
-        """Create from HookimplOpts for backward compatibility."""
-        return cls(**opts)
-
     def __repr__(self) -> str:
         attrs = []
         for slot in self.__slots__:
@@ -383,15 +378,6 @@ class HookimplMarker:
         attr_name = self.project_name + "_impl"
         config: HookimplConfiguration = getattr(func, attr_name)
         return config
-
-
-def normalize_hookimpl_opts(opts: HookimplOpts) -> None:
-    opts.setdefault("tryfirst", False)
-    opts.setdefault("trylast", False)
-    opts.setdefault("wrapper", False)
-    opts.setdefault("hookwrapper", False)
-    opts.setdefault("optionalhook", False)
-    opts.setdefault("specname", None)
 
 
 _PYPY = hasattr(sys, "pypy_version_info")
