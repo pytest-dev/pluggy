@@ -1,7 +1,9 @@
 from collections.abc import Generator
 from collections.abc import Sequence
 from typing import Callable
+from typing import cast
 from typing import TypeVar
+from typing import Union
 
 import pytest
 
@@ -9,8 +11,10 @@ from pluggy import HookspecConfiguration
 from pluggy import PluginManager
 from pluggy import PluginValidationError
 from pluggy import ProjectSpec
+from pluggy._hooks import HistoricHookCaller
 from pluggy._hooks import HookCaller
 from pluggy._hooks import HookImpl
+from pluggy._hooks import NormalHookCaller
 
 
 project_spec = ProjectSpec("example")
@@ -52,7 +56,9 @@ class AddMeth:
             )(func)
             config = project_spec.get_hookimpl_config(func)
             assert config is not None  # Test functions should be decorated
-            self.hc._add_hookimpl(
+            # Cast to access private method since this is a concrete implementation
+            concrete_hook = cast(Union[NormalHookCaller, HistoricHookCaller], self.hc)
+            concrete_hook._add_hookimpl(
                 HookImpl(
                     None,
                     "<temp>",
@@ -638,12 +644,12 @@ def test_hookspec_configuration_backward_compatibility() -> None:
 def test_set_specification_backward_compatibility() -> None:
     """Test that HookCaller.set_specification supports both old and new interfaces."""
     from pluggy._hooks import HistoricHookCaller
-    from pluggy._hooks import HookCaller
     from pluggy._hooks import HookspecOpts
+    from pluggy._hooks import NormalHookCaller
     from pluggy._manager import PluginManager
 
     pm = PluginManager("test")
-    hook_caller = HookCaller("test_hook", pm._hookexec)
+    hook_caller = NormalHookCaller("test_hook", pm._hookexec)
 
     # Test with new HookspecConfiguration interface
     config = HookspecConfiguration(firstresult=True, historic=False)
@@ -681,7 +687,7 @@ def test_set_specification_backward_compatibility() -> None:
     assert historic_hook_caller2.spec.config.historic is True
 
     # Test error cases
-    hook_caller4 = HookCaller("test_hook", pm._hookexec)
+    hook_caller4 = NormalHookCaller("test_hook", pm._hookexec)
 
     # Cannot provide both positional and keyword
     with pytest.raises(
