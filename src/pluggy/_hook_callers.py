@@ -631,6 +631,17 @@ class HookImpl:
         "trylast",
         "hookimpl_config",
     )
+    function: Final[_HookImplFunction[object]]
+    argnames: Final[tuple[str, ...]]
+    kwargnames: Final[tuple[str, ...]]
+    plugin: Final[_Plugin]
+    plugin_name: Final[str]
+    wrapper: Final[bool]
+    hookwrapper: Final[bool]
+    optionalhook: Final[bool]
+    tryfirst: Final[bool]
+    trylast: Final[bool]
+    hookimpl_config: Final[HookimplConfiguration]
 
     function: Final[_HookImplFunction[object]]
     argnames: Final[tuple[str, ...]]
