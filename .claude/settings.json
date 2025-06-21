@@ -3,7 +3,9 @@
     "allow": [
       "Bash(uv run pytest:*)",
       "Bash(git add:*)",
-      "Bash(uv run mypy:*)"
+      "Bash(uv run mypy:*)",
+      "Bash(uv run pre-commit:*)"
+
     ],
     "deny": []
   }
