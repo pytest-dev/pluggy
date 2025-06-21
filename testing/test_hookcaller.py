@@ -637,6 +637,7 @@ def test_hookspec_configuration_backward_compatibility() -> None:
 
 def test_set_specification_backward_compatibility() -> None:
     """Test that HookCaller.set_specification supports both old and new interfaces."""
+    from pluggy._hooks import HistoricHookCaller
     from pluggy._hooks import HookCaller
     from pluggy._hooks import HookspecOpts
     from pluggy._manager import PluginManager
@@ -656,25 +657,28 @@ def test_set_specification_backward_compatibility() -> None:
     assert hook_caller.spec.config.firstresult is True
     assert hook_caller.spec.config.historic is False
 
-    # Test with old HookspecOpts interface (positional)
-    hook_caller2 = HookCaller("test_hook", pm._hookexec)
+    # Test with old HookspecOpts interface (positional) - use HistoricHookCaller
     old_opts: HookspecOpts = {
         "firstresult": False,
         "historic": True,
         "warn_on_impl": None,
         "warn_on_impl_args": None,
     }
-    hook_caller2.set_specification(TestSpec, old_opts)
-    assert hook_caller2.spec is not None
-    assert hook_caller2.spec.config.firstresult is False
-    assert hook_caller2.spec.config.historic is True
+    historic_config = HookspecConfiguration(**old_opts)
+    historic_hook_caller = HistoricHookCaller(
+        "test_hook", pm._hookexec, TestSpec, historic_config
+    )
+    assert historic_hook_caller.spec is not None
+    assert historic_hook_caller.spec.config.firstresult is False
+    assert historic_hook_caller.spec.config.historic is True
 
-    # Test with old HookspecOpts interface (keyword)
-    hook_caller3 = HookCaller("test_hook", pm._hookexec)
-    hook_caller3.set_specification(TestSpec, spec_opts=old_opts)
-    assert hook_caller3.spec is not None
-    assert hook_caller3.spec.config.firstresult is False
-    assert hook_caller3.spec.config.historic is True
+    # Test with old HookspecOpts interface (keyword) - use HistoricHookCaller
+    historic_hook_caller2 = HistoricHookCaller(
+        "test_hook", pm._hookexec, TestSpec, historic_config
+    )
+    assert historic_hook_caller2.spec is not None
+    assert historic_hook_caller2.spec.config.firstresult is False
+    assert historic_hook_caller2.spec.config.historic is True
 
     # Test error cases
     hook_caller4 = HookCaller("test_hook", pm._hookexec)

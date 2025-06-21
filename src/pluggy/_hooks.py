@@ -513,6 +513,165 @@ _HookRelay = HookRelay
 _CallHistory = list[tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
 
 
+class HistoricHookCaller:
+    """A caller for historic hook specifications that memorizes and replays calls.
+
+    Historic hooks memorize every call and replay them on plugins registered
+    after the call was made. Historic hooks do not support wrappers.
+    """
+
+    __slots__ = (
+        "name",
+        "spec",
+        "_hookexec",
+        "_hookimpls",
+        "_call_history",
+    )
+
+    def __init__(
+        self,
+        name: str,
+        hook_execute: _HookExec,
+        specmodule_or_class: _Namespace,
+        spec_config: HookspecConfiguration,
+    ) -> None:
+        """:meta private:"""
+        assert spec_config.historic, "HistoricHookCaller requires historic=True"
+        #: Name of the hook getting called.
+        self.name: Final = name
+        self._hookexec: Final = hook_execute
+        # The hookimpls list for historic hooks (no wrappers supported)
+        self._hookimpls: Final[list[HookImpl]] = []
+        self._call_history: Final[_CallHistory] = []
+        # TODO: Document, or make private.
+        self.spec: Final = HookSpec(specmodule_or_class, name, spec_config)
+
+    def has_spec(self) -> bool:
+        return True  # HistoricHookCaller always has a spec
+
+    def set_specification(
+        self,
+        specmodule_or_class: _Namespace,
+        _spec_opts_or_config: HookspecOpts | HookspecConfiguration | None = None,
+        *,
+        spec_opts: HookspecOpts | None = None,
+        spec_config: HookspecConfiguration | None = None,
+    ) -> None:
+        """Historic hooks cannot have their specification changed after creation."""
+        raise ValueError(
+            f"HistoricHookCaller {self.name!r} already has a specification. "
+            "Historic hooks cannot have their specification changed."
+        )
+
+    def is_historic(self) -> bool:
+        """Whether this caller is :ref:`historic <historic>`."""
+        return True  # HistoricHookCaller is always historic
+
+    def _remove_plugin(self, plugin: _Plugin) -> None:
+        for i, method in enumerate(self._hookimpls):
+            if method.plugin == plugin:
+                del self._hookimpls[i]
+                return
+        raise ValueError(f"plugin {plugin!r} not found")
+
+    def get_hookimpls(self) -> list[HookImpl]:
+        """Get all registered hook implementations for this hook."""
+        return self._hookimpls.copy()
+
+    def _add_hookimpl(self, hookimpl: HookImpl) -> None:
+        """Add an implementation to the callback chain."""
+        # Historic hooks don't support wrappers - simpler ordering
+        if hookimpl.trylast:
+            self._hookimpls.insert(0, hookimpl)
+        elif hookimpl.tryfirst:
+            self._hookimpls.append(hookimpl)
+        else:
+            # find last non-tryfirst method
+            i = len(self._hookimpls) - 1
+            while i >= 0 and self._hookimpls[i].tryfirst:
+                i -= 1
+            self._hookimpls.insert(i + 1, hookimpl)
+
+        # Apply history to the newly added hookimpl
+        self._maybe_apply_history(hookimpl)
+
+    def __repr__(self) -> str:
+        return f"<HistoricHookCaller {self.name!r}>"
+
+    def _verify_all_args_are_provided(self, kwargs: Mapping[str, object]) -> None:
+        # This is written to avoid expensive operations when not needed.
+        if self.spec:
+            for argname in self.spec.argnames:
+                if argname not in kwargs:
+                    notincall = ", ".join(
+                        repr(argname)
+                        for argname in self.spec.argnames
+                        # Avoid self.spec.argnames - kwargs.keys()
+                        # it doesn't preserve order.
+                        if argname not in kwargs.keys()
+                    )
+                    warnings.warn(
+                        f"Argument(s) {notincall} which are declared in the hookspec "
+                        "cannot be found in this hook call",
+                        stacklevel=2,
+                    )
+                    break
+
+    def __call__(self, **kwargs: object) -> Any:
+        """Call the hook.
+
+        Historic hooks cannot be called directly. Use call_historic instead.
+        """
+        raise RuntimeError(
+            "Cannot directly call a historic hook - use call_historic instead."
+        )
+
+    def call_historic(
+        self,
+        result_callback: Callable[[Any], None] | None = None,
+        kwargs: Mapping[str, object] | None = None,
+    ) -> None:
+        """Call the hook with given ``kwargs`` for all registered plugins and
+        for all plugins which will be registered afterwards, see
+        :ref:`historic`.
+
+        :param result_callback:
+            If provided, will be called for each non-``None`` result obtained
+            from a hook implementation.
+        """
+        kwargs = kwargs or {}
+        self._verify_all_args_are_provided(kwargs)
+        self._call_history.append((kwargs, result_callback))
+        # Historizing hooks don't return results.
+        # Remember firstresult isn't compatible with historic.
+        # Copy because plugins may register other plugins during iteration (#438).
+        res = self._hookexec(self.name, self._hookimpls.copy(), kwargs, False)
+        if result_callback is None:
+            return
+        if isinstance(res, list):
+            for x in res:
+                result_callback(x)
+
+    def call_extra(
+        self, methods: Sequence[Callable[..., object]], kwargs: Mapping[str, object]
+    ) -> Any:
+        """Call the hook with some additional temporarily participating
+        methods using the specified ``kwargs`` as call parameters, see
+        :ref:`call_extra`."""
+        raise RuntimeError(
+            "Cannot call call_extra on a historic hook - use call_historic instead."
+        )
+
+    def _maybe_apply_history(self, method: HookImpl) -> None:
+        """Apply call history to a new hookimpl if it is marked as historic."""
+        for kwargs, result_callback in self._call_history:
+            res = self._hookexec(self.name, [method], kwargs, False)
+            if res and result_callback is not None:
+                # XXX: remember firstresult isn't compat with historic
+                assert isinstance(res, list)
+                result_callback(res[0])
+
+
 class HookCaller:
     """A caller of all registered implementations of a hook specification."""
 
@@ -521,7 +680,6 @@ class HookCaller:
         "spec",
         "_hookexec",
         "_hookimpls",
-        "_call_history",
     )
 
     def __init__(
@@ -543,7 +701,6 @@ class HookCaller:
         # 5. wrappers
         # 6. tryfirst wrappers
         self._hookimpls: Final[list[HookImpl]] = []
-        self._call_history: _CallHistory | None = None
         # TODO: Document, or make private.
         self.spec: HookSpec | None = None
         if specmodule_or_class is not None:
@@ -589,13 +746,16 @@ class HookCaller:
         else:
             raise TypeError("Must provide either spec_opts or spec_config")
 
-        self.spec = HookSpec(specmodule_or_class, self.name, final_config)
         if final_config.historic:
-            self._call_history = []
+            raise ValueError(
+                f"HookCaller cannot handle historic hooks. "
+                f"Use HistoricHookCaller for {self.name!r}"
+            )
+        self.spec = HookSpec(specmodule_or_class, self.name, final_config)
 
     def is_historic(self) -> bool:
         """Whether this caller is :ref:`historic <historic>`."""
-        return self._call_history is not None
+        return False  # HookCaller is never historic
 
     def _remove_plugin(self, plugin: _Plugin) -> None:
         for i, method in enumerate(self._hookimpls):
@@ -663,9 +823,6 @@ class HookCaller:
         Returns the result(s) of calling all registered plugins, see
         :ref:`calling`.
         """
-        assert not self.is_historic(), (
-            "Cannot directly call a historic hook - use call_historic instead."
-        )
         self._verify_all_args_are_provided(kwargs)
         firstresult = self.spec.config.firstresult if self.spec else False
         # Copy because plugins may register other plugins during iteration (#438).
@@ -680,23 +837,11 @@ class HookCaller:
         for all plugins which will be registered afterwards, see
         :ref:`historic`.
 
-        :param result_callback:
-            If provided, will be called for each non-``None`` result obtained
-            from a hook implementation.
+        This method should not be called on non-historic hooks.
         """
-        assert self._call_history is not None
-        kwargs = kwargs or {}
-        self._verify_all_args_are_provided(kwargs)
-        self._call_history.append((kwargs, result_callback))
-        # Historizing hooks don't return results.
-        # Remember firstresult isn't compatible with historic.
-        # Copy because plugins may register other plugins during iteration (#438).
-        res = self._hookexec(self.name, self._hookimpls.copy(), kwargs, False)
-        if result_callback is None:
-            return
-        if isinstance(res, list):
-            for x in res:
-                result_callback(x)
+        raise AssertionError(
+            f"Hook {self.name!r} is not historic - cannot call call_historic"
+        )
 
     def call_extra(
         self, methods: Sequence[Callable[..., object]], kwargs: Mapping[str, object]
@@ -704,9 +849,6 @@ class HookCaller:
         """Call the hook with some additional temporarily participating
         methods using the specified ``kwargs`` as call parameters, see
         :ref:`call_extra`."""
-        assert not self.is_historic(), (
-            "Cannot directly call a historic hook - use call_historic instead."
-        )
         self._verify_all_args_are_provided(kwargs)
         config = HookimplConfiguration()
         hookimpls = self._hookimpls.copy()
@@ -724,17 +866,6 @@ class HookCaller:
             hookimpls.insert(i + 1, hookimpl)
         firstresult = self.spec.config.firstresult if self.spec else False
         return self._hookexec(self.name, hookimpls, kwargs, firstresult)
-
-    def _maybe_apply_history(self, method: HookImpl) -> None:
-        """Apply call history to a new hookimpl if it is marked as historic."""
-        if self.is_historic():
-            assert self._call_history is not None
-            for kwargs, result_callback in self._call_history:
-                res = self._hookexec(self.name, [method], kwargs, False)
-                if res and result_callback is not None:
-                    # XXX: remember firstresult isn't compat with historic
-                    assert isinstance(res, list)
-                    result_callback(res[0])
 
 
 # Historical name (pluggy<=1.2), kept for backward compatibility.
@@ -778,9 +909,38 @@ class _SubsetHookCaller(HookCaller):
     def spec(self) -> HookSpec | None:  # type: ignore[override]
         return self._orig.spec
 
-    @property
-    def _call_history(self) -> _CallHistory | None:  # type: ignore[override]
-        return self._orig._call_history
+    def is_historic(self) -> bool:
+        return self._orig.is_historic()
+
+    def call_historic(
+        self,
+        result_callback: Callable[[Any], None] | None = None,
+        kwargs: Mapping[str, object] | None = None,
+    ) -> None:
+        """Call the hook with given ``kwargs`` for all registered plugins and
+        for all plugins which will be registered afterwards, see
+        :ref:`historic`.
+        """
+        if not self.is_historic():
+            raise AssertionError(
+                f"Hook {self.name!r} is not historic - cannot call call_historic"
+            )
+
+        # For subset hook callers, we need to manually handle the history and execution
+        kwargs = kwargs or {}
+        self._verify_all_args_are_provided(kwargs)
+
+        # If the original is a HistoricHookCaller, add to its history
+        if hasattr(self._orig, "_call_history"):
+            self._orig._call_history.append((kwargs, result_callback))
+
+        # Execute with filtered hookimpls
+        res = self._hookexec(self.name, self._hookimpls, kwargs, False)
+        if result_callback is None:
+            return
+        if isinstance(res, list):
+            for x in res:
+                result_callback(x)
 
     def __repr__(self) -> str:
         return f"<_SubsetHookCaller {self.name!r}>"
