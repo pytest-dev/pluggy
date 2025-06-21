@@ -1,0 +1,1 @@
+Migrate from generating a version file to lazy loading it via importlib.
