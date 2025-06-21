@@ -11,7 +11,7 @@ from typing import cast
 from typing import NoReturn
 import warnings
 
-from ._hooks import HookImpl
+from ._hook_callers import HookImpl
 from ._result import HookCallError
 from ._result import Result
 from ._warnings import PluggyTeardownRaisedWarning
