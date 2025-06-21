@@ -60,6 +60,23 @@ def _insert_hookimpl_into_list(
         target_list.insert(i + 1, hookimpl)
 
 
+def _insert_hookimpl_into_list(hookimpl: HookImpl, target_list: list[HookImpl]) -> None:
+    """Insert a hookimpl into the target list maintaining proper ordering.
+
+    The ordering is: [trylast, normal, tryfirst]
+    """
+    if hookimpl.trylast:
+        target_list.insert(0, hookimpl)
+    elif hookimpl.tryfirst:
+        target_list.append(hookimpl)
+    else:
+        # find last non-tryfirst method
+        i = len(target_list) - 1
+        while i >= 0 and target_list[i].tryfirst:
+            i -= 1
+        target_list.insert(i + 1, hookimpl)
+
+
 @runtime_checkable
 class HookCaller(Protocol):
     """Protocol defining the interface for hook callers."""
