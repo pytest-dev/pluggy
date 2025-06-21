@@ -3,6 +3,7 @@ __all__ = [
     "PluginManager",
     "PluginValidationError",
     "HookCaller",
+    "HistoricHookCaller",
     "HookCallError",
     "HookspecOpts",
     "HookimplOpts",
@@ -17,6 +18,7 @@ __all__ = [
     "PluggyWarning",
     "PluggyTeardownRaisedWarning",
 ]
+from ._hooks import HistoricHookCaller
 from ._hooks import HookCaller
 from ._hooks import HookImpl
 from ._hooks import HookimplConfiguration
@@ -33,6 +35,9 @@ from ._result import HookCallError
 from ._result import Result
 from ._warnings import PluggyTeardownRaisedWarning
 from ._warnings import PluggyWarning
+
+
+__version__: str
 
 
 def __getattr__(name: str) -> str:

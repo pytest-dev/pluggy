@@ -19,6 +19,7 @@ from ._hooks import _HookImplFunction
 from ._hooks import _Namespace
 from ._hooks import _Plugin
 from ._hooks import _SubsetHookCaller
+from ._hooks import HistoricHookCaller
 from ._hooks import HookCaller
 from ._hooks import HookImpl
 from ._hooks import HookimplConfiguration
@@ -170,13 +171,14 @@ class PluginManager:
                 method: _HookImplFunction[object] = getattr(plugin, name)
                 hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_config)
                 hook_name = hookimpl_config.specname or name
-                hook: HookCaller | None = getattr(self.hook, hook_name, None)
+                hook: HookCaller | HistoricHookCaller | None = getattr(
+                    self.hook, hook_name, None
+                )
                 if hook is None:
                     hook = HookCaller(hook_name, self._hookexec)
                     setattr(self.hook, hook_name, hook)
                 elif hook.has_spec():
                     self._verify_hook(hook, hookimpl)
-                    hook._maybe_apply_history(hookimpl)
                 hook._add_hookimpl(hookimpl)
         return plugin_name
 
@@ -317,13 +319,33 @@ class PluginManager:
         for name in dir(module_or_class):
             spec_config = self._parse_hookspec(module_or_class, name)
             if spec_config is not None:
-                hc: HookCaller | None = getattr(self.hook, name, None)
+                hc: HookCaller | HistoricHookCaller | None = getattr(
+                    self.hook, name, None
+                )
                 if hc is None:
-                    hc = HookCaller(name, self._hookexec, module_or_class, spec_config)
+                    if spec_config.historic:
+                        hc = HistoricHookCaller(
+                            name, self._hookexec, module_or_class, spec_config
+                        )
+                    else:
+                        hc = HookCaller(
+                            name, self._hookexec, module_or_class, spec_config
+                        )
                     setattr(self.hook, name, hc)
                 else:
                     # Plugins registered this hook without knowing the spec.
-                    hc.set_specification(module_or_class, spec_config)
+                    if spec_config.historic and isinstance(hc, HookCaller):
+                        # Need to handover from HookCaller to HistoricHookCaller
+                        old_hookimpls = hc.get_hookimpls()
+                        hc = HistoricHookCaller(
+                            name, self._hookexec, module_or_class, spec_config
+                        )
+                        # Re-add existing hookimpls (history applied by _add_hookimpl)
+                        for hookimpl in old_hookimpls:
+                            hc._add_hookimpl(hookimpl)
+                        setattr(self.hook, name, hc)
+                    else:
+                        hc.set_specification(module_or_class, spec_config)
                     for hookfunction in hc.get_hookimpls():
                         self._verify_hook(hc, hookfunction)
                 names.append(name)
@@ -388,7 +410,9 @@ class PluginManager:
                 return name
         return None
 
-    def _verify_hook(self, hook: HookCaller, hookimpl: HookImpl) -> None:
+    def _verify_hook(
+        self, hook: HookCaller | HistoricHookCaller, hookimpl: HookImpl
+    ) -> None:
         if hook.is_historic() and (hookimpl.hookwrapper or hookimpl.wrapper):
             raise PluginValidationError(
                 hookimpl.plugin,
