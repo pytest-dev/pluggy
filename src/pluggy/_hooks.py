@@ -296,17 +296,6 @@ class HookspecMarker:
         else:
             return setattr_hookspec_opts
 
-    def _get_hookconfig(self, func: Callable[..., object]) -> HookspecConfiguration:
-        """Extract hook specification configuration from a decorated function.
-
-        :param func: A function decorated with this HookspecMarker
-        :return: HookspecConfiguration object containing the hook specification options
-        :raises AttributeError: If the function is not decorated with this marker
-        """
-        attr_name = self.project_name + "_spec"
-        config: HookspecConfiguration = getattr(func, attr_name)
-        return config
-
 
 @final
 class HookimplMarker:
@@ -432,17 +421,6 @@ class HookimplMarker:
             return setattr_hookimpl_opts
         else:
             return setattr_hookimpl_opts(function)
-
-    def get_hookconfig(self, func: Callable[..., object]) -> HookimplConfiguration:
-        """Extract hook implementation configuration from a decorated function.
-
-        :param func: A function decorated with this HookimplMarker
-        :return: HookimplConfiguration object containing the hook implementation options
-        :raises AttributeError: If the function is not decorated with this marker
-        """
-        attr_name = self.project_name + "_impl"
-        config: HookimplConfiguration = getattr(func, attr_name)
-        return config
 
 
 _PYPY = hasattr(sys, "pypy_version_info")

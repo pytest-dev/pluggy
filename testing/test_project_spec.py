@@ -143,7 +143,7 @@ def test_project_spec_hook_attribute_naming() -> None:
 
 
 def test_project_spec_with_get_hookconfig() -> None:
-    """Test that ProjectSpec works with HookimplMarker.get_hookconfig()."""
+    """Test that ProjectSpec works with get_hookimpl_config()."""
     project = ProjectSpec("testproject")
     hookimpl = project.hookimpl
 
@@ -152,9 +152,10 @@ def test_project_spec_with_get_hookconfig() -> None:
     def my_hook_impl() -> None:
         pass
 
-    # Get the configuration
-    config = hookimpl.get_hookconfig(my_hook_impl)
+    # Get the configuration using ProjectSpec
+    config = project.get_hookimpl_config(my_hook_impl)
 
+    assert config is not None
     assert config.tryfirst is True
     assert config.optionalhook is True
     assert config.wrapper is False

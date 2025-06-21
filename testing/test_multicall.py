@@ -6,14 +6,14 @@ from typing import Union
 import pytest
 
 from pluggy import HookCallError
-from pluggy import HookimplMarker
-from pluggy import HookspecMarker
+from pluggy import ProjectSpec
 from pluggy._callers import _multicall
 from pluggy._hooks import HookImpl
 
 
-hookspec = HookspecMarker("example")
-hookimpl = HookimplMarker("example")
+project_spec = ProjectSpec("example")
+hookspec = project_spec.hookspec
+hookimpl = project_spec.hookimpl
 
 
 def MC(
@@ -24,7 +24,9 @@ def MC(
     caller = _multicall
     hookfuncs = []
     for method in methods:
-        f = HookImpl(None, "<temp>", method, hookimpl.get_hookconfig(method))
+        config = project_spec.get_hookimpl_config(method)
+        assert config is not None  # Test functions should be decorated
+        f = HookImpl(None, "<temp>", method, config)
         hookfuncs.append(f)
     return caller("foo", hookfuncs, kwargs, firstresult)
 
