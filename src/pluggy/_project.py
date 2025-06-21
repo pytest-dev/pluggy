@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from ._hooks import HookimplConfiguration
-    from ._hooks import HookspecConfiguration
+    from ._hook_config import HookimplConfiguration
+    from ._hook_config import HookspecConfiguration
     from ._manager import PluginManager
 
 
@@ -33,8 +33,8 @@ class ProjectSpec:
     def __init__(
         self, project_name: str, plugin_manager_cls: type[PluginManager] | None = None
     ) -> None:
-        from ._hooks import HookimplMarker
-        from ._hooks import HookspecMarker
+        from ._hook_markers import HookimplMarker
+        from ._hook_markers import HookspecMarker
         from ._manager import PluginManager as DefaultPluginManager
 
         #: The project name used across all components.

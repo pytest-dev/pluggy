@@ -16,19 +16,19 @@ import warnings
 from . import _project
 from . import _tracing
 from ._callers import _multicall
-from ._hooks import _HookImplFunction
-from ._hooks import _Namespace
-from ._hooks import _Plugin
-from ._hooks import HistoricHookCaller
-from ._hooks import HookCaller
-from ._hooks import HookImpl
-from ._hooks import HookimplConfiguration
-from ._hooks import HookimplOpts
-from ._hooks import HookRelay
-from ._hooks import HookspecConfiguration
-from ._hooks import HookspecOpts
-from ._hooks import NormalHookCaller
-from ._hooks import SubsetHookCaller
+from ._hook_callers import HistoricHookCaller
+from ._hook_callers import HookCaller
+from ._hook_callers import HookImpl
+from ._hook_callers import HookRelay
+from ._hook_callers import NormalHookCaller
+from ._hook_callers import SubsetHookCaller
+from ._hook_config import _HookImplFunction
+from ._hook_config import _Namespace
+from ._hook_config import _Plugin
+from ._hook_config import HookimplConfiguration
+from ._hook_config import HookimplOpts
+from ._hook_config import HookspecConfiguration
+from ._hook_config import HookspecOpts
 from ._result import Result
 
 

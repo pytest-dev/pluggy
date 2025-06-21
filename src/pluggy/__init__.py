@@ -18,16 +18,16 @@ __all__ = [
     "PluggyWarning",
     "PluggyTeardownRaisedWarning",
 ]
-from ._hooks import HistoricHookCaller
-from ._hooks import HookCaller
-from ._hooks import HookImpl
-from ._hooks import HookimplConfiguration
-from ._hooks import HookimplMarker
-from ._hooks import HookimplOpts
-from ._hooks import HookRelay
-from ._hooks import HookspecConfiguration
-from ._hooks import HookspecMarker
-from ._hooks import HookspecOpts
+from ._hook_callers import HistoricHookCaller
+from ._hook_callers import HookCaller
+from ._hook_callers import HookImpl
+from ._hook_callers import HookRelay
+from ._hook_config import HookimplConfiguration
+from ._hook_config import HookimplOpts
+from ._hook_config import HookspecConfiguration
+from ._hook_config import HookspecOpts
+from ._hook_markers import HookimplMarker
+from ._hook_markers import HookspecMarker
 from ._manager import PluginManager
 from ._manager import PluginValidationError
 from ._project import ProjectSpec
