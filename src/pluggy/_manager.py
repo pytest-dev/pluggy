@@ -197,14 +197,10 @@ class PluginManager:
         if not inspect.isroutine(method):
             return None
 
-        try:
-            # Get hook implementation configuration directly
-            impl_attr = getattr(method, self.project_name + "_impl", None)
-        except Exception:  # pragma: no cover
-            impl_attr = None
-
-        if isinstance(impl_attr, HookimplConfiguration):
-            return impl_attr
+        # Get hook implementation configuration using ProjectSpec
+        impl_config = self._project_spec.get_hookimpl_config(method)
+        if impl_config is not None:
+            return impl_config
 
         # Fall back to legacy parse_hookimpl_opts for compatibility
         # (e.g. pytest override)
@@ -231,14 +227,10 @@ class PluginManager:
         if not inspect.isroutine(method):
             return None
 
-        try:
-            # Get hook specification configuration directly
-            spec_attr = getattr(method, self.project_name + "_spec", None)
-        except Exception:  # pragma: no cover
-            spec_attr = None
-
-        if isinstance(spec_attr, HookspecConfiguration):
-            return spec_attr
+        # Get hook specification configuration using ProjectSpec
+        spec_config = self._project_spec.get_hookspec_config(method)
+        if spec_config is not None:
+            return spec_config
 
         # Fall back to legacy parse_hookspec_opts for compatibility
         legacy_opts = self.parse_hookspec_opts(module_or_class, name)

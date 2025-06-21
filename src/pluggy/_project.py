@@ -4,11 +4,14 @@ Project configuration and management for pluggy projects.
 
 from __future__ import annotations
 
+from typing import Callable
 from typing import Final
 from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
+    from ._hooks import HookimplConfiguration
+    from ._hooks import HookspecConfiguration
     from ._manager import PluginManager
 
 
@@ -55,6 +58,32 @@ class ProjectSpec:
         :returns: New PluginManager instance.
         """
         return self._plugin_manager_cls(self)
+
+    def get_hookspec_config(
+        self, func: Callable[..., object]
+    ) -> HookspecConfiguration | None:
+        """Extract hook specification configuration from a decorated function.
+
+        :param func: A function that may be decorated with this project's
+            hookspec marker
+        :return: HookspecConfiguration object if found, None if not decorated
+            with this project's hookspec marker
+        """
+        attr_name = self.project_name + "_spec"
+        return getattr(func, attr_name, None)
+
+    def get_hookimpl_config(
+        self, func: Callable[..., object]
+    ) -> HookimplConfiguration | None:
+        """Extract hook implementation configuration from a decorated function.
+
+        :param func: A function that may be decorated with this project's
+            hookimpl marker
+        :return: HookimplConfiguration object if found, None if not decorated
+            with this project's hookimpl marker
+        """
+        attr_name = self.project_name + "_impl"
+        return getattr(func, attr_name, None)
 
     def __repr__(self) -> str:
         return f"ProjectSpec(project_name={self.project_name!r})"

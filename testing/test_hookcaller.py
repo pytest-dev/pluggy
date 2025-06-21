@@ -5,17 +5,17 @@ from typing import TypeVar
 
 import pytest
 
-from pluggy import HookimplMarker
 from pluggy import HookspecConfiguration
-from pluggy import HookspecMarker
 from pluggy import PluginManager
 from pluggy import PluginValidationError
+from pluggy import ProjectSpec
 from pluggy._hooks import HookCaller
 from pluggy._hooks import HookImpl
 
 
-hookspec = HookspecMarker("example")
-hookimpl = HookimplMarker("example")
+project_spec = ProjectSpec("example")
+hookspec = project_spec.hookspec
+hookimpl = project_spec.hookimpl
 
 
 @pytest.fixture
@@ -50,12 +50,14 @@ class AddMeth:
                 hookwrapper=hookwrapper,
                 wrapper=wrapper,
             )(func)
+            config = project_spec.get_hookimpl_config(func)
+            assert config is not None  # Test functions should be decorated
             self.hc._add_hookimpl(
                 HookImpl(
                     None,
                     "<temp>",
                     func,
-                    hookimpl.get_hookconfig(func),
+                    config,
                 ),
             )
             return func
@@ -549,15 +551,16 @@ def test_hookspec_configuration() -> None:
 
 
 def test_hookspec_marker_config_extraction() -> None:
-    """Test that HookspecMarker creates and extracts HookspecConfiguration correctly."""
-    marker = HookspecMarker("test")
+    """Test that ProjectSpec can extract HookspecConfiguration correctly."""
+    test_project_spec = ProjectSpec("test")
+    marker = test_project_spec.hookspec
 
     @marker(firstresult=True, historic=False)
     def test_hook(arg1: str) -> str:
         return arg1
 
-    # Test private config extraction method
-    config = marker._get_hookconfig(test_hook)
+    # Test config extraction method via ProjectSpec
+    config = test_project_spec.get_hookspec_config(test_hook)
     assert isinstance(config, HookspecConfiguration)
     assert config.firstresult is True
     assert config.historic is False
