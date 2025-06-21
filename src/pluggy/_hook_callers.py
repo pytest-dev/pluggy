@@ -27,6 +27,23 @@ from ._hook_markers import HookSpec
 from ._hook_markers import varnames
 
 
+def _insert_hookimpl_into_list(hookimpl: HookImpl, target_list: list[HookImpl]) -> None:
+    """Insert a hookimpl into the target list maintaining proper ordering.
+
+    The ordering is: [trylast, normal, tryfirst]
+    """
+    if hookimpl.trylast:
+        target_list.insert(0, hookimpl)
+    elif hookimpl.tryfirst:
+        target_list.append(hookimpl)
+    else:
+        # find last non-tryfirst method
+        i = len(target_list) - 1
+        while i >= 0 and target_list[i].tryfirst:
+            i -= 1
+        target_list.insert(i + 1, hookimpl)
+
+
 @runtime_checkable
 class HookCaller(Protocol):
     """Protocol defining the interface for hook callers."""
@@ -183,16 +200,7 @@ class HistoricHookCaller:
     def _add_hookimpl(self, hookimpl: HookImpl) -> None:
         """Add an implementation to the callback chain."""
         # Historic hooks don't support wrappers - simpler ordering
-        if hookimpl.trylast:
-            self._hookimpls.insert(0, hookimpl)
-        elif hookimpl.tryfirst:
-            self._hookimpls.append(hookimpl)
-        else:
-            # find last non-tryfirst method
-            i = len(self._hookimpls) - 1
-            while i >= 0 and self._hookimpls[i].tryfirst:
-                i -= 1
-            self._hookimpls.insert(i + 1, hookimpl)
+        _insert_hookimpl_into_list(hookimpl, self._hookimpls)
 
         # Apply history to the newly added hookimpl
         self._maybe_apply_history(hookimpl)
@@ -262,12 +270,14 @@ class NormalHookCaller:
         "name",
         "spec",
         "_hookexec",
-        "_hookimpls",
+        "_normal_hookimpls",
+        "_wrapper_hookimpls",
     )
     name: Final[str]
     spec: HookSpec | None
     _hookexec: Final[_HookExec]
-    _hookimpls: Final[list[HookImpl]]
+    _normal_hookimpls: Final[list[HookImpl]]
+    _wrapper_hookimpls: Final[list[HookImpl]]
 
     def __init__(
         self,
@@ -280,14 +290,12 @@ class NormalHookCaller:
         #: Name of the hook getting called.
         self.name = name
         self._hookexec = hook_execute
-        # The hookimpls list. The caller iterates it *in reverse*. Format:
-        # 1. trylast nonwrappers
-        # 2. nonwrappers
-        # 3. tryfirst nonwrappers
-        # 4. trylast wrappers
-        # 5. wrappers
-        # 6. tryfirst wrappers
-        self._hookimpls = []
+        # Split hook implementations into two lists for simpler management:
+        # Normal hooks: [trylast, normal, tryfirst]
+        # Wrapper hooks: [trylast, normal, tryfirst]
+        # Combined execution order: normal_hooks + wrapper_hooks (reversed)
+        self._normal_hookimpls = []
+        self._wrapper_hookimpls = []
         # TODO: Document, or make private.
         self.spec: HookSpec | None = None
         if specmodule_or_class is not None:
@@ -345,39 +353,34 @@ class NormalHookCaller:
         return False  # HookCaller is never historic
 
     def _remove_plugin(self, plugin: _Plugin) -> None:
-        for i, method in enumerate(self._hookimpls):
+        # Try to remove from normal hookimpls first
+        for i, method in enumerate(self._normal_hookimpls):
             if method.plugin == plugin:
-                del self._hookimpls[i]
+                del self._normal_hookimpls[i]
+                return
+        # Then try wrapper hookimpls
+        for i, method in enumerate(self._wrapper_hookimpls):
+            if method.plugin == plugin:
+                del self._wrapper_hookimpls[i]
                 return
         raise ValueError(f"plugin {plugin!r} not found")
 
     def get_hookimpls(self) -> list[HookImpl]:
         """Get all registered hook implementations for this hook."""
-        return self._hookimpls.copy()
+        # Combine normal hooks and wrapper hooks in the correct order
+        # Normal hooks come first, then wrapper hooks (execution order is reversed)
+        return [*self._normal_hookimpls, *self._wrapper_hookimpls]
 
     def _add_hookimpl(self, hookimpl: HookImpl) -> None:
         """Add an implementation to the callback chain."""
-        for i, method in enumerate(self._hookimpls):
-            if method.hookwrapper or method.wrapper:
-                splitpoint = i
-                break
-        else:
-            splitpoint = len(self._hookimpls)
+        # Choose the appropriate list based on wrapper type
         if hookimpl.hookwrapper or hookimpl.wrapper:
-            start, end = splitpoint, len(self._hookimpls)
+            target_list = self._wrapper_hookimpls
         else:
-            start, end = 0, splitpoint
+            target_list = self._normal_hookimpls
 
-        if hookimpl.trylast:
-            self._hookimpls.insert(start, hookimpl)
-        elif hookimpl.tryfirst:
-            self._hookimpls.insert(end, hookimpl)
-        else:
-            # find last non-tryfirst method
-            i = end - 1
-            while i >= start and self._hookimpls[i].tryfirst:
-                i -= 1
-            self._hookimpls.insert(i + 1, hookimpl)
+        # Insert in the correct position within the chosen list
+        _insert_hookimpl_into_list(hookimpl, target_list)
 
     def __repr__(self) -> str:
         return f"<NormalHookCaller {self.name!r}>"
@@ -395,7 +398,9 @@ class NormalHookCaller:
             self.spec.verify_all_args_are_provided(kwargs)
         firstresult = self.spec.config.firstresult if self.spec else False
         # Copy because plugins may register other plugins during iteration (#438).
-        return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+        # Combine normal and wrapper hookimpls in correct order
+        all_hookimpls = [*self._normal_hookimpls, *self._wrapper_hookimpls]
+        return self._hookexec(self.name, all_hookimpls, kwargs, firstresult)
 
     def call_historic(
         self,
@@ -421,19 +426,16 @@ class NormalHookCaller:
         if self.spec:
             self.spec.verify_all_args_are_provided(kwargs)
         config = HookimplConfiguration()
-        hookimpls = self._hookimpls.copy()
+        # Start with copies of our separate lists
+        normal_hookimpls = self._normal_hookimpls.copy()
+
         for method in methods:
             hookimpl = HookImpl(None, "<temp>", method, config)
-            # Find last non-tryfirst nonwrapper method.
-            i = len(hookimpls) - 1
-            while i >= 0 and (
-                # Skip wrappers.
-                (hookimpls[i].hookwrapper or hookimpls[i].wrapper)
-                # Skip tryfirst nonwrappers.
-                or hookimpls[i].tryfirst
-            ):
-                i -= 1
-            hookimpls.insert(i + 1, hookimpl)
+            # Add temporary methods to the normal hookimpls list
+            _insert_hookimpl_into_list(hookimpl, normal_hookimpls)
+
+        # Combine the lists
+        hookimpls = [*normal_hookimpls, *self._wrapper_hookimpls]
         firstresult = self.spec.config.firstresult if self.spec else False
         return self._hookexec(self.name, hookimpls, kwargs, firstresult)
 
