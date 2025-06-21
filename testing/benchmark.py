@@ -6,15 +6,15 @@ from typing import Any
 
 import pytest
 
-from pluggy import HookimplMarker
-from pluggy import HookspecMarker
 from pluggy import PluginManager
+from pluggy import ProjectSpec
 from pluggy._callers import _multicall
 from pluggy._hooks import HookImpl
 
 
-hookspec = HookspecMarker("example")
-hookimpl = HookimplMarker("example")
+project_spec = ProjectSpec("example")
+hookspec = project_spec.hookspec
+hookimpl = project_spec.hookimpl
 
 
 @hookimpl
@@ -42,11 +42,13 @@ def test_hook_and_wrappers_speed(benchmark, hooks, wrappers) -> None:
         hook_name = "foo"
         hook_impls = []
         for method in hooks + wrappers:
+            config = project_spec.get_hookimpl_config(method)
+            assert config is not None  # Benchmark functions should be decorated
             f = HookImpl(
                 None,
                 "<temp>",
                 method,
-                hookimpl.get_hookconfig(method),
+                config,
             )
             hook_impls.append(f)
         caller_kwargs = {"arg1": 1, "arg2": 2, "arg3": 3}
