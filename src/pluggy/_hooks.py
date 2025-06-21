@@ -17,6 +17,8 @@ from typing import Final
 from typing import final
 from typing import Optional
 from typing import overload
+from typing import Protocol
+from typing import runtime_checkable
 from typing import TYPE_CHECKING
 from typing import TypedDict
 from typing import TypeVar
@@ -36,6 +38,66 @@ _HookExec = Callable[
     Union[object, list[object]],
 ]
 _HookImplFunction = Callable[..., Union[_T, Generator[None, Result[_T], None]]]
+
+
+@runtime_checkable
+class HookCaller(Protocol):
+    """Protocol defining the interface for hook callers."""
+
+    @property
+    def name(self) -> str:
+        """Name of the hook getting called."""
+        ...
+
+    @property
+    def spec(self) -> HookSpec | None:
+        """The hook specification, if any."""
+        ...
+
+    def has_spec(self) -> bool:
+        """Whether this caller has a hook specification."""
+        ...
+
+    def is_historic(self) -> bool:
+        """Whether this caller is historic."""
+        ...
+
+    def get_hookimpls(self) -> list[HookImpl]:
+        """Get all registered hook implementations for this hook."""
+        ...
+
+    def set_specification(
+        self,
+        specmodule_or_class: _Namespace,
+        _spec_opts_or_config: HookspecOpts | HookspecConfiguration | None = None,
+        *,
+        spec_opts: HookspecOpts | None = None,
+        spec_config: HookspecConfiguration | None = None,
+    ) -> None:
+        """Set the hook specification."""
+        ...
+
+    def __call__(self, **kwargs: object) -> Any:
+        """Call the hook with given kwargs."""
+        ...
+
+    def call_historic(
+        self,
+        result_callback: Callable[[Any], None] | None = None,
+        kwargs: Mapping[str, object] | None = None,
+    ) -> None:
+        """Call the hook historically."""
+        ...
+
+    def call_extra(
+        self, methods: Sequence[Callable[..., object]], kwargs: Mapping[str, object]
+    ) -> Any:
+        """Call the hook with additional methods."""
+        ...
+
+    def __repr__(self) -> str:
+        """String representation of the hook caller."""
+        ...
 
 
 class HookspecOpts(TypedDict):
@@ -598,25 +660,6 @@ class HistoricHookCaller:
     def __repr__(self) -> str:
         return f"<HistoricHookCaller {self.name!r}>"
 
-    def _verify_all_args_are_provided(self, kwargs: Mapping[str, object]) -> None:
-        # This is written to avoid expensive operations when not needed.
-        if self.spec:
-            for argname in self.spec.argnames:
-                if argname not in kwargs:
-                    notincall = ", ".join(
-                        repr(argname)
-                        for argname in self.spec.argnames
-                        # Avoid self.spec.argnames - kwargs.keys()
-                        # it doesn't preserve order.
-                        if argname not in kwargs.keys()
-                    )
-                    warnings.warn(
-                        f"Argument(s) {notincall} which are declared in the hookspec "
-                        "cannot be found in this hook call",
-                        stacklevel=2,
-                    )
-                    break
-
     def __call__(self, **kwargs: object) -> Any:
         """Call the hook.
 
@@ -640,7 +683,7 @@ class HistoricHookCaller:
             from a hook implementation.
         """
         kwargs = kwargs or {}
-        self._verify_all_args_are_provided(kwargs)
+        self.spec.verify_all_args_are_provided(kwargs)
         self._call_history.append((kwargs, result_callback))
         # Historizing hooks don't return results.
         # Remember firstresult isn't compatible with historic.
@@ -672,7 +715,7 @@ class HistoricHookCaller:
                 result_callback(res[0])
 
 
-class HookCaller:
+class NormalHookCaller:
     """A caller of all registered implementations of a hook specification."""
 
     __slots__ = (
@@ -793,26 +836,7 @@ class HookCaller:
             self._hookimpls.insert(i + 1, hookimpl)
 
     def __repr__(self) -> str:
-        return f"<HookCaller {self.name!r}>"
-
-    def _verify_all_args_are_provided(self, kwargs: Mapping[str, object]) -> None:
-        # This is written to avoid expensive operations when not needed.
-        if self.spec:
-            for argname in self.spec.argnames:
-                if argname not in kwargs:
-                    notincall = ", ".join(
-                        repr(argname)
-                        for argname in self.spec.argnames
-                        # Avoid self.spec.argnames - kwargs.keys()
-                        # it doesn't preserve order.
-                        if argname not in kwargs.keys()
-                    )
-                    warnings.warn(
-                        f"Argument(s) {notincall} which are declared in the hookspec "
-                        "cannot be found in this hook call",
-                        stacklevel=2,
-                    )
-                    break
+        return f"<NormalHookCaller {self.name!r}>"
 
     def __call__(self, **kwargs: object) -> Any:
         """Call the hook.
@@ -823,7 +847,8 @@ class HookCaller:
         Returns the result(s) of calling all registered plugins, see
         :ref:`calling`.
         """
-        self._verify_all_args_are_provided(kwargs)
+        if self.spec:
+            self.spec.verify_all_args_are_provided(kwargs)
         firstresult = self.spec.config.firstresult if self.spec else False
         # Copy because plugins may register other plugins during iteration (#438).
         return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
@@ -849,7 +874,8 @@ class HookCaller:
         """Call the hook with some additional temporarily participating
         methods using the specified ``kwargs`` as call parameters, see
         :ref:`call_extra`."""
-        self._verify_all_args_are_provided(kwargs)
+        if self.spec:
+            self.spec.verify_all_args_are_provided(kwargs)
         config = HookimplConfiguration()
         hookimpls = self._hookimpls.copy()
         for method in methods:
@@ -869,22 +895,12 @@ class HookCaller:
 
 
 # Historical name (pluggy<=1.2), kept for backward compatibility.
-_HookCaller = HookCaller
+_HookCaller = NormalHookCaller
 
 
-class _SubsetHookCaller(HookCaller):
+class SubsetHookCaller:
     """A proxy to another HookCaller which manages calls to all registered
     plugins except the ones from remove_plugins."""
-
-    # This class is unusual: in inhertits from `HookCaller` so all of
-    # the *code* runs in the class, but it delegates all underlying *data*
-    # to the original HookCaller.
-    # `subset_hook_caller` used to be implemented by creating a full-fledged
-    # HookCaller, copying all hookimpls from the original. This had problems
-    # with memory leaks (#346) and historic calls (#347), which make a proxy
-    # approach better.
-    # An alternative implementation is to use a `_getattr__`/`__getattribute__`
-    # proxy, however that adds more overhead and is more tricky to implement.
 
     __slots__ = (
         "_orig",
@@ -894,23 +910,55 @@ class _SubsetHookCaller(HookCaller):
     def __init__(self, orig: HookCaller, remove_plugins: Set[_Plugin]) -> None:
         self._orig = orig
         self._remove_plugins = remove_plugins
-        self.name = orig.name  # type: ignore[misc]
-        self._hookexec = orig._hookexec  # type: ignore[misc]
-
-    @property  # type: ignore[misc]
-    def _hookimpls(self) -> list[HookImpl]:
-        return [
-            impl
-            for impl in self._orig._hookimpls
-            if impl.plugin not in self._remove_plugins
-        ]
 
     @property
-    def spec(self) -> HookSpec | None:  # type: ignore[override]
+    def name(self) -> str:
+        return self._orig.name
+
+    @property
+    def spec(self) -> HookSpec | None:
         return self._orig.spec
+
+    def has_spec(self) -> bool:
+        return self._orig.has_spec()
 
     def is_historic(self) -> bool:
         return self._orig.is_historic()
+
+    def get_hookimpls(self) -> list[HookImpl]:
+        """Get filtered hook implementations for this hook."""
+        return [
+            impl
+            for impl in self._orig.get_hookimpls()
+            if impl.plugin not in self._remove_plugins
+        ]
+
+    def set_specification(
+        self,
+        specmodule_or_class: _Namespace,
+        _spec_opts_or_config: HookspecOpts | HookspecConfiguration | None = None,
+        *,
+        spec_opts: HookspecOpts | None = None,
+        spec_config: HookspecConfiguration | None = None,
+    ) -> None:
+        """SubsetHookCaller cannot set specifications - they are read-only proxies."""
+        raise RuntimeError(
+            f"Cannot set specification on SubsetHookCaller {self.name!r} - "
+            "it is a read-only proxy to another hook caller"
+        )
+
+    def __call__(self, **kwargs: object) -> Any:
+        """Call the hook with filtered implementations."""
+        if self.is_historic():
+            raise RuntimeError(
+                "Cannot directly call a historic hook - use call_historic instead."
+            )
+        if self.spec:
+            self.spec.verify_all_args_are_provided(kwargs)
+        firstresult = self.spec.config.firstresult if self.spec else False
+        # Get the hookexec from the original
+        hookexec = getattr(self._orig, "_hookexec")
+        return hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
 
     def call_historic(
         self,
@@ -928,22 +976,56 @@ class _SubsetHookCaller(HookCaller):
 
         # For subset hook callers, we need to manually handle the history and execution
         kwargs = kwargs or {}
-        self._verify_all_args_are_provided(kwargs)
+        if self.spec:
+            self.spec.verify_all_args_are_provided(kwargs)
 
         # If the original is a HistoricHookCaller, add to its history
         if hasattr(self._orig, "_call_history"):
             self._orig._call_history.append((kwargs, result_callback))
 
         # Execute with filtered hookimpls
-        res = self._hookexec(self.name, self._hookimpls, kwargs, False)
+        hookexec = getattr(self._orig, "_hookexec")
+        res = hookexec(self.name, self.get_hookimpls(), kwargs, False)
         if result_callback is None:
             return
         if isinstance(res, list):
             for x in res:
                 result_callback(x)
 
+    def call_extra(
+        self, methods: Sequence[Callable[..., object]], kwargs: Mapping[str, object]
+    ) -> Any:
+        """Call the hook with some additional temporarily participating methods."""
+        if self.is_historic():
+            raise RuntimeError(
+                "Cannot call call_extra on a historic hook - use call_historic instead."
+            )
+        if self.spec:
+            self.spec.verify_all_args_are_provided(kwargs)
+        config = HookimplConfiguration()
+        hookimpls = self.get_hookimpls()
+        for method in methods:
+            hookimpl = HookImpl(None, "<temp>", method, config)
+            # Find last non-tryfirst nonwrapper method.
+            i = len(hookimpls) - 1
+            while i >= 0 and (
+                # Skip wrappers.
+                (hookimpls[i].hookwrapper or hookimpls[i].wrapper)
+                # Skip tryfirst nonwrappers.
+                or hookimpls[i].tryfirst
+            ):
+                i -= 1
+            hookimpls.insert(i + 1, hookimpl)
+        firstresult = self.spec.config.firstresult if self.spec else False
+        hookexec = getattr(self._orig, "_hookexec")
+        return hookexec(self.name, hookimpls, kwargs, firstresult)
+
     def __repr__(self) -> str:
-        return f"<_SubsetHookCaller {self.name!r}>"
+        return f"<SubsetHookCaller {self.name!r}>"
+
+
+# Historical name (pluggy<=1.2), kept for backward compatibility.
+_SubsetHookCaller = SubsetHookCaller
 
 
 @final
@@ -1028,3 +1110,22 @@ class HookSpec:
         self.config = config
         self.warn_on_impl = config.warn_on_impl
         self.warn_on_impl_args = config.warn_on_impl_args
+
+    def verify_all_args_are_provided(self, kwargs: Mapping[str, object]) -> None:
+        """Verify that all required arguments are provided in kwargs."""
+        # This is written to avoid expensive operations when not needed.
+        for argname in self.argnames:
+            if argname not in kwargs:
+                notincall = ", ".join(
+                    repr(argname)
+                    for argname in self.argnames
+                    # Avoid self.argnames - kwargs.keys()
+                    # it doesn't preserve order.
+                    if argname not in kwargs.keys()
+                )
+                warnings.warn(
+                    f"Argument(s) {notincall} which are declared in the hookspec "
+                    "cannot be found in this hook call",
+                    stacklevel=3,  # Adjusted for delegation
+                )
+                break

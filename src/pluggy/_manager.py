@@ -10,6 +10,7 @@ from typing import Callable
 from typing import cast
 from typing import Final
 from typing import TYPE_CHECKING
+from typing import Union
 import warnings
 
 from . import _project
@@ -18,7 +19,6 @@ from ._callers import _multicall
 from ._hooks import _HookImplFunction
 from ._hooks import _Namespace
 from ._hooks import _Plugin
-from ._hooks import _SubsetHookCaller
 from ._hooks import HistoricHookCaller
 from ._hooks import HookCaller
 from ._hooks import HookImpl
@@ -27,6 +27,8 @@ from ._hooks import HookimplOpts
 from ._hooks import HookRelay
 from ._hooks import HookspecConfiguration
 from ._hooks import HookspecOpts
+from ._hooks import NormalHookCaller
+from ._hooks import SubsetHookCaller
 from ._result import Result
 
 
@@ -171,15 +173,15 @@ class PluginManager:
                 method: _HookImplFunction[object] = getattr(plugin, name)
                 hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_config)
                 hook_name = hookimpl_config.specname or name
-                hook: HookCaller | HistoricHookCaller | None = getattr(
-                    self.hook, hook_name, None
-                )
+                hook: HookCaller | None = getattr(self.hook, hook_name, None)
                 if hook is None:
-                    hook = HookCaller(hook_name, self._hookexec)
+                    hook = NormalHookCaller(hook_name, self._hookexec)
                     setattr(self.hook, hook_name, hook)
                 elif hook.has_spec():
                     self._verify_hook(hook, hookimpl)
-                hook._add_hookimpl(hookimpl)
+                # Cast to access private method since this is a concrete implementation
+                concrete_hook = cast(Union[NormalHookCaller, HistoricHookCaller], hook)
+                concrete_hook._add_hookimpl(hookimpl)
         return plugin_name
 
     def _parse_hookimpl(
@@ -281,7 +283,11 @@ class PluginManager:
         hookcallers = self.get_hookcallers(plugin)
         if hookcallers:
             for hookcaller in hookcallers:
-                hookcaller._remove_plugin(plugin)
+                # Cast to access private method since this is a concrete implementation
+                concrete_hook = cast(
+                    Union[NormalHookCaller, HistoricHookCaller], hookcaller
+                )
+                concrete_hook._remove_plugin(plugin)
 
         # if self._name2plugin[name] == None registration was blocked: ignore
         if self._name2plugin.get(name):
@@ -319,22 +325,20 @@ class PluginManager:
         for name in dir(module_or_class):
             spec_config = self._parse_hookspec(module_or_class, name)
             if spec_config is not None:
-                hc: HookCaller | HistoricHookCaller | None = getattr(
-                    self.hook, name, None
-                )
+                hc: HookCaller | None = getattr(self.hook, name, None)
                 if hc is None:
                     if spec_config.historic:
                         hc = HistoricHookCaller(
                             name, self._hookexec, module_or_class, spec_config
                         )
                     else:
-                        hc = HookCaller(
+                        hc = NormalHookCaller(
                             name, self._hookexec, module_or_class, spec_config
                         )
                     setattr(self.hook, name, hc)
                 else:
                     # Plugins registered this hook without knowing the spec.
-                    if spec_config.historic and isinstance(hc, HookCaller):
+                    if spec_config.historic and isinstance(hc, NormalHookCaller):
                         # Need to handover from HookCaller to HistoricHookCaller
                         old_hookimpls = hc.get_hookimpls()
                         hc = HistoricHookCaller(
@@ -410,9 +414,7 @@ class PluginManager:
                 return name
         return None
 
-    def _verify_hook(
-        self, hook: HookCaller | HistoricHookCaller, hookimpl: HookImpl
-    ) -> None:
+    def _verify_hook(self, hook: HookCaller, hookimpl: HookImpl) -> None:
         if hook.is_historic() and (hookimpl.hookwrapper or hookimpl.wrapper):
             raise PluginValidationError(
                 hookimpl.plugin,
@@ -602,7 +604,7 @@ class PluginManager:
         orig: HookCaller = getattr(self.hook, name)
         plugins_to_remove = {plug for plug in remove_plugins if hasattr(plug, name)}
         if plugins_to_remove:
-            return _SubsetHookCaller(orig, plugins_to_remove)
+            return SubsetHookCaller(orig, plugins_to_remove)
         return orig
 
 

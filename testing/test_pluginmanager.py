@@ -494,7 +494,110 @@ def test_subset_hook_caller(pm: PluginManager) -> None:
     pm.hook.he_method1(arg=1)
     assert out == [10]
 
-    assert repr(hc) == "<_SubsetHookCaller 'he_method1'>"
+    assert repr(hc) == "<SubsetHookCaller 'he_method1'>"
+
+    # Test that SubsetHookCaller cannot set specifications
+    from pluggy._hooks import HookspecConfiguration
+
+    with pytest.raises(
+        RuntimeError, match="Cannot set specification on SubsetHookCaller"
+    ):
+        hc.set_specification(Hooks)
+
+    with pytest.raises(
+        RuntimeError, match="Cannot set specification on SubsetHookCaller"
+    ):
+        config = HookspecConfiguration(firstresult=True)
+        hc.set_specification(Hooks, spec_config=config)
+
+
+def test_subset_hook_caller_maintains_invariants(pm: PluginManager) -> None:
+    """Test that SubsetHookCaller maintains the same invariants as the original hook."""
+
+    # Test with normal (non-historic) hook
+    class NormalHooks:
+        @hookspec
+        def normal_hook(self, arg):
+            pass
+
+    pm.add_hookspecs(NormalHooks)
+
+    class Plugin1:
+        @hookimpl
+        def normal_hook(self, arg):
+            return f"plugin1-{arg}"
+
+    class Plugin2:
+        @hookimpl
+        def normal_hook(self, arg):
+            return f"plugin2-{arg}"
+
+    plugin1, plugin2 = Plugin1(), Plugin2()
+    pm.register(plugin1)
+    pm.register(plugin2)
+
+    # Create subset hook caller for normal hook
+    normal_hc = pm.subset_hook_caller("normal_hook", [plugin1])
+
+    # Normal SubsetHookCaller should allow __call__ and call_extra
+    result = normal_hc(arg="test")
+    assert result == ["plugin2-test"]  # Only plugin2 should be called
+
+    # Normal SubsetHookCaller should allow call_extra
+    def extra_method(arg):
+        return f"extra-{arg}"
+
+    result = normal_hc.call_extra([extra_method], {"arg": "test"})
+    assert "plugin2-test" in result
+    assert "extra-test" in result
+
+    # Normal SubsetHookCaller should NOT allow call_historic
+    with pytest.raises(
+        AssertionError, match="is not historic - cannot call call_historic"
+    ):
+        normal_hc.call_historic(kwargs={"arg": "test"})
+
+    # Test with historic hook
+    class HistoricHooks:
+        @hookspec(historic=True)
+        def historic_hook(self, arg):
+            pass
+
+    pm.add_hookspecs(HistoricHooks)
+
+    class Plugin3:
+        @hookimpl
+        def historic_hook(self, arg):
+            return f"plugin3-{arg}"
+
+    class Plugin4:
+        @hookimpl
+        def historic_hook(self, arg):
+            return f"plugin4-{arg}"
+
+    plugin3, plugin4 = Plugin3(), Plugin4()
+    pm.register(plugin3)
+    pm.register(plugin4)
+
+    # Create subset hook caller for historic hook
+    historic_hc = pm.subset_hook_caller("historic_hook", [plugin3])
+
+    # Historic SubsetHookCaller should NOT allow direct __call__
+    with pytest.raises(RuntimeError, match="Cannot directly call a historic hook"):
+        historic_hc(arg="test")
+
+    # Historic SubsetHookCaller should NOT allow call_extra
+    with pytest.raises(RuntimeError, match="Cannot call call_extra on a historic hook"):
+        historic_hc.call_extra([extra_method], {"arg": "test"})
+
+    # Historic SubsetHookCaller should allow call_historic
+    results = []
+
+    def result_callback(result):
+        results.append(result)
+
+    historic_hc.call_historic(result_callback=result_callback, kwargs={"arg": "test"})
+    assert results == ["plugin4-test"]  # Only plugin4 should be called
 
 
 def test_get_hookimpls(pm: PluginManager) -> None:
