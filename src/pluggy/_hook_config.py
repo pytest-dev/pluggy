@@ -81,6 +81,10 @@ class HookspecConfiguration:
         "warn_on_impl",
         "warn_on_impl_args",
     )
+    firstresult: Final[bool]
+    historic: Final[bool]
+    warn_on_impl: Final[Warning | None]
+    warn_on_impl_args: Final[Mapping[str, Warning] | None]
 
     def __init__(
         self,
@@ -104,14 +108,14 @@ class HookspecConfiguration:
         if historic and firstresult:
             raise ValueError("cannot have a historic firstresult hook")
         #: Whether the hook is :ref:`first result only <firstresult>`.
-        self.firstresult: Final = firstresult
+        self.firstresult = firstresult
         #: Whether the hook is :ref:`historic <historic>`.
-        self.historic: Final = historic
+        self.historic = historic
         #: Whether the hook :ref:`warns when implemented <warn_on_impl>`.
-        self.warn_on_impl: Final = warn_on_impl
+        self.warn_on_impl = warn_on_impl
         #: Whether the hook warns when :ref:`certain arguments are requested
         #: <warn_on_impl>`.
-        self.warn_on_impl_args: Final = warn_on_impl_args
+        self.warn_on_impl_args = warn_on_impl_args
 
     def __repr__(self) -> str:
         attrs = []
@@ -139,6 +143,12 @@ class HookimplConfiguration:
         "trylast",
         "specname",
     )
+    wrapper: Final[bool]
+    hookwrapper: Final[bool]
+    optionalhook: Final[bool]
+    tryfirst: Final[bool]
+    trylast: Final[bool]
+    specname: Final[str | None]
 
     def __init__(
         self,
@@ -169,21 +179,21 @@ class HookimplConfiguration:
             The name of the hook specification to match, see :ref:`specname`.
         """
         #: Whether the hook implementation is a :ref:`wrapper <hookwrapper>`.
-        self.wrapper: Final = wrapper
+        self.wrapper = wrapper
         #: Whether the hook implementation is an :ref:`old-style wrapper
         #: <old_style_hookwrappers>`.
-        self.hookwrapper: Final = hookwrapper
+        self.hookwrapper = hookwrapper
         #: Whether validation against a hook specification is :ref:`optional
         #: <optionalhook>`.
-        self.optionalhook: Final = optionalhook
+        self.optionalhook = optionalhook
         #: Whether to try to order this hook implementation :ref:`first
         #: <callorder>`.
-        self.tryfirst: Final = tryfirst
+        self.tryfirst = tryfirst
         #: Whether to try to order this hook implementation :ref:`last
         #: <callorder>`.
-        self.trylast: Final = trylast
+        self.trylast = trylast
         #: The name of the hook specification to match, see :ref:`specname`.
-        self.specname: Final = specname
+        self.specname = specname
 
     def __repr__(self) -> str:
         attrs = []
