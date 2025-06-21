@@ -23,6 +23,7 @@ from typing import TypeVar
 from typing import Union
 import warnings
 
+from . import _project
 from ._result import Result
 
 
@@ -155,15 +156,24 @@ class HookimplConfiguration:
 class HookspecMarker:
     """Decorator for marking functions as hook specifications.
 
-    Instantiate it with a project_name to get a decorator.
+    Instantiate it with a project_name or ProjectSpec to get a decorator.
     Calling :meth:`PluginManager.add_hookspecs` later will discover all marked
     functions if the :class:`PluginManager` uses the same project name.
     """
 
-    __slots__ = ("project_name",)
+    __slots__ = ("_project_spec",)
 
-    def __init__(self, project_name: str) -> None:
-        self.project_name: Final = project_name
+    def __init__(self, project_name_or_spec: str | _project.ProjectSpec) -> None:
+        self._project_spec: Final = (
+            _project.ProjectSpec(project_name_or_spec)
+            if isinstance(project_name_or_spec, str)
+            else project_name_or_spec
+        )
+
+    @property
+    def project_name(self) -> str:
+        """The project name from the associated ProjectSpec."""
+        return self._project_spec.project_name
 
     @overload
     def __call__(
@@ -242,15 +252,24 @@ class HookspecMarker:
 class HookimplMarker:
     """Decorator for marking functions as hook implementations.
 
-    Instantiate it with a ``project_name`` to get a decorator.
+    Instantiate it with a ``project_name`` or ProjectSpec to get a decorator.
     Calling :meth:`PluginManager.register` later will discover all marked
     functions if the :class:`PluginManager` uses the same project name.
     """
 
-    __slots__ = ("project_name",)
+    __slots__ = ("_project_spec",)
 
-    def __init__(self, project_name: str) -> None:
-        self.project_name: Final = project_name
+    def __init__(self, project_name_or_spec: str | _project.ProjectSpec) -> None:
+        self._project_spec: Final = (
+            _project.ProjectSpec(project_name_or_spec)
+            if isinstance(project_name_or_spec, str)
+            else project_name_or_spec
+        )
+
+    @property
+    def project_name(self) -> str:
+        """The project name from the associated ProjectSpec."""
+        return self._project_spec.project_name
 
     @overload
     def __call__(

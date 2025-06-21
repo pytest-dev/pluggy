@@ -22,6 +22,7 @@ It provides hook specification and implementation mechanisms through a plugin ma
 - `ruff format` - Format code with Ruff
 - `uv run mypy src/` - Type checking with mypy
 - `pre-commit run --all-files` - Run all pre-commit hooks
+- Use pre-commit to lint and fix code
 
 ### Documentation
 - `tox -e docs` - Build documentation

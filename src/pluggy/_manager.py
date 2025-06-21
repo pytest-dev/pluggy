@@ -12,6 +12,7 @@ from typing import Final
 from typing import TYPE_CHECKING
 import warnings
 
+from . import _project
 from . import _tracing
 from ._callers import _multicall
 from ._hooks import _HookImplFunction
@@ -91,13 +92,17 @@ class PluginManager:
     For debugging purposes you can call :meth:`PluginManager.enable_tracing`
     which will subsequently send debug information to the trace helper.
 
-    :param project_name:
-        The short project name. Prefer snake case. Make sure it's unique!
+    :param project_name_or_spec:
+        The short project name (string) or a ProjectSpec instance.
     """
 
-    def __init__(self, project_name: str) -> None:
-        #: The project name.
-        self.project_name: Final = project_name
+    def __init__(self, project_name_or_spec: str | _project.ProjectSpec) -> None:
+        self._project_spec: Final = (
+            _project.ProjectSpec(project_name_or_spec)
+            if isinstance(project_name_or_spec, str)
+            else project_name_or_spec
+        )
+
         self._name2plugin: Final[dict[str, _Plugin]] = {}
         self._plugin_distinfo: Final[list[tuple[_Plugin, DistFacade]]] = []
         #: The "hook relay", used to call a hook on all registered plugins.
@@ -108,6 +113,11 @@ class PluginManager:
             "pluginmanage"
         )
         self._inner_hookexec = _multicall
+
+    @property
+    def project_name(self) -> str:
+        """The project name from the associated ProjectSpec."""
+        return self._project_spec.project_name
 
     def _hookexec(
         self,

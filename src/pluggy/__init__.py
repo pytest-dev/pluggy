@@ -11,6 +11,7 @@ __all__ = [
     "HookRelay",
     "HookspecMarker",
     "HookimplMarker",
+    "ProjectSpec",
     "Result",
     "PluggyWarning",
     "PluggyTeardownRaisedWarning",
@@ -25,6 +26,7 @@ from ._hooks import HookspecMarker
 from ._hooks import HookspecOpts
 from ._manager import PluginManager
 from ._manager import PluginValidationError
+from ._project import ProjectSpec
 from ._result import HookCallError
 from ._result import Result
 from ._warnings import PluggyTeardownRaisedWarning
