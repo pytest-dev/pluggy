@@ -4,6 +4,7 @@ Hook caller implementations and hook implementation classes.
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from collections.abc import Mapping
 from collections.abc import MutableSequence
 from collections.abc import Sequence
@@ -32,6 +33,12 @@ from ._result import HookCallError
 
 
 _T_HookImpl = TypeVar("_T_HookImpl", bound="HookImpl")
+
+# Type alias for completion hook functions
+CompletionHook = Callable[
+    [object | list[object] | None, BaseException | None],
+    tuple[object | list[object] | None, BaseException | None],
+]
 
 
 def _insert_hookimpl_into_list(
@@ -738,3 +745,75 @@ class WrapperImpl(HookImpl):
                 "Use HookImpl for normal implementations."
             )
         super().__init__(plugin, plugin_name, function, hook_impl_config)
+
+    def setup_and_get_completion_hook(
+        self, hook_name: str, caller_kwargs: Mapping[str, object]
+    ) -> CompletionHook:
+        """Set up wrapper and return a completion hook for teardown processing.
+
+        This method provides a streamlined way to handle wrapper setup and teardown.
+        Both old-style hookwrappers and new-style wrappers are handled uniformly
+        by converting old-style wrappers to the new protocol using
+        run_old_style_hookwrapper.
+
+        Args:
+            hook_name: Name of the hook being called
+            caller_kwargs: Keyword arguments passed to the hook call
+
+        Returns:
+            A completion hook function that handles the teardown process
+        """
+        args = self._get_call_args(caller_kwargs)
+
+        # Use run_old_style_hookwrapper for old-style, direct generator for new-style
+        if self.hookwrapper:
+            from ._callers import run_old_style_hookwrapper
+
+            wrapper_gen = run_old_style_hookwrapper(self, hook_name, args)
+        else:
+            # New-style wrapper handling
+            res = self.function(*args)
+            wrapper_gen = cast(Generator[None, object, object], res)
+
+        # Start the wrapper generator - this is where "did not yield" is checked
+        try:
+            next(wrapper_gen)  # first yield
+        except StopIteration:
+            from ._callers import _raise_wrapfail
+
+            _raise_wrapfail(wrapper_gen, "did not yield")
+
+        def completion_hook(
+            result: object | list[object] | None, exception: BaseException | None
+        ) -> tuple[object | list[object] | None, BaseException | None]:
+            """Unified completion hook for both old-style and new-style wrappers."""
+            try:
+                if exception is not None:
+                    try:
+                        wrapper_gen.throw(exception)
+                    except RuntimeError as re:
+                        # StopIteration from generator causes RuntimeError
+                        # even for coroutine usage - see #544
+                        if (
+                            isinstance(exception, StopIteration)
+                            and re.__cause__ is exception
+                        ):
+                            wrapper_gen.close()
+                            return result, exception
+                        else:
+                            raise
+                else:
+                    wrapper_gen.send(result)
+                # Following is unreachable for a well behaved hook wrapper.
+                # Try to force finalizers otherwise postponed till GC action.
+                # Note: close() may raise if generator handles GeneratorExit.
+                wrapper_gen.close()
+                from ._callers import _raise_wrapfail
+
+                _raise_wrapfail(wrapper_gen, "has second yield")
+            except StopIteration as si:
+                return si.value, None
+            except BaseException as e:
+                return result, e
+
+        return completion_hook

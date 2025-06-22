@@ -70,7 +70,7 @@ def _warn_teardown_exception(
     msg += f"Plugin: {hook_impl.plugin_name}, Hook: {hook_name}\n"
     msg += f"{type(e).__name__}: {e}\n"
     msg += "For more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning"  # noqa: E501
-    warnings.warn(PluggyTeardownRaisedWarning(msg), stacklevel=6)
+    warnings.warn(PluggyTeardownRaisedWarning(msg), stacklevel=7)
 
 
 def _multicall(
@@ -89,76 +89,40 @@ def _multicall(
     results: list[object] = []
     exception = None
 
-    try:  # run impl and wrapper setup functions in a loop
-        teardowns: list[Teardown] = []
-        try:
-            for hook_impl in reversed(wrapper_impls):
-                args = hook_impl._get_call_args(caller_kwargs)
+    # Set up wrapper completion hooks
+    from ._hook_callers import CompletionHook
 
-                if hook_impl.hookwrapper:
-                    function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
-                    next(function_gen)  # first yield
-                    teardowns.append(function_gen)
-                elif hook_impl.wrapper:
-                    try:
-                        # If this cast is not valid, a type error is raised below,
-                        # which is the desired response.
-                        res = hook_impl.function(*args)
-                        function_gen = cast(Generator[None, object, object], res)
-                        next(function_gen)  # first yield
-                        teardowns.append(function_gen)
-                    except StopIteration:
-                        _raise_wrapfail(function_gen, "did not yield")
+    completion_hooks: list[CompletionHook] = []
 
-            # Process normal implementations (in reverse order for correct execution)
-            # Caller ensures normal_impls contains only non-wrapper implementations
-            for normal_impl in reversed(normal_impls):
-                args = normal_impl._get_call_args(caller_kwargs)
+    try:
+        # Set up all wrappers and collect their completion hooks
+        for wrapper_impl in reversed(wrapper_impls):
+            completion_hook = wrapper_impl.setup_and_get_completion_hook(
+                hook_name, caller_kwargs
+            )
+            completion_hooks.append(completion_hook)
 
-                res = normal_impl.function(*args)
-                if res is not None:
-                    results.append(res)
-                    if firstresult:  # halt further impl calls
-                        break
-        except BaseException as exc:
-            exception = exc
-    finally:
-        if firstresult:  # first result hooks return a single value
-            result = results[0] if results else None
-        else:
-            result = results
+        # Process normal implementations (in reverse order for correct execution)
+        # Caller ensures normal_impls contains only non-wrapper implementations
+        for normal_impl in reversed(normal_impls):
+            args = normal_impl._get_call_args(caller_kwargs)
+            res = normal_impl.function(*args)
+            if res is not None:
+                results.append(res)
+                if firstresult:  # halt further impl calls
+                    break
+    except BaseException as exc:
+        exception = exc
 
-        # run all wrapper post-yield blocks
-        for teardown in reversed(teardowns):
-            try:
-                if exception is not None:
-                    try:
-                        teardown.throw(exception)
-                    except RuntimeError as re:
-                        # StopIteration from generator causes RuntimeError
-                        # even for coroutine usage - see #544
-                        if (
-                            isinstance(exception, StopIteration)
-                            and re.__cause__ is exception
-                        ):
-                            teardown.close()
-                            continue
-                        else:
-                            raise
-                else:
-                    teardown.send(result)
-                # Following is unreachable for a well behaved hook wrapper.
-                # Try to force finalizers otherwise postponed till GC action.
-                # Note: close() may raise if generator handles GeneratorExit.
-                teardown.close()
-            except StopIteration as si:
-                result = si.value
-                exception = None
-                continue
-            except BaseException as e:
-                exception = e
-                continue
-            _raise_wrapfail(teardown, "has second yield")
+    # Determine final result before teardown
+    if firstresult:  # first result hooks return a single value
+        result = results[0] if results else None
+    else:
+        result = results
+
+    # Run completion hooks in reverse order (LIFO - Last In, First Out)
+    for completion_hook in reversed(completion_hooks):
+        result, exception = completion_hook(result, exception)
 
     if exception is not None:
         raise exception
