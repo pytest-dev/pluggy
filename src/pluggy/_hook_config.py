@@ -8,14 +8,15 @@ from collections.abc import Generator
 from collections.abc import Mapping
 from collections.abc import Sequence
 from types import ModuleType
-from typing import Any
 from typing import Callable
 from typing import Final
 from typing import final
+from typing import Protocol
 from typing import TypedDict
 from typing import TypeVar
 from typing import Union
 
+from . import _hook_callers  # import as partial module for forward refs
 from ._result import Result
 
 
@@ -23,10 +24,19 @@ _T = TypeVar("_T")
 _F = TypeVar("_F", bound=Callable[..., object])
 _Namespace = Union[ModuleType, type]
 _Plugin = object
-_HookExec = Callable[
-    [str, Sequence[Any], Mapping[str, object], bool],
-    Union[object, list[object]],
-]
+
+
+class _HookExec(Protocol):
+    def __call__(
+        self,
+        hook_name: str,
+        normal_impls: Sequence[_hook_callers.HookImpl],
+        wrapper_impls: Sequence[_hook_callers.WrapperImpl],
+        caller_kwargs: Mapping[str, object],
+        firstresult: bool,
+    ) -> object | list[object]: ...
+
+
 _HookImplFunction = Callable[..., Union[_T, Generator[None, Result[_T], None]]]
 
 
@@ -194,6 +204,18 @@ class HookimplConfiguration:
         self.trylast = trylast
         #: The name of the hook specification to match, see :ref:`specname`.
         self.specname = specname
+
+    def create_hookimpl(
+        self,
+        plugin: _Plugin,
+        plugin_name: str,
+        function: _HookImplFunction[object],
+    ) -> _hook_callers.HookImpl | _hook_callers.WrapperImpl:
+        """Create the appropriate HookImpl subclass based on configuration."""
+        if self.wrapper or self.hookwrapper:
+            return _hook_callers.WrapperImpl(plugin, plugin_name, function, self)
+        else:
+            return _hook_callers.HookImpl(plugin, plugin_name, function, self)
 
     def __repr__(self) -> str:
         attrs = []

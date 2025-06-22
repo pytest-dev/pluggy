@@ -12,6 +12,7 @@ from typing import NoReturn
 import warnings
 
 from ._hook_callers import HookImpl
+from ._hook_callers import WrapperImpl
 from ._result import HookCallError
 from ._result import Result
 from ._warnings import PluggyTeardownRaisedWarning
@@ -23,7 +24,7 @@ Teardown = Generator[None, object, object]
 
 
 def run_old_style_hookwrapper(
-    hook_impl: HookImpl, hook_name: str, args: Sequence[object]
+    hook_impl: WrapperImpl, hook_name: str, args: Sequence[object]
 ) -> Teardown:
     """
     backward compatibility wrapper to run a old style hookwrapper as a wrapper
@@ -64,7 +65,7 @@ def _raise_wrapfail(
 
 
 def _warn_teardown_exception(
-    hook_name: str, hook_impl: HookImpl, e: BaseException
+    hook_name: str, hook_impl: WrapperImpl, e: BaseException
 ) -> None:
     msg = "A plugin raised an exception during an old-style hookwrapper teardown.\n"
     msg += f"Plugin: {hook_impl.plugin_name}, Hook: {hook_name}\n"
@@ -75,7 +76,8 @@ def _warn_teardown_exception(
 
 def _multicall(
     hook_name: str,
-    hook_impls: Sequence[HookImpl],
+    normal_impls: Sequence[HookImpl],
+    wrapper_impls: Sequence[WrapperImpl],
     caller_kwargs: Mapping[str, object],
     firstresult: bool,
 ) -> object | list[object]:
@@ -87,10 +89,11 @@ def _multicall(
     __tracebackhide__ = True
     results: list[object] = []
     exception = None
+
     try:  # run impl and wrapper setup functions in a loop
         teardowns: list[Teardown] = []
         try:
-            for hook_impl in reversed(hook_impls):
+            for hook_impl in reversed(wrapper_impls):
                 try:
                     args = [caller_kwargs[argname] for argname in hook_impl.argnames]
                 except KeyError as e:
@@ -103,10 +106,8 @@ def _multicall(
 
                 if hook_impl.hookwrapper:
                     function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
-
                     next(function_gen)  # first yield
                     teardowns.append(function_gen)
-
                 elif hook_impl.wrapper:
                     try:
                         # If this cast is not valid, a type error is raised below,
@@ -117,12 +118,25 @@ def _multicall(
                         teardowns.append(function_gen)
                     except StopIteration:
                         _raise_wrapfail(function_gen, "did not yield")
-                else:
-                    res = hook_impl.function(*args)
-                    if res is not None:
-                        results.append(res)
-                        if firstresult:  # halt further impl calls
-                            break
+
+            # Process normal implementations (in reverse order for correct execution)
+            # Caller ensures normal_impls contains only non-wrapper implementations
+            for normal_impl in reversed(normal_impls):
+                try:
+                    args = [caller_kwargs[argname] for argname in normal_impl.argnames]
+                except KeyError as e:
+                    # coverage bug - this is tested
+                    for argname in normal_impl.argnames:  # pragma: no cover
+                        if argname not in caller_kwargs:
+                            raise HookCallError(
+                                f"hook call must provide argument {argname!r}"
+                            ) from e
+
+                res = normal_impl.function(*args)
+                if res is not None:
+                    results.append(res)
+                    if firstresult:  # halt further impl calls
+                        break
         except BaseException as exc:
             exception = exc
     finally:

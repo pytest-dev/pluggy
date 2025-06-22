@@ -10,7 +10,6 @@ from typing import Callable
 from typing import cast
 from typing import Final
 from typing import TYPE_CHECKING
-from typing import Union
 import warnings
 
 from . import _project
@@ -22,6 +21,7 @@ from ._hook_callers import HookImpl
 from ._hook_callers import HookRelay
 from ._hook_callers import NormalHookCaller
 from ._hook_callers import SubsetHookCaller
+from ._hook_callers import WrapperImpl
 from ._hook_config import _HookImplFunction
 from ._hook_config import _Namespace
 from ._hook_config import _Plugin
@@ -125,13 +125,16 @@ class PluginManager:
     def _hookexec(
         self,
         hook_name: str,
-        methods: Sequence[HookImpl],
-        kwargs: Mapping[str, object],
+        normal_impls: Sequence[HookImpl],
+        wrapper_impls: Sequence[WrapperImpl],
+        caller_kwargs: Mapping[str, object],
         firstresult: bool,
     ) -> object | list[object]:
         # called from all hookcaller instances.
         # enable_tracing will set its own wrapping function at self._inner_hookexec
-        return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+        return self._inner_hookexec(
+            hook_name, normal_impls, wrapper_impls, caller_kwargs, firstresult
+        )
 
     def register(self, plugin: _Plugin, name: str | None = None) -> str | None:
         """Register a plugin and return its name.
@@ -171,17 +174,33 @@ class PluginManager:
             hookimpl_config = self._parse_hookimpl(plugin, name)
             if hookimpl_config is not None:
                 method: _HookImplFunction[object] = getattr(plugin, name)
-                hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_config)
+                hookimpl = hookimpl_config.create_hookimpl(plugin, plugin_name, method)
                 hook_name = hookimpl_config.specname or name
-                hook: HookCaller | None = getattr(self.hook, hook_name, None)
+                hook: NormalHookCaller | HistoricHookCaller | None = getattr(
+                    self.hook, hook_name, None
+                )
                 if hook is None:
                     hook = NormalHookCaller(hook_name, self._hookexec)
                     setattr(self.hook, hook_name, hook)
                 elif hook.has_spec():
                     self._verify_hook(hook, hookimpl)
-                # Cast to access private method since this is a concrete implementation
-                concrete_hook = cast(Union[NormalHookCaller, HistoricHookCaller], hook)
-                concrete_hook._add_hookimpl(hookimpl)
+                # With stronger types, we can access _add_hookimpl directly
+                # Historic hooks only accept HookImpl, not WrapperImpl
+                if hook.is_historic():
+                    if isinstance(hookimpl, WrapperImpl):
+                        raise PluginValidationError(
+                            hookimpl.plugin,
+                            f"Plugin {hookimpl.plugin_name!r}\nhook {hook_name!r}\n"
+                            "Historic hooks do not support wrappers.",
+                        )
+                    # hook is HistoricHookCaller here
+                    # We already checked that hookimpl is not WrapperImpl above
+                    assert isinstance(hookimpl, HookImpl)
+                    hook._add_hookimpl(hookimpl)
+                else:
+                    # hook is NormalHookCaller here
+                    assert isinstance(hook, NormalHookCaller)
+                    hook._add_hookimpl(hookimpl)
         return plugin_name
 
     def _parse_hookimpl(
@@ -283,10 +302,8 @@ class PluginManager:
         hookcallers = self.get_hookcallers(plugin)
         if hookcallers:
             for hookcaller in hookcallers:
-                # Cast to access private method since this is a concrete implementation
-                concrete_hook = cast(
-                    Union[NormalHookCaller, HistoricHookCaller], hookcaller
-                )
+                # hookcaller is typed as Union[NormalHookCaller, HistoricHookCaller]
+                concrete_hook = hookcaller
                 concrete_hook._remove_plugin(plugin)
 
         # if self._name2plugin[name] == None registration was blocked: ignore
@@ -325,7 +342,9 @@ class PluginManager:
         for name in dir(module_or_class):
             spec_config = self._parse_hookspec(module_or_class, name)
             if spec_config is not None:
-                hc: HookCaller | None = getattr(self.hook, name, None)
+                hc: NormalHookCaller | HistoricHookCaller | None = getattr(
+                    self.hook, name, None
+                )
                 if hc is None:
                     if spec_config.historic:
                         hc = HistoricHookCaller(
@@ -345,12 +364,21 @@ class PluginManager:
                             name, self._hookexec, module_or_class, spec_config
                         )
                         # Re-add existing hookimpls (history applied by _add_hookimpl)
+                        # Only normal implementations can be moved to historic hooks
                         for hookimpl in old_hookimpls:
+                            if hookimpl.hookwrapper or hookimpl.wrapper:
+                                raise PluginValidationError(
+                                    hookimpl.plugin,
+                                    f"Plugin {hookimpl.plugin_name!r}\nhook {name!r}\n"
+                                    "Historic hooks do not support wrappers.",
+                                )
+                            # hc is HistoricHookCaller, access _add_hookimpl directly
                             hc._add_hookimpl(hookimpl)
                         setattr(self.hook, name, hc)
                     else:
                         hc.set_specification(module_or_class, spec_config)
                     for hookfunction in hc.get_hookimpls():
+                        # hookfunction is now already typed as HookImpl
                         self._verify_hook(hc, hookfunction)
                 names.append(name)
 
@@ -414,7 +442,11 @@ class PluginManager:
                 return name
         return None
 
-    def _verify_hook(self, hook: HookCaller, hookimpl: HookImpl) -> None:
+    def _verify_hook(
+        self,
+        hook: NormalHookCaller | HistoricHookCaller,
+        hookimpl: HookImpl | WrapperImpl,
+    ) -> None:
         if hook.is_historic() and (hookimpl.hookwrapper or hookimpl.wrapper):
             raise PluginValidationError(
                 hookimpl.plugin,
@@ -469,7 +501,7 @@ class PluginManager:
         for name in self.hook.__dict__:
             if name[0] == "_":
                 continue
-            hook: HookCaller = getattr(self.hook, name)
+            hook: NormalHookCaller | HistoricHookCaller = getattr(self.hook, name)
             if not hook.has_spec():
                 for hookimpl in hook.get_hookimpls():
                     if not hookimpl.optionalhook:
@@ -517,7 +549,9 @@ class PluginManager:
         """Return a list of (name, plugin) pairs for all registered plugins."""
         return list(self._name2plugin.items())
 
-    def get_hookcallers(self, plugin: _Plugin) -> list[HookCaller] | None:
+    def get_hookcallers(
+        self, plugin: _Plugin
+    ) -> list[NormalHookCaller | HistoricHookCaller] | None:
         """Get all hook callers for the specified plugin.
 
         :returns:
@@ -526,7 +560,7 @@ class PluginManager:
         """
         if self.get_name(plugin) is None:
             return None
-        hookcallers = []
+        hookcallers: list[NormalHookCaller | HistoricHookCaller] = []
         for hookcaller in self.hook.__dict__.values():
             for hookimpl in hookcaller.get_hookimpls():
                 if hookimpl.plugin is plugin:
@@ -552,15 +586,24 @@ class PluginManager:
 
         def traced_hookexec(
             hook_name: str,
-            hook_impls: Sequence[HookImpl],
+            normal_impls: Sequence[HookImpl],
+            wrapper_impls: Sequence[WrapperImpl],
             caller_kwargs: Mapping[str, object],
             firstresult: bool,
         ) -> object | list[object]:
-            before(hook_name, hook_impls, caller_kwargs)
+            # For backward compatibility, combine the lists for tracing callbacks
+            combined_hook_impls = [*normal_impls, *wrapper_impls]
+            before(hook_name, combined_hook_impls, caller_kwargs)
             outcome = Result.from_call(
-                lambda: oldcall(hook_name, hook_impls, caller_kwargs, firstresult)
+                lambda: oldcall(
+                    hook_name,
+                    normal_impls,
+                    wrapper_impls,
+                    caller_kwargs,
+                    firstresult,
+                )
             )
-            after(outcome, hook_name, hook_impls, caller_kwargs)
+            after(outcome, hook_name, combined_hook_impls, caller_kwargs)
             return outcome.get_result()
 
         self._inner_hookexec = traced_hookexec
@@ -601,11 +644,12 @@ class PluginManager:
         """Return a proxy :class:`~pluggy.HookCaller` instance for the named
         method which manages calls to all registered plugins except the ones
         from remove_plugins."""
-        orig: HookCaller = getattr(self.hook, name)
+        orig: NormalHookCaller | HistoricHookCaller = getattr(self.hook, name)
         plugins_to_remove = {plug for plug in remove_plugins if hasattr(plug, name)}
         if plugins_to_remove:
             return SubsetHookCaller(orig, plugins_to_remove)
-        return orig
+        # Return as HookCaller protocol for compatibility
+        return cast(HookCaller, orig)
 
 
 def _formatdef(func: Callable[..., object]) -> str:

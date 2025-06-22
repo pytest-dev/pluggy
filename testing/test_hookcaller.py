@@ -1,9 +1,7 @@
 from collections.abc import Generator
 from collections.abc import Sequence
 from typing import Callable
-from typing import cast
 from typing import TypeVar
-from typing import Union
 
 import pytest
 
@@ -23,13 +21,14 @@ hookimpl = project_spec.hookimpl
 
 
 @pytest.fixture
-def hc(pm: PluginManager) -> HookCaller:
+def hc(pm: PluginManager) -> NormalHookCaller:
     class Hooks:
         @hookspec
         def he_method1(self, arg: object) -> None:
             pass
 
     pm.add_hookspecs(Hooks)
+    assert isinstance(pm.hook.he_method1, NormalHookCaller)
     return pm.hook.he_method1
 
 
@@ -37,7 +36,7 @@ FuncT = TypeVar("FuncT", bound=Callable[..., object])
 
 
 class AddMeth:
-    def __init__(self, hc: HookCaller) -> None:
+    def __init__(self, hc: NormalHookCaller) -> None:
         self.hc = hc
 
     def __call__(
@@ -48,7 +47,7 @@ class AddMeth:
         wrapper: bool = False,
     ) -> Callable[[FuncT], FuncT]:
         def wrap(func: FuncT) -> FuncT:
-            hookimpl(
+            project_spec.hookimpl(
                 tryfirst=tryfirst,
                 trylast=trylast,
                 hookwrapper=hookwrapper,
@@ -56,23 +55,16 @@ class AddMeth:
             )(func)
             config = project_spec.get_hookimpl_config(func)
             assert config is not None  # Test functions should be decorated
-            # Cast to access private method since this is a concrete implementation
-            concrete_hook = cast(Union[NormalHookCaller, HistoricHookCaller], self.hc)
-            concrete_hook._add_hookimpl(
-                HookImpl(
-                    None,
-                    "<temp>",
-                    func,
-                    config,
-                ),
-            )
+            # Create hookimpl and add to hook caller
+            hookimpl = config.create_hookimpl(None, "<temp>", func)
+            self.hc._add_hookimpl(hookimpl)
             return func
 
         return wrap
 
 
 @pytest.fixture
-def addmeth(hc: HookCaller) -> AddMeth:
+def addmeth(hc: NormalHookCaller) -> AddMeth:
     return AddMeth(hc)
 
 
@@ -643,7 +635,6 @@ def test_hookspec_configuration_backward_compatibility() -> None:
 
 def test_set_specification_backward_compatibility() -> None:
     """Test that HookCaller.set_specification supports both old and new interfaces."""
-    from pluggy._hooks import HistoricHookCaller
     from pluggy._hooks import HookspecOpts
     from pluggy._hooks import NormalHookCaller
     from pluggy._manager import PluginManager

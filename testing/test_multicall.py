@@ -8,7 +8,8 @@ import pytest
 from pluggy import HookCallError
 from pluggy import ProjectSpec
 from pluggy._callers import _multicall
-from pluggy._hooks import HookImpl
+from pluggy._hook_callers import HookImpl
+from pluggy._hook_callers import WrapperImpl
 
 
 project_spec = ProjectSpec("example")
@@ -26,9 +27,19 @@ def MC(
     for method in methods:
         config = project_spec.get_hookimpl_config(method)
         assert config is not None  # Test functions should be decorated
-        f = HookImpl(None, "<temp>", method, config)
+        f = config.create_hookimpl(None, "<temp>", method)
         hookfuncs.append(f)
-    return caller("foo", hookfuncs, kwargs, firstresult)
+
+    # Separate normal and wrapper implementations for new signature
+    normal_impls: list[HookImpl] = []
+    wrapper_impls: list[WrapperImpl] = []
+    for hookfunc in hookfuncs:
+        if isinstance(hookfunc, WrapperImpl):
+            wrapper_impls.append(hookfunc)
+        else:
+            normal_impls.append(hookfunc)
+
+    return caller("foo", normal_impls, wrapper_impls, kwargs, firstresult)
 
 
 def test_keyword_args() -> None:
