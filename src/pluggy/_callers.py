@@ -13,7 +13,6 @@ import warnings
 
 from ._hook_callers import HookImpl
 from ._hook_callers import WrapperImpl
-from ._result import HookCallError
 from ._result import Result
 from ._warnings import PluggyTeardownRaisedWarning
 
@@ -94,15 +93,7 @@ def _multicall(
         teardowns: list[Teardown] = []
         try:
             for hook_impl in reversed(wrapper_impls):
-                try:
-                    args = [caller_kwargs[argname] for argname in hook_impl.argnames]
-                except KeyError as e:
-                    # coverage bug - this is tested
-                    for argname in hook_impl.argnames:  # pragma: no cover
-                        if argname not in caller_kwargs:
-                            raise HookCallError(
-                                f"hook call must provide argument {argname!r}"
-                            ) from e
+                args = hook_impl._get_call_args(caller_kwargs)
 
                 if hook_impl.hookwrapper:
                     function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
@@ -122,15 +113,7 @@ def _multicall(
             # Process normal implementations (in reverse order for correct execution)
             # Caller ensures normal_impls contains only non-wrapper implementations
             for normal_impl in reversed(normal_impls):
-                try:
-                    args = [caller_kwargs[argname] for argname in normal_impl.argnames]
-                except KeyError as e:
-                    # coverage bug - this is tested
-                    for argname in normal_impl.argnames:  # pragma: no cover
-                        if argname not in caller_kwargs:
-                            raise HookCallError(
-                                f"hook call must provide argument {argname!r}"
-                            ) from e
+                args = normal_impl._get_call_args(caller_kwargs)
 
                 res = normal_impl.function(*args)
                 if res is not None:

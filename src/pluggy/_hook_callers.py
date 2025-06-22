@@ -28,6 +28,7 @@ from ._hook_config import HookspecConfiguration
 from ._hook_config import HookspecOpts
 from ._hook_markers import HookSpec
 from ._hook_markers import varnames
+from ._result import HookCallError
 
 
 _T_HookImpl = TypeVar("_T_HookImpl", bound="HookImpl")
@@ -667,6 +668,30 @@ class HookImpl:
         #: Whether to try to order this hook implementation :ref:`last
         #: <callorder>`.
         self.trylast = hook_impl_config.trylast
+
+    def _get_call_args(self, caller_kwargs: Mapping[str, object]) -> list[object]:
+        """Extract arguments for calling this hook implementation.
+
+        Args:
+            caller_kwargs: Keyword arguments passed to the hook call
+
+        Returns:
+            List of arguments in the order expected by the hook implementation
+
+        Raises:
+            HookCallError: If required arguments are missing
+        """
+        try:
+            return [caller_kwargs[argname] for argname in self.argnames]
+        except KeyError as e:
+            # Find the first missing argument for a clearer error message
+            for argname in self.argnames:  # pragma: no cover
+                if argname not in caller_kwargs:
+                    raise HookCallError(
+                        f"hook call must provide argument {argname!r}"
+                    ) from e
+            # This should never be reached but keep the original exception just in case
+            raise  # pragma: no cover
 
     def __repr__(self) -> str:
         return (
