@@ -13,6 +13,7 @@ import warnings
 
 from ._hook_callers import HookImpl
 from ._hook_callers import WrapperImpl
+from ._hook_callers import WrapperImpl
 from ._result import Result
 from ._warnings import PluggyTeardownRaisedWarning
 
