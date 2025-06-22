@@ -62,6 +62,12 @@ def _insert_hookimpl_into_list(
 
 _T_HookImpl = TypeVar("_T_HookImpl", bound="HookImpl")
 
+# Type alias for completion hook functions
+CompletionHook = Callable[
+    [object | list[object] | None, BaseException | None],
+    tuple[object | list[object] | None, BaseException | None],
+]
+
 
 def _insert_hookimpl_into_list(
     hookimpl: _T_HookImpl, target_list: MutableSequence[_T_HookImpl]
