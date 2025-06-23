@@ -9,7 +9,7 @@ import pytest
 from pluggy import PluginManager
 from pluggy import ProjectSpec
 from pluggy._callers import _multicall
-from pluggy._hook_impl import WrapperImpl
+from pluggy._hook_callers import WrapperImpl
 
 
 project_spec = ProjectSpec("example")

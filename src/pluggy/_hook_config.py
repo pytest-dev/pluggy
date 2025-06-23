@@ -12,9 +12,14 @@ from typing import Callable
 from typing import Final
 from typing import final
 from typing import Protocol
+from typing import TYPE_CHECKING
 from typing import TypedDict
 from typing import TypeVar
 from typing import Union
+
+
+if TYPE_CHECKING:
+    from ._async import Submitter
 
 from . import _hook_callers  # import as partial module for forward refs
 from ._result import Result
@@ -34,6 +39,7 @@ class _HookExec(Protocol):
         wrapper_impls: Sequence[_hook_callers.WrapperImpl],
         caller_kwargs: Mapping[str, object],
         firstresult: bool,
+        async_submitter: Submitter,
     ) -> object | list[object]: ...
 
 

@@ -10,10 +10,12 @@ from typing import Callable
 from typing import cast
 from typing import Final
 from typing import TYPE_CHECKING
+from typing import TypeVar
 import warnings
 
 from . import _project
 from . import _tracing
+from ._async import Submitter
 from ._callers import _multicall
 from ._hook_callers import HistoricHookCaller
 from ._hook_callers import HookCaller
@@ -37,6 +39,7 @@ if TYPE_CHECKING:
     import importlib.metadata
 
 
+_T = TypeVar("_T")
 _BeforeTrace = Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]
 _AfterTrace = Callable[[Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None]
 
@@ -99,7 +102,11 @@ class PluginManager:
         The short project name (string) or a ProjectSpec instance.
     """
 
-    def __init__(self, project_name_or_spec: str | _project.ProjectSpec) -> None:
+    def __init__(
+        self,
+        project_name_or_spec: str | _project.ProjectSpec,
+        async_submitter: Submitter | None = None,
+    ) -> None:
         self._project_spec: Final = (
             _project.ProjectSpec(project_name_or_spec)
             if isinstance(project_name_or_spec, str)
@@ -116,6 +123,7 @@ class PluginManager:
             "pluginmanage"
         )
         self._inner_hookexec = _multicall
+        self._async_submitter: Submitter = async_submitter or Submitter()
 
     @property
     def project_name(self) -> str:
@@ -129,11 +137,17 @@ class PluginManager:
         wrapper_impls: Sequence[WrapperImpl],
         caller_kwargs: Mapping[str, object],
         firstresult: bool,
+        async_submitter: Submitter,
     ) -> object | list[object]:
         # called from all hookcaller instances.
         # enable_tracing will set its own wrapping function at self._inner_hookexec
         return self._inner_hookexec(
-            hook_name, normal_impls, wrapper_impls, caller_kwargs, firstresult
+            hook_name,
+            normal_impls,
+            wrapper_impls,
+            caller_kwargs,
+            firstresult,
+            async_submitter,
         )
 
     def register(self, plugin: _Plugin, name: str | None = None) -> str | None:
@@ -180,7 +194,9 @@ class PluginManager:
                     self.hook, hook_name, None
                 )
                 if hook is None:
-                    hook = NormalHookCaller(hook_name, self._hookexec)
+                    hook = NormalHookCaller(
+                        hook_name, self._hookexec, self._async_submitter
+                    )
                     setattr(self.hook, hook_name, hook)
                 elif hook.has_spec():
                     self._verify_hook(hook, hookimpl)
@@ -348,11 +364,19 @@ class PluginManager:
                 if hc is None:
                     if spec_config.historic:
                         hc = HistoricHookCaller(
-                            name, self._hookexec, module_or_class, spec_config
+                            name,
+                            self._hookexec,
+                            module_or_class,
+                            spec_config,
+                            self._async_submitter,
                         )
                     else:
                         hc = NormalHookCaller(
-                            name, self._hookexec, module_or_class, spec_config
+                            name,
+                            self._hookexec,
+                            self._async_submitter,
+                            module_or_class,
+                            spec_config,
                         )
                     setattr(self.hook, name, hc)
                 else:
@@ -361,7 +385,11 @@ class PluginManager:
                         # Need to handover from HookCaller to HistoricHookCaller
                         old_hookimpls = hc.get_hookimpls()
                         hc = HistoricHookCaller(
-                            name, self._hookexec, module_or_class, spec_config
+                            name,
+                            self._hookexec,
+                            module_or_class,
+                            spec_config,
+                            self._async_submitter,
                         )
                         # Re-add existing hookimpls (history applied by _add_hookimpl)
                         # Only normal implementations can be moved to historic hooks
@@ -590,6 +618,7 @@ class PluginManager:
             wrapper_impls: Sequence[WrapperImpl],
             caller_kwargs: Mapping[str, object],
             firstresult: bool,
+            async_submitter: Submitter,
         ) -> object | list[object]:
             # For backward compatibility, combine the lists for tracing callbacks
             combined_hook_impls = [*normal_impls, *wrapper_impls]
@@ -601,6 +630,7 @@ class PluginManager:
                     wrapper_impls,
                     caller_kwargs,
                     firstresult,
+                    self._async_submitter,
                 )
             )
             after(outcome, hook_name, combined_hook_impls, caller_kwargs)
@@ -650,6 +680,51 @@ class PluginManager:
             return SubsetHookCaller(orig, plugins_to_remove)
         # Return as HookCaller protocol for compatibility
         return cast(HookCaller, orig)
+
+    async def run_async(self, func: Callable[[], _T]) -> _T:
+        """Run a function with async support enabled for hook results.
+
+        This method runs the provided function in a greenlet context that enables
+        awaiting async results returned by hooks. Hook results that are awaitable
+        will be automatically awaited when running in this context.
+
+        :param func: The function to run with async support enabled
+        :returns: The result of the function
+        :raises RuntimeError: If greenlet is not available
+
+        Example:
+            pm = PluginManager("myapp")
+            result = await pm.run_async(lambda: pm.hook.some_hook())
+        """
+
+        def wrapper() -> _T:
+            # Store the async submitter in the plugin manager for hook execution
+            old_hookexec = self._inner_hookexec
+
+            def async_hookexec(
+                hook_name: str,
+                normal_impls: Sequence[HookImpl],
+                wrapper_impls: Sequence[WrapperImpl],
+                caller_kwargs: Mapping[str, object],
+                firstresult: bool,
+                async_submitter: Submitter,
+            ) -> object | list[object]:
+                return old_hookexec(
+                    hook_name,
+                    normal_impls,
+                    wrapper_impls,
+                    caller_kwargs,
+                    firstresult,
+                    async_submitter,
+                )
+
+            try:
+                self._inner_hookexec = async_hookexec
+                return func()
+            finally:
+                self._inner_hookexec = old_hookexec
+
+        return await self._async_submitter.run(wrapper)
 
 
 def _formatdef(func: Callable[..., object]) -> str:

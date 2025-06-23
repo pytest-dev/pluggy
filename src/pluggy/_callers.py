@@ -4,13 +4,18 @@ Call loop machinery
 
 from __future__ import annotations
 
+from collections.abc import Awaitable
 from collections.abc import Generator
 from collections.abc import Mapping
 from collections.abc import Sequence
 from typing import cast
 from typing import NoReturn
+from typing import TYPE_CHECKING
 import warnings
 
+
+if TYPE_CHECKING:
+    from ._async import Submitter
 from ._hook_callers import HookImpl
 from ._hook_callers import WrapperImpl
 from ._hook_callers import WrapperImpl
@@ -80,6 +85,7 @@ def _multicall(
     wrapper_impls: Sequence[WrapperImpl],
     caller_kwargs: Mapping[str, object],
     firstresult: bool,
+    async_submitter: Submitter,
 ) -> object | list[object]:
     """Execute a call into multiple python functions/methods and return the
     result(s).
@@ -109,6 +115,9 @@ def _multicall(
             args = normal_impl._get_call_args(caller_kwargs)
             res = normal_impl.function(*args)
             if res is not None:
+                # Handle awaitable results using maybe_submit
+                if isinstance(res, Awaitable):
+                    res = async_submitter.maybe_submit(res)
                 results.append(res)
                 if firstresult:  # halt further impl calls
                     break

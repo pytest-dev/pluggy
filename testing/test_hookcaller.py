@@ -640,7 +640,7 @@ def test_set_specification_backward_compatibility() -> None:
     from pluggy._manager import PluginManager
 
     pm = PluginManager("test")
-    hook_caller = NormalHookCaller("test_hook", pm._hookexec)
+    hook_caller = NormalHookCaller("test_hook", pm._hookexec, pm._async_submitter)
 
     # Test with new HookspecConfiguration interface
     config = HookspecConfiguration(firstresult=True, historic=False)
@@ -663,7 +663,7 @@ def test_set_specification_backward_compatibility() -> None:
     }
     historic_config = HookspecConfiguration(**old_opts)
     historic_hook_caller = HistoricHookCaller(
-        "test_hook", pm._hookexec, TestSpec, historic_config
+        "test_hook", pm._hookexec, TestSpec, historic_config, pm._async_submitter
     )
     assert historic_hook_caller.spec is not None
     assert historic_hook_caller.spec.config.firstresult is False
@@ -671,14 +671,14 @@ def test_set_specification_backward_compatibility() -> None:
 
     # Test with old HookspecOpts interface (keyword) - use HistoricHookCaller
     historic_hook_caller2 = HistoricHookCaller(
-        "test_hook", pm._hookexec, TestSpec, historic_config
+        "test_hook", pm._hookexec, TestSpec, historic_config, pm._async_submitter
     )
     assert historic_hook_caller2.spec is not None
     assert historic_hook_caller2.spec.config.firstresult is False
     assert historic_hook_caller2.spec.config.historic is True
 
     # Test error cases
-    hook_caller4 = NormalHookCaller("test_hook", pm._hookexec)
+    hook_caller4 = NormalHookCaller("test_hook", pm._hookexec, pm._async_submitter)
 
     # Cannot provide both positional and keyword
     with pytest.raises(

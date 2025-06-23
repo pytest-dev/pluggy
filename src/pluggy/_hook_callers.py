@@ -32,6 +32,10 @@ from ._hook_markers import varnames
 from ._result import HookCallError
 
 
+if TYPE_CHECKING:
+    from ._async import Submitter
+
+
 _T_HookImpl = TypeVar("_T_HookImpl", bound="HookImpl")
 
 # Type alias for completion hook functions
@@ -184,12 +188,14 @@ class HistoricHookCaller:
         "_hookexec",
         "_hookimpls",
         "_call_history",
+        "_async_submitter",
     )
     name: Final[str]
     spec: Final[HookSpec]
     _hookexec: Final[_HookExec]
     _hookimpls: Final[list[HookImpl]]
     _call_history: Final[_CallHistory]
+    _async_submitter: Final[Submitter]
 
     def __init__(
         self,
@@ -197,12 +203,14 @@ class HistoricHookCaller:
         hook_execute: _HookExec,
         specmodule_or_class: _Namespace,
         spec_config: HookspecConfiguration,
+        async_submitter: Submitter,
     ) -> None:
         """:meta private:"""
         assert spec_config.historic, "HistoricHookCaller requires historic=True"
         #: Name of the hook getting called.
         self.name = name
         self._hookexec = hook_execute
+        self._async_submitter = async_submitter
         # The hookimpls list for historic hooks (no wrappers supported)
         self._hookimpls = []
         self._call_history = []
@@ -280,7 +288,9 @@ class HistoricHookCaller:
         # Historizing hooks don't return results.
         # Remember firstresult isn't compatible with historic.
         # Copy because plugins may register other plugins during iteration (#438).
-        res = self._hookexec(self.name, self._hookimpls.copy(), [], kwargs, False)
+        res = self._hookexec(
+            self.name, self._hookimpls.copy(), [], kwargs, False, self._async_submitter
+        )
         if result_callback is None:
             return
         if isinstance(res, list):
@@ -300,7 +310,9 @@ class HistoricHookCaller:
     def _maybe_apply_history(self, method: HookImpl) -> None:
         """Apply call history to a new hookimpl if it is marked as historic."""
         for kwargs, result_callback in self._call_history:
-            res = self._hookexec(self.name, [method], [], kwargs, False)
+            res = self._hookexec(
+                self.name, [method], [], kwargs, False, self._async_submitter
+            )
             if res and result_callback is not None:
                 # XXX: remember firstresult isn't compat with historic
                 assert isinstance(res, list)
@@ -316,17 +328,20 @@ class NormalHookCaller:
         "_hookexec",
         "_normal_hookimpls",
         "_wrapper_hookimpls",
+        "_async_submitter",
     )
     name: Final[str]
     spec: HookSpec | None
     _hookexec: Final[_HookExec]
     _normal_hookimpls: Final[list[HookImpl]]
     _wrapper_hookimpls: Final[list[WrapperImpl]]
+    _async_submitter: Final[Submitter]
 
     def __init__(
         self,
         name: str,
         hook_execute: _HookExec,
+        async_submitter: Submitter,
         specmodule_or_class: _Namespace | None = None,
         spec_config: HookspecConfiguration | None = None,
     ) -> None:
@@ -334,6 +349,7 @@ class NormalHookCaller:
         #: Name of the hook getting called.
         self.name = name
         self._hookexec = hook_execute
+        self._async_submitter = async_submitter
         # Split hook implementations into two lists for simpler management:
         # Normal hooks: [trylast, normal, tryfirst]
         # Wrapper hooks: [trylast, normal, tryfirst]
@@ -445,6 +461,7 @@ class NormalHookCaller:
             self._wrapper_hookimpls.copy(),
             kwargs,
             firstresult,
+            self._async_submitter,
         )
 
     def call_historic(
@@ -488,6 +505,7 @@ class NormalHookCaller:
             self._wrapper_hookimpls.copy(),
             kwargs,
             firstresult,
+            self._async_submitter,
         )
 
 
@@ -564,7 +582,15 @@ class SubsetHookCaller:
 
         normal_impls = self._get_filtered(self._orig._normal_hookimpls)
         wrapper_impls = self._get_filtered(self._orig._wrapper_hookimpls)
-        return hookexec(self.name, normal_impls, wrapper_impls, kwargs, firstresult)
+        # Both NormalHookCaller and HistoricHookCaller now have async_submitter
+        return hookexec(
+            self.name,
+            normal_impls,
+            wrapper_impls,
+            kwargs,
+            firstresult,
+            self._orig._async_submitter,
+        )
 
         normal_impls = self._get_filtered(self._orig._normal_hookimpls)
         wrapper_impls = self._get_filtered(self._orig._wrapper_hookimpls)
@@ -600,7 +626,15 @@ class SubsetHookCaller:
         # Historic hooks should have empty wrapper list
         assert not wrapper_impls, "Historic hooks don't support wrappers"
         empty_wrappers = cast(list[WrapperImpl], [])
-        res = hookexec(self.name, normal_impls, empty_wrappers, kwargs, False)
+        # Historic hooks need async_submitter
+        res = hookexec(
+            self.name,
+            normal_impls,
+            empty_wrappers,
+            kwargs,
+            False,
+            self._orig._async_submitter,
+        )
         if result_callback is None:
             return
         if isinstance(res, list):
@@ -632,7 +666,15 @@ class SubsetHookCaller:
 
         firstresult = self.spec.config.firstresult if self.spec else False
         hookexec = getattr(self._orig, "_hookexec")
-        return hookexec(self.name, normal_impls, wrapper_impls, kwargs, firstresult)
+        # Both NormalHookCaller and HistoricHookCaller now have async_submitter
+        return hookexec(
+            self.name,
+            normal_impls,
+            wrapper_impls,
+            kwargs,
+            firstresult,
+            self._orig._async_submitter,
+        )
 
     def __repr__(self) -> str:
         return f"<SubsetHookCaller {self.name!r}>"

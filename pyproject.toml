@@ -35,15 +35,21 @@ readme = {file = "README.rst", content-type = "text/x-rst"}
 requires-python = ">=3.9"
 
 dynamic = ["version"]
+
+[project.optional-dependencies]
+async = ["greenlet"]
+
 [dependency-groups]
 dev = ["pre-commit", "tox", "mypy", "ruff"]
-testing = ["pytest", "pytest-benchmark", "coverage"]
+testing = ["pytest", "pytest-benchmark", "coverage", "greenlet", "types-greenlet"]
+
 
 
 [tool.setuptools]
 packages = ["pluggy"]
 package-dir =  {""="src"}
 package-data = {"pluggy" = ["py.typed"]}
+
 
 
 [tool.ruff.lint]

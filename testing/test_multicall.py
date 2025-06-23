@@ -7,6 +7,7 @@ import pytest
 
 from pluggy import HookCallError
 from pluggy import ProjectSpec
+from pluggy._async import Submitter
 from pluggy._callers import _multicall
 from pluggy._hook_callers import HookImpl
 from pluggy._hook_callers import WrapperImpl
@@ -39,7 +40,9 @@ def MC(
         else:
             normal_impls.append(hookfunc)
 
-    return caller("foo", normal_impls, wrapper_impls, kwargs, firstresult)
+    # Create a submitter for test purposes
+    submitter = Submitter()
+    return caller("foo", normal_impls, wrapper_impls, kwargs, firstresult, submitter)
 
 
 def test_keyword_args() -> None:
