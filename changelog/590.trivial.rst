@@ -1,1 +1,1 @@
-Migrate from generating a version file to lazy loading it via importlib.
+The ``pluggy.__version__`` variable is now dynamically provided via a module-level ``__getattr__`` implementation, using ``importlib`` to obtain the installed version.
