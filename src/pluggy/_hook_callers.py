@@ -64,34 +64,6 @@ def _insert_hookimpl_into_list(
         target_list.insert(i + 1, hookimpl)
 
 
-_T_HookImpl = TypeVar("_T_HookImpl", bound="HookImpl")
-
-# Type alias for completion hook functions
-CompletionHook = Callable[
-    [object | list[object] | None, BaseException | None],
-    tuple[object | list[object] | None, BaseException | None],
-]
-
-
-def _insert_hookimpl_into_list(
-    hookimpl: _T_HookImpl, target_list: MutableSequence[_T_HookImpl]
-) -> None:
-    """Insert a hookimpl into the target list maintaining proper ordering.
-
-    The ordering is: [trylast, normal, tryfirst]
-    """
-    if hookimpl.trylast:
-        target_list.insert(0, hookimpl)
-    elif hookimpl.tryfirst:
-        target_list.append(hookimpl)
-    else:
-        # find last non-tryfirst method
-        i = len(target_list) - 1
-        while i >= 0 and target_list[i].tryfirst:
-            i -= 1
-        target_list.insert(i + 1, hookimpl)
-
-
 @runtime_checkable
 class HookCaller(Protocol):
     """Protocol defining the interface for hook callers."""
@@ -592,10 +564,6 @@ class SubsetHookCaller:
             self._orig._async_submitter,
         )
 
-        normal_impls = self._get_filtered(self._orig._normal_hookimpls)
-        wrapper_impls = self._get_filtered(self._orig._wrapper_hookimpls)
-        return hookexec(self.name, normal_impls, wrapper_impls, kwargs, firstresult)
-
     def call_historic(
         self,
         result_callback: Callable[[Any], None] | None = None,
@@ -700,18 +668,6 @@ class HookImpl:
         "trylast",
         "hookimpl_config",
     )
-
-    function: Final[_HookImplFunction[object]]
-    argnames: Final[tuple[str, ...]]
-    kwargnames: Final[tuple[str, ...]]
-    plugin: Final[_Plugin]
-    plugin_name: Final[str]
-    wrapper: Final[bool]
-    hookwrapper: Final[bool]
-    optionalhook: Final[bool]
-    tryfirst: Final[bool]
-    trylast: Final[bool]
-    hookimpl_config: Final[HookimplConfiguration]
 
     function: Final[_HookImplFunction[object]]
     argnames: Final[tuple[str, ...]]
