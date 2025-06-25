@@ -4,7 +4,9 @@ separate module for only hookrelay as mypyc doesnt support dynamic attributes/ge
 
 from __future__ import annotations
 
-from typing import final, TYPE_CHECKING
+from typing import final
+from typing import TYPE_CHECKING
+
 
 if TYPE_CHECKING:
     from pluggy import HookCaller

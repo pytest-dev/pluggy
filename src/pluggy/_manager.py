@@ -5,16 +5,17 @@ from collections.abc import Mapping
 from collections.abc import Sequence
 import inspect
 import types
-from typing import Any, TypeAlias
+from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Final
 from typing import TYPE_CHECKING
+from typing import TypeAlias
 import warnings
 
 from . import _tracing
-from ._hookrelay import HookRelay
 from ._callers import _multicall
+from ._hookrelay import HookRelay
 from ._hooks import _HookImplFunction
 from ._hooks import _Namespace
 from ._hooks import _Plugin
@@ -33,7 +34,9 @@ if TYPE_CHECKING:
 
 
 _BeforeTrace: TypeAlias = Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]
-_AfterTrace: TypeAlias = Callable[[Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None]
+_AfterTrace: TypeAlias = Callable[
+    [Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None
+]
 
 
 def _warn_for_function(warning: Warning, function: Callable[..., object]) -> None:

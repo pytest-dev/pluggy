@@ -32,8 +32,7 @@ _Namespace = Union[ModuleType, type]
 _Plugin = object
 
 type _HookExec = Callable[
-    [str, Sequence[HookImpl], Mapping[str, object], bool],
-    Union[object, list[object]]
+    [str, Sequence[HookImpl], Mapping[str, object], bool], Union[object, list[object]]
 ]
 
 type _HookImplFunction[T] = Callable[..., Union[T, Generator[None, Result[T], None]]]
@@ -375,8 +374,8 @@ class HookCaller:
         "_call_history",
     )
 
-
     _call_history: _CallHistory | None
+
     def __init__(
         self,
         name: str,
