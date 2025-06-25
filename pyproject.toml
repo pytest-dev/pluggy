@@ -117,6 +117,7 @@ template = "changelog/_template.rst"
 
 [tool.mypy]
 mypy_path = "src"
+python="3.9"
 check_untyped_defs = true
 # Hopefully we can set this someday!
 # disallow_any_expr = true

@@ -38,11 +38,16 @@ if TYPE_CHECKING:
 
 _T_HookImpl = TypeVar("_T_HookImpl", bound="HookImpl")
 
+
 # Type alias for completion hook functions
-CompletionHook = Callable[
-    [object | list[object] | None, BaseException | None],
-    tuple[object | list[object] | None, BaseException | None],
-]
+class CompletionHook(Protocol):
+    """completion hooks are used to express the teardown of hookwrappers
+    as python has no builtin way to change the result using a
+    """
+
+    def __call__(
+        self, result: object | list[object] | None, exception: BaseException | None
+    ) -> tuple[object | list[object] | None, BaseException | None]: ...
 
 
 def _insert_hookimpl_into_list(
