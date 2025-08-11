@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: hynek/build-and-inspect-python-package@v2
@@ -96,7 +96,7 @@ jobs:
             tox_env: "benchmark"
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Download built packages from the check-package job.
       uses: actions/download-artifact@v4
       with:
