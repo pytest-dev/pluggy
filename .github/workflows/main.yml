@@ -3,7 +3,8 @@ name: main
 on:
   push:
     branches:
-      - "*"
+      - main
+      - test-me-*
     tags:
       - "*"
 
@@ -33,7 +34,7 @@ jobs:
           "windows-py313",
           "windows-pypy3",
 
-          "ubuntu-py39-pytestmain",
+          "ubuntu-py310-pytestmain",
           "ubuntu-py39",
           "ubuntu-py310",
           "ubuntu-py311",
@@ -56,10 +57,10 @@ jobs:
             python: "pypy3.9"
             os: windows-latest
             tox_env: "pypy3"
-          - name: "ubuntu-py39-pytestmain"
-            python: "3.9"
+          - name: "ubuntu-py310-pytestmain"
+            python: "3.10"
             os: ubuntu-latest
-            tox_env: "py39-pytestmain"
+            tox_env: "py310-pytestmain"
             use_coverage: true
           - name: "ubuntu-py39"
             python: "3.9"
