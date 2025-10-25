@@ -4,9 +4,9 @@ Tracing utils
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from collections.abc import Sequence
 from typing import Any
-from typing import Callable
 
 
 _Writer = Callable[[str], object]

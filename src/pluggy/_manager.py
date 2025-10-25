@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import Mapping
 from collections.abc import Sequence
 import inspect
 import types
 from typing import Any
-from typing import Callable
 from typing import cast
 from typing import Final
 from typing import TYPE_CHECKING

@@ -4,16 +4,15 @@ Hook wrapper "result" utilities.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from types import TracebackType
-from typing import Callable
 from typing import cast
 from typing import final
 from typing import Generic
-from typing import Optional
 from typing import TypeVar
 
 
-_ExcInfo = tuple[type[BaseException], BaseException, Optional[TracebackType]]
+_ExcInfo = tuple[type[BaseException], BaseException, TracebackType | None]
 ResultType = TypeVar("ResultType")
 
 
