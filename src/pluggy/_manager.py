@@ -15,6 +15,7 @@ import warnings
 
 from . import _tracing
 from ._callers import _multicall
+from ._compat import DistFacade
 from ._hooks import _HookImplFunction
 from ._hooks import _Namespace
 from ._hooks import _Plugin
@@ -29,7 +30,6 @@ from ._result import Result
 
 
 if TYPE_CHECKING:
-    # importtlib.metadata import is slow, defer it.
     import importlib.metadata
 
 
@@ -62,24 +62,6 @@ class PluginValidationError(Exception):
         self.plugin = plugin
 
 
-class DistFacade:
-    """Emulate a pkg_resources Distribution"""
-
-    def __init__(self, dist: importlib.metadata.Distribution) -> None:
-        self._dist = dist
-
-    @property
-    def project_name(self) -> str:
-        name: str = self.metadata["name"]
-        return name
-
-    def __getattr__(self, attr: str, default: Any | None = None) -> Any:
-        return getattr(self._dist, attr, default)
-
-    def __dir__(self) -> list[str]:
-        return sorted(dir(self._dist) + ["_dist", "project_name"])
-
-
 class PluginManager:
     """Core class which manages registration of plugin objects and 1:N hook
     calling.
@@ -101,7 +83,9 @@ class PluginManager:
         #: The project name.
         self.project_name: Final = project_name
         self._name2plugin: Final[dict[str, _Plugin]] = {}
-        self._plugin_distinfo: Final[list[tuple[_Plugin, DistFacade]]] = []
+        self._plugin_distinfo: Final[
+            list[tuple[_Plugin, importlib.metadata.Distribution]]
+        ] = []
         #: The "hook relay", used to call a hook on all registered plugins.
         #: See :ref:`calling`.
         self.hook: Final = HookRelay()
@@ -418,13 +402,33 @@ class PluginManager:
                     continue
                 plugin = ep.load()
                 self.register(plugin, name=ep.name)
-                self._plugin_distinfo.append((plugin, DistFacade(dist)))
+                self._plugin_distinfo.append((plugin, dist))
                 count += 1
         return count
 
     def list_plugin_distinfo(self) -> list[tuple[_Plugin, DistFacade]]:
         """Return a list of (plugin, distinfo) pairs for all
-        setuptools-registered plugins."""
+        setuptools-registered plugins.
+
+        .. note::
+            The distinfo objects are wrapped with :class:`~pluggy._compat.DistFacade`
+            for backward compatibility with the legacy pkg_resources API.
+            Use the modern :meth:`list_plugin_distributions` method to get
+            unwrapped :class:`importlib.metadata.Distribution` objects.
+        """
+        return [(plugin, DistFacade(dist)) for plugin, dist in self._plugin_distinfo]
+
+    def list_plugin_distributions(
+        self,
+    ) -> list[tuple[_Plugin, importlib.metadata.Distribution]]:
+        """Return a list of (plugin, distribution) pairs for all plugins
+        loaded via entry points.
+
+        Returns modern :class:`importlib.metadata.Distribution` objects without
+        the legacy pkg_resources compatibility layer.
+
+        .. versionadded:: 1.6
+        """
         return list(self._plugin_distinfo)
 
     def list_name_plugin(self) -> list[tuple[str, _Plugin]]:
