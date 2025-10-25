@@ -219,12 +219,12 @@ def test_unregister_unknown_plugin_raises(pm: PluginManager) -> None:
     class Plugin1:
         @hookimpl
         def he_method1(self, arg):
-            return arg + 1
+            return arg + 1  # pragma: no cover
 
     class Plugin2:
         @hookimpl
         def he_method1(self, arg):
-            return arg + 2
+            return arg + 2  # pragma: no cover
 
     # Register Plugin1
     p1 = Plugin1()

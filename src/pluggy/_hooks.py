@@ -532,9 +532,11 @@ class HookCaller:
         res = self._hookexec(self.name, self._hookimpls.copy(), kwargs, False)
         if result_callback is None:
             return
-        if isinstance(res, list):
-            for x in res:
-                result_callback(x)
+        # Historic hooks are called with firstresult=False and cannot have wrappers,
+        # so the result is always a list.
+        assert isinstance(res, list), "historic call should always return a list"
+        for x in res:
+            result_callback(x)
 
     def call_extra(
         self, methods: Sequence[Callable[..., object]], kwargs: Mapping[str, object]
