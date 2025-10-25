@@ -32,7 +32,7 @@ class TagTracer:
         content = " ".join(map(str, args))
         indent = "  " * self.indent
 
-        lines = ["{}{} [{}]\n".format(indent, content, ":".join(tags))]
+        lines = [f"{indent}{content} [{':'.join(tags)}]\n"]
 
         for name, value in extra.items():
             lines.append(f"{indent}    {name}: {value}\n")
@@ -42,11 +42,7 @@ class TagTracer:
     def _processmessage(self, tags: tuple[str, ...], args: tuple[object, ...]) -> None:
         if self._writer is not None and args:
             self._writer(self._format_message(tags, args))
-        try:
-            processor = self._tags2proc[tags]
-        except KeyError:
-            pass
-        else:
+        if processor := self._tags2proc.get(tags):
             processor(tags, args)
 
     def setwriter(self, writer: _Writer | None) -> None:
