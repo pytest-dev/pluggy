@@ -213,6 +213,32 @@ def test_unregister_blocked(pm: PluginManager) -> None:
     pm.unregister(p, "error")
 
 
+def test_unregister_unknown_plugin_raises(pm: PluginManager) -> None:
+    """Test that _remove_plugin raises ValueError for unknown plugin."""
+
+    class Plugin1:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg + 1
+
+    class Plugin2:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg + 2
+
+    # Register Plugin1
+    p1 = Plugin1()
+    pm.register(p1)
+
+    # Create Plugin2 but don't register it
+    p2 = Plugin2()
+
+    # Get the hook and try to remove the unregistered plugin directly
+    hook = pm.hook.he_method1
+    with pytest.raises(ValueError, match="plugin.*not found"):
+        hook._remove_plugin(p2)
+
+
 def test_register_unknown_hooks(pm: PluginManager) -> None:
     class Plugin1:
         @hookimpl
