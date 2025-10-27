@@ -17,6 +17,7 @@ from typing import Final
 from typing import final
 from typing import overload
 from typing import TYPE_CHECKING
+from typing import TypeAlias
 from typing import TypedDict
 from typing import TypeVar
 import warnings
@@ -26,13 +27,14 @@ from ._result import Result
 
 _T = TypeVar("_T")
 _F = TypeVar("_F", bound=Callable[..., object])
-_Namespace = ModuleType | type
-_Plugin = object
-_HookExec = Callable[
+
+_Namespace: TypeAlias = ModuleType | type
+_Plugin: TypeAlias = object
+_HookExec: TypeAlias = Callable[
     [str, Sequence["HookImpl"], Mapping[str, object], bool],
     object | list[object],
 ]
-_HookImplFunction = Callable[..., _T | Generator[None, Result[_T], None]]
+_HookImplFunction: TypeAlias = Callable[..., _T | Generator[None, Result[_T], None]]
 
 
 class HookspecOpts(TypedDict):
@@ -372,7 +374,9 @@ class HookRelay:
 _HookRelay = HookRelay
 
 
-_CallHistory = list[tuple[Mapping[str, object], Callable[[Any], None] | None]]
+_CallHistory: TypeAlias = list[
+    tuple[Mapping[str, object], Callable[[Any], None] | None]
+]
 
 
 class HookCaller:

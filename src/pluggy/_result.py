@@ -9,10 +9,11 @@ from types import TracebackType
 from typing import cast
 from typing import final
 from typing import Generic
+from typing import TypeAlias
 from typing import TypeVar
 
 
-_ExcInfo = tuple[type[BaseException], BaseException, TracebackType | None]
+_ExcInfo: TypeAlias = tuple[type[BaseException], BaseException, TracebackType | None]
 ResultType = TypeVar("ResultType")
 
 
