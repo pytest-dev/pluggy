@@ -99,7 +99,7 @@ jobs:
     steps:
     - uses: actions/checkout@v5
     - name: Download built packages from the check-package job.
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v6
       with:
         name: Packages
         path: dist
@@ -141,7 +141,7 @@ jobs:
       id-token: write
     steps:
       - name: Download built packages from the check-package job.
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: Packages
           path: dist
