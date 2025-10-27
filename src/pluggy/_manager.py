@@ -10,6 +10,7 @@ from typing import Any
 from typing import cast
 from typing import Final
 from typing import TYPE_CHECKING
+from typing import TypeAlias
 import warnings
 
 from . import _tracing
@@ -32,8 +33,10 @@ if TYPE_CHECKING:
     import importlib.metadata
 
 
-_BeforeTrace = Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]
-_AfterTrace = Callable[[Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None]
+_BeforeTrace: TypeAlias = Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]
+_AfterTrace: TypeAlias = Callable[
+    [Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None
+]
 
 
 def _warn_for_function(warning: Warning, function: Callable[..., object]) -> None:

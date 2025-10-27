@@ -9,6 +9,7 @@ from collections.abc import Mapping
 from collections.abc import Sequence
 from typing import cast
 from typing import NoReturn
+from typing import TypeAlias
 import warnings
 
 from ._hooks import HookImpl
@@ -19,7 +20,7 @@ from ._warnings import PluggyTeardownRaisedWarning
 
 # Need to distinguish between old- and new-style hook wrappers.
 # Wrapping with a tuple is the fastest type-safe way I found to do it.
-Teardown = Generator[None, object, object]
+Teardown: TypeAlias = Generator[None, object, object]
 
 
 def run_old_style_hookwrapper(
