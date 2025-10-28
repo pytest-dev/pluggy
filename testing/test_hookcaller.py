@@ -1,6 +1,6 @@
+from collections.abc import Callable
 from collections.abc import Generator
 from collections.abc import Sequence
-from typing import Callable
 from typing import TypeVar
 
 import pytest
