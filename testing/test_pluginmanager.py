@@ -213,6 +213,32 @@ def test_unregister_blocked(pm: PluginManager) -> None:
     pm.unregister(p, "error")
 
 
+def test_unregister_unknown_plugin_raises(pm: PluginManager) -> None:
+    """Test that _remove_plugin raises ValueError for unknown plugin."""
+
+    class Plugin1:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg + 1  # pragma: no cover
+
+    class Plugin2:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg + 2  # pragma: no cover
+
+    # Register Plugin1
+    p1 = Plugin1()
+    pm.register(p1)
+
+    # Create Plugin2 but don't register it
+    p2 = Plugin2()
+
+    # Get the hook and try to remove the unregistered plugin directly
+    hook = pm.hook.he_method1
+    with pytest.raises(ValueError, match="plugin.*not found"):
+        hook._remove_plugin(p2)
+
+
 def test_register_unknown_hooks(pm: PluginManager) -> None:
     class Plugin1:
         @hookimpl
@@ -617,6 +643,19 @@ def test_load_setuptools_instantiation(monkeypatch, pm: PluginManager) -> None:
     assert ret[0][1]._dist == dist  # type: ignore[comparison-overlap]
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 0  # no plugin loaded by this call
+
+    # Test the new modern API returns unwrapped Distribution objects
+    ret_modern = pm.list_plugin_distributions()
+    assert len(ret_modern) == 1
+    assert len(ret_modern[0]) == 2
+    assert ret_modern[0][0] == plugin
+    assert ret_modern[0][1] == dist  # type: ignore[comparison-overlap]
+
+    # Verify the old API wraps with DistFacade while new API doesn't
+    from pluggy._compat import DistFacade
+
+    assert isinstance(ret[0][1], DistFacade)
+    assert not isinstance(ret_modern[0][1], DistFacade)
 
 
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
