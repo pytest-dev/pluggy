@@ -53,10 +53,12 @@ jobs:
             tox_env: "py39"
           - name: "windows-py314"
             python: "3.14"
+            os: windows-latest
+            tox_env: "py314"
           - name: "windows-py314t"
             python: "3.14t"
             os: windows-latest
-            tox_env: "py314"
+            tox_env: "py314t"
           - name: "windows-pypy3"
             python: "pypy3.9"
             os: windows-latest
