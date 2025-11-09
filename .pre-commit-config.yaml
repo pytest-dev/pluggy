@@ -28,7 +28,7 @@ repos:
     rev: v3.21.0
     hooks:
     -   id: pyupgrade
-        args: [--py39-plus]
+        args: [--py310-plus]
 -   repo: https://github.com/asottile/blacken-docs
     rev: 1.20.0
     hooks:
