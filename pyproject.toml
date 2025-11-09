@@ -35,9 +35,10 @@ readme = {file = "README.rst", content-type = "text/x-rst"}
 requires-python = ">=3.9"
 
 dynamic = ["version"]
-[project.optional-dependencies]
+[dependency-groups]
 dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark", "coverage"]
+
 
 [tool.setuptools]
 packages = ["pluggy"]
@@ -66,6 +67,9 @@ known-local-folder = ["pluggy"]
 lines-after-imports = 2
 
 [tool.setuptools_scm]
+
+[tool.uv]
+default-groups = ["dev", "testing"]
 
 [tool.towncrier]
 package = "pluggy"
