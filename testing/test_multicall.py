@@ -1,7 +1,6 @@
+from collections.abc import Callable
 from collections.abc import Mapping
 from collections.abc import Sequence
-from typing import Callable
-from typing import Union
 
 import pytest
 
@@ -20,7 +19,7 @@ def MC(
     methods: Sequence[Callable[..., object]],
     kwargs: Mapping[str, object],
     firstresult: bool = False,
-) -> Union[object, list[object]]:
+) -> object | list[object]:
     caller = _multicall
     hookfuncs = []
     for method in methods:

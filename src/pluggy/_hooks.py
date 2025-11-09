@@ -4,6 +4,7 @@ Internal hook annotation, representation and calling machinery.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from collections.abc import Generator
 from collections.abc import Mapping
 from collections.abc import Sequence
@@ -12,15 +13,13 @@ import inspect
 import sys
 from types import ModuleType
 from typing import Any
-from typing import Callable
 from typing import Final
 from typing import final
-from typing import Optional
 from typing import overload
 from typing import TYPE_CHECKING
+from typing import TypeAlias
 from typing import TypedDict
 from typing import TypeVar
-from typing import Union
 import warnings
 
 from ._result import Result
@@ -28,13 +27,14 @@ from ._result import Result
 
 _T = TypeVar("_T")
 _F = TypeVar("_F", bound=Callable[..., object])
-_Namespace = Union[ModuleType, type]
-_Plugin = object
-_HookExec = Callable[
+
+_Namespace: TypeAlias = ModuleType | type
+_Plugin: TypeAlias = object
+_HookExec: TypeAlias = Callable[
     [str, Sequence["HookImpl"], Mapping[str, object], bool],
-    Union[object, list[object]],
+    object | list[object],
 ]
-_HookImplFunction = Callable[..., Union[_T, Generator[None, Result[_T], None]]]
+_HookImplFunction: TypeAlias = Callable[..., _T | Generator[None, Result[_T], None]]
 
 
 class HookspecOpts(TypedDict):
@@ -374,7 +374,9 @@ class HookRelay:
 _HookRelay = HookRelay
 
 
-_CallHistory = list[tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
+_CallHistory: TypeAlias = list[
+    tuple[Mapping[str, object], Callable[[Any], None] | None]
+]
 
 
 class HookCaller:
