@@ -6,14 +6,16 @@ from typing import Union
 import pytest
 
 from pluggy import HookCallError
-from pluggy import HookimplMarker
-from pluggy import HookspecMarker
+from pluggy import ProjectSpec
+from pluggy._async import Submitter
 from pluggy._callers import _multicall
-from pluggy._hooks import HookImpl
+from pluggy._hook_callers import HookImpl
+from pluggy._hook_callers import WrapperImpl
 
 
-hookspec = HookspecMarker("example")
-hookimpl = HookimplMarker("example")
+project_spec = ProjectSpec("example")
+hookspec = project_spec.hookspec
+hookimpl = project_spec.hookimpl
 
 
 def MC(
@@ -24,9 +26,23 @@ def MC(
     caller = _multicall
     hookfuncs = []
     for method in methods:
-        f = HookImpl(None, "<temp>", method, method.example_impl)  # type: ignore[attr-defined]
+        config = project_spec.get_hookimpl_config(method)
+        assert config is not None  # Test functions should be decorated
+        f = config.create_hookimpl(None, "<temp>", method)
         hookfuncs.append(f)
-    return caller("foo", hookfuncs, kwargs, firstresult)
+
+    # Separate normal and wrapper implementations for new signature
+    normal_impls: list[HookImpl] = []
+    wrapper_impls: list[WrapperImpl] = []
+    for hookfunc in hookfuncs:
+        if isinstance(hookfunc, WrapperImpl):
+            wrapper_impls.append(hookfunc)
+        else:
+            normal_impls.append(hookfunc)
+
+    # Create a submitter for test purposes
+    submitter = Submitter()
+    return caller("foo", normal_impls, wrapper_impls, kwargs, firstresult, submitter)
 
 
 def test_keyword_args() -> None:
