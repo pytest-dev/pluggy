@@ -2,7 +2,6 @@
 include =
   pluggy/*
   src/pluggy/*
-  pluggy/testing/*
   testing/*
   */lib/python*/site-packages/pluggy/*
   */pypy*/site-packages/pluggy/*

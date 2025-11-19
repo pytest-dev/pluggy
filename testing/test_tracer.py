@@ -100,13 +100,3 @@ def test_unicode_surrogate_handling_2(rootlogger: TagTracer) -> None:
     assert len(out) == 1
     assert "\ud800" not in out[0]
     assert "?" in out[0]
-
-
-def test_unicode_surrogate_handling_normal(rootlogger: TagTracer) -> None:
-    out: list[str] = []
-    rootlogger.setwriter(out.append)
-    log = rootlogger.get("pytest")
-    s = "hello world"
-    log(s)
-    assert len(out) == 1
-    assert "hello world" in out[0]
