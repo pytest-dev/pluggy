@@ -86,3 +86,27 @@ def test_unicode_surrogate_handling(rootlogger: TagTracer) -> None:
     assert len(out) == 1
     assert "\ud800" not in out
     assert "hello ? world" in out[0]
+
+
+def test_unicode_surrogate_handling_2(rootlogger: TagTracer) -> None:
+    out: list[str] = []
+    rootlogger.setwriter(out.append)
+    log = rootlogger.get("pytest")
+
+    bad = b"\xed\xa0\x80".decode("utf-8", "surrogatepass")
+
+    log(bad)
+
+    assert len(out) == 1
+    assert "\ud800" not in out[0]
+    assert "?" in out[0]
+
+
+def test_unicode_surrogate_handling_normal(rootlogger: TagTracer) -> None:
+    out: list[str] = []
+    rootlogger.setwriter(out.append)
+    log = rootlogger.get("pytest")
+    s = "hello world"
+    log(s)
+    assert len(out) == 1
+    assert "hello world" in out[0]
