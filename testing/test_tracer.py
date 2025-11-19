@@ -75,3 +75,14 @@ def test_setprocessor(rootlogger: TagTracer) -> None:
     log2("seen")
     tags, args = l2[0]
     assert args == ("seen",)
+
+
+def test_unicode_surrogate_handling(rootlogger: TagTracer) -> None:
+    out: list[str] = []
+    rootlogger.setwriter(out.append)
+    log = rootlogger.get("pytest")
+    s = "hello \ud800 world"
+    log(s)
+    assert len(out) == 1
+    assert "\ud800" not in out
+    assert "hello ? world" in out[0]
