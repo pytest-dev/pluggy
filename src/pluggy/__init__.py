@@ -7,7 +7,6 @@ __all__ = [
     "HookspecOpts",
     "HookimplOpts",
     "HookImpl",
-    "HookRelay",
     "HookspecMarker",
     "HookimplMarker",
     "Result",
@@ -18,7 +17,6 @@ from ._hooks import HookCaller
 from ._hooks import HookImpl
 from ._hooks import HookimplMarker
 from ._hooks import HookimplOpts
-from ._hooks import HookRelay
 from ._hooks import HookspecMarker
 from ._hooks import HookspecOpts
 from ._manager import PluginManager
