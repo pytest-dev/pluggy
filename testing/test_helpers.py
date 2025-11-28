@@ -114,3 +114,25 @@ def test_varnames_decorator() -> None:
     assert varnames(example) == (("a",), ("b",))
     assert varnames(Example.example_method) == (("x",), ("y",))
     assert varnames(ex_inst.example_method) == (("x",), ("y",))
+
+
+def test_varnames_unresolvable_annotation() -> None:
+    """Test that varnames works with annotations that cannot be resolved.
+
+    In Python 3.14+, inspect.signature() tries to resolve string annotations
+    by default, which can fail if the annotation refers to a type that isn't
+    importable. This test ensures varnames handles such cases.
+    """
+    # Create a function with an annotation that cannot be resolved
+    exec_globals: dict[str, object] = {}
+    exec(
+        """
+def func_with_unresolvable_annotation(x: "NonExistentType", y) -> None:
+    pass
+""",
+        exec_globals,
+    )
+    func = exec_globals["func_with_unresolvable_annotation"]
+
+    # Should work without trying to resolve the annotation
+    assert varnames(func) == (("x", "y"), ())
