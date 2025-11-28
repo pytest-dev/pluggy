@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from collections.abc import Set
 import inspect
 import sys
+import types
 from types import ModuleType
 from typing import Any
 from typing import Final
@@ -288,27 +289,8 @@ def normalize_hookimpl_opts(opts: HookimplOpts) -> None:
 
 
 _PYPY = hasattr(sys, "pypy_version_info")
-
-
-if sys.version_info >= (3, 14):
-    import annotationlib
-
-    def _signature(func: object) -> inspect.Signature:
-        """Return the signature of a callable, avoiding annotation resolution.
-
-        In Python 3.14+, annotations are evaluated lazily (PEP 649/749).
-        Using annotation_format=STRING prevents errors when annotations
-        reference undefined names.
-        """
-        return inspect.signature(
-            func,  # type: ignore[arg-type]
-            annotation_format=annotationlib.Format.STRING,
-        )
-else:
-
-    def _signature(func: object) -> inspect.Signature:
-        """Return the signature of a callable."""
-        return inspect.signature(func)  # type: ignore[arg-type]
+# pypy3 uses "obj" instead of "self" for default dunder methods
+_IMPLICIT_NAMES = ("self", "obj") if _PYPY else ("self",)
 
 
 def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -329,47 +311,32 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
         except Exception:  # pragma: no cover - pypy special case
             return (), ()
 
+    # Unwrap decorated functions to get the original signature
+    func = inspect.unwrap(func)  # type: ignore[arg-type]
+    if inspect.ismethod(func):
+        func = func.__func__
+
     try:
-        # func MUST be a function or method here or we won't parse any args.
-        sig = _signature(func.__func__ if inspect.ismethod(func) else func)
-    except TypeError:  # pragma: no cover
+        code: types.CodeType = func.__code__  # type: ignore[attr-defined]
+        defaults: tuple[object, ...] | None = func.__defaults__  # type: ignore[attr-defined]
+        qualname: str = func.__qualname__  # type: ignore[attr-defined]
+    except AttributeError:  # pragma: no cover
         return (), ()
 
-    _valid_param_kinds = (
-        inspect.Parameter.POSITIONAL_ONLY,
-        inspect.Parameter.POSITIONAL_OR_KEYWORD,
-    )
-    _valid_params = {
-        name: param
-        for name, param in sig.parameters.items()
-        if param.kind in _valid_param_kinds
-    }
-    args = tuple(_valid_params)
-    defaults = (
-        tuple(
-            param.default
-            for param in _valid_params.values()
-            if param.default is not param.empty
-        )
-        or None
-    )
+    # Get positional argument names (positional-only + positional-or-keyword)
+    args: tuple[str, ...] = code.co_varnames[: code.co_argcount]
 
+    # Determine which args have defaults
+    kwargs: tuple[str, ...]
     if defaults:
         index = -len(defaults)
-        args, kwargs = args[:index], tuple(args[index:])
+        args, kwargs = args[:index], args[index:]
     else:
         kwargs = ()
 
-    # strip any implicit instance arg
-    # pypy3 uses "obj" instead of "self" for default dunder methods
-    if not _PYPY:
-        implicit_names: tuple[str, ...] = ("self",)
-    else:  # pragma: no cover
-        implicit_names = ("self", "obj")
-    if args:
-        qualname: str = getattr(func, "__qualname__", "")
-        if inspect.ismethod(func) or ("." in qualname and args[0] in implicit_names):
-            args = args[1:]
+    # Strip implicit instance arg (self/obj for methods)
+    if args and "." in qualname and args[0] in _IMPLICIT_NAMES:
+        args = args[1:]
 
     return args, kwargs
 
