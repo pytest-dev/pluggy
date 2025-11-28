@@ -4,6 +4,7 @@
 
 import importlib.metadata
 from typing import Any
+from typing import cast
 
 import pytest
 
@@ -583,7 +584,9 @@ def test_add_hookspecs_nohooks(pm: PluginManager) -> None:
         pm.add_hookspecs(NoHooks)
 
 
-def test_load_setuptools_instantiation(monkeypatch, pm: PluginManager) -> None:
+def test_load_setuptools_instantiation(
+    monkeypatch: pytest.MonkeyPatch, pm: PluginManager
+) -> None:
     class EntryPoint:
         name = "myname"
         group = "hello"
@@ -598,7 +601,8 @@ def test_load_setuptools_instantiation(monkeypatch, pm: PluginManager) -> None:
     class Distribution:
         entry_points = (EntryPoint(),)
 
-    dist = Distribution()
+    # Cast mock Distribution to satisfy mypy type checking
+    dist = cast(importlib.metadata.Distribution, Distribution())
 
     def my_distributions():
         return (dist,)
@@ -614,9 +618,12 @@ def test_load_setuptools_instantiation(monkeypatch, pm: PluginManager) -> None:
     assert len(ret) == 1
     assert len(ret[0]) == 2
     assert ret[0][0] == plugin
-    assert ret[0][1]._dist == dist  # type: ignore[comparison-overlap]
-    num = pm.load_setuptools_entrypoints("hello")  # type:ignore[unreachable]
+    assert ret[0][1]._dist == dist
+    num = pm.load_setuptools_entrypoints("hello")
     assert num == 0  # no plugin loaded by this call
+
+    ret_distributions = pm.list_plugin_distributions()
+    assert ret_distributions == [(plugin, dist)]
 
 
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
