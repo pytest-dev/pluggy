@@ -290,6 +290,27 @@ def normalize_hookimpl_opts(opts: HookimplOpts) -> None:
 _PYPY = hasattr(sys, "pypy_version_info")
 
 
+if sys.version_info >= (3, 14):
+    import annotationlib
+
+    def _signature(func: object) -> inspect.Signature:
+        """Return the signature of a callable, avoiding annotation resolution.
+
+        In Python 3.14+, annotations are evaluated lazily (PEP 649/749).
+        Using annotation_format=STRING prevents errors when annotations
+        reference undefined names.
+        """
+        return inspect.signature(
+            func,  # type: ignore[arg-type]
+            annotation_format=annotationlib.Format.STRING,
+        )
+else:
+
+    def _signature(func: object) -> inspect.Signature:
+        """Return the signature of a callable."""
+        return inspect.signature(func)  # type: ignore[arg-type]
+
+
 def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Return tuple of positional and keywrord argument names for a function,
     method, class or callable.
@@ -310,9 +331,7 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
 
     try:
         # func MUST be a function or method here or we won't parse any args.
-        sig = inspect.signature(
-            func.__func__ if inspect.ismethod(func) else func  # type:ignore[arg-type]
-        )
+        sig = _signature(func.__func__ if inspect.ismethod(func) else func)
     except TypeError:  # pragma: no cover
         return (), ()
 
