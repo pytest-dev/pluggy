@@ -40,7 +40,7 @@ def test_only_kwargs(pm: PluginManager) -> None:
 
     pm.add_hookspecs(Api)
     with pytest.raises(TypeError) as exc:
-        pm.hook.hello(3)  # type: ignore[call-arg]
+        pm.hook.hello(3)
 
     message = "__call__() takes 1 positional argument but 2 were given"
     assert message in str(exc.value)

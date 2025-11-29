@@ -12,6 +12,10 @@ from typing import NoReturn
 from typing import TypeAlias
 import warnings
 
+from ._hooks import _AnyHookImpl
+from ._hooks import _NewStyleWrapper
+from ._hooks import _NormalHookImplementation
+from ._hooks import _OldStyleWrapper
 from ._hooks import HookImpl
 from ._result import HookCallError
 from ._result import Result
@@ -24,7 +28,7 @@ Teardown: TypeAlias = Generator[None, object, object]
 
 
 def run_old_style_hookwrapper(
-    hook_impl: HookImpl, hook_name: str, args: Sequence[object]
+    hook_impl: _AnyHookImpl, hook_name: str, args: Sequence[object]
 ) -> Teardown:
     """
     backward compatibility wrapper to run a old style hookwrapper as a wrapper
@@ -65,7 +69,7 @@ def _raise_wrapfail(
 
 
 def _warn_teardown_exception(
-    hook_name: str, hook_impl: HookImpl, e: BaseException
+    hook_name: str, hook_impl: _AnyHookImpl, e: BaseException
 ) -> None:
     msg = (
         f"A plugin raised an exception during an old-style hookwrapper teardown.\n"
@@ -78,7 +82,8 @@ def _warn_teardown_exception(
 
 def _multicall(
     hook_name: str,
-    hook_impls: Sequence[HookImpl],
+    normal_impls: Sequence[_AnyHookImpl],
+    wrapper_impls: Sequence[_AnyHookImpl],
     caller_kwargs: Mapping[str, object],
     firstresult: bool,
 ) -> object | list[object]:
@@ -93,7 +98,8 @@ def _multicall(
     try:  # run impl and wrapper setup functions in a loop
         teardowns: list[Teardown] = []
         try:
-            for hook_impl in reversed(hook_impls):
+            # Phase 1: Run wrapper setup (in reverse - tryfirst wrappers run first)
+            for hook_impl in reversed(wrapper_impls):
                 try:
                     args = [caller_kwargs[argname] for argname in hook_impl.argnames]
                 except KeyError as e:
@@ -104,28 +110,69 @@ def _multicall(
                                 f"hook call must provide argument {argname!r}"
                             ) from e
 
-                if hook_impl.hookwrapper:
-                    function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
-
-                    next(function_gen)  # first yield
-                    teardowns.append(function_gen)
-
-                elif hook_impl.wrapper:
-                    try:
-                        # If this cast is not valid, a type error is raised below,
-                        # which is the desired response.
-                        res = hook_impl.function(*args)
-                        function_gen = cast(Generator[None, object, object], res)
+                # Type-based dispatch for wrapper types
+                match hook_impl:
+                    case _OldStyleWrapper():
+                        function_gen = run_old_style_hookwrapper(
+                            hook_impl, hook_name, args
+                        )
                         next(function_gen)  # first yield
                         teardowns.append(function_gen)
-                    except StopIteration:
-                        _raise_wrapfail(function_gen, "did not yield")
-                else:
-                    res = hook_impl.function(*args)
-                    if res is not None:
-                        results.append(res)
-                        if firstresult:  # halt further impl calls
-                            break
+
+                    case _NewStyleWrapper():
+                        try:
+                            res = hook_impl.function(*args)
+                            function_gen = cast(Generator[None, object, object], res)
+                            next(function_gen)  # first yield
+                            teardowns.append(function_gen)
+                        except StopIteration:
+                            _raise_wrapfail(function_gen, "did not yield")
+
+                    # Backward compatibility with old HookImpl class
+                    case HookImpl() if hook_impl.hookwrapper:
+                        function_gen = run_old_style_hookwrapper(
+                            hook_impl, hook_name, args
+                        )
+                        next(function_gen)  # first yield
+                        teardowns.append(function_gen)
+
+                    case HookImpl() if hook_impl.wrapper:
+                        try:
+                            res = hook_impl.function(*args)
+                            function_gen = cast(Generator[None, object, object], res)
+                            next(function_gen)  # first yield
+                            teardowns.append(function_gen)
+                        except StopIteration:
+                            _raise_wrapfail(function_gen, "did not yield")
+
+            # Phase 2: Run normal impls (in reverse - tryfirst impls run first)
+            for hook_impl in reversed(normal_impls):
+                try:
+                    args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+                except KeyError as e:
+                    # coverage bug - this is tested
+                    for argname in hook_impl.argnames:  # pragma: no cover
+                        if argname not in caller_kwargs:
+                            raise HookCallError(
+                                f"hook call must provide argument {argname!r}"
+                            ) from e
+
+                # Type-based dispatch for normal types
+                match hook_impl:
+                    case _NormalHookImplementation():
+                        res = hook_impl.function(*args)
+                        if res is not None:
+                            results.append(res)
+                            if firstresult:  # halt further impl calls
+                                break
+
+                    # Backward compatibility with old HookImpl class
+                    case HookImpl():
+                        res = hook_impl.function(*args)
+                        if res is not None:
+                            results.append(res)
+                            if firstresult:  # halt further impl calls
+                                break
         except BaseException as exc:
             exception = exc
     finally:

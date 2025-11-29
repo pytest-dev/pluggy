@@ -21,11 +21,15 @@ def MC(
     firstresult: bool = False,
 ) -> object | list[object]:
     caller = _multicall
-    hookfuncs = []
+    normal_funcs: list[HookImpl] = []
+    wrapper_funcs: list[HookImpl] = []
     for method in methods:
         f = HookImpl(None, "<temp>", method, method.example_impl)  # type: ignore[attr-defined]
-        hookfuncs.append(f)
-    return caller("foo", hookfuncs, kwargs, firstresult)
+        if f.wrapper or f.hookwrapper:
+            wrapper_funcs.append(f)
+        else:
+            normal_funcs.append(f)
+    return caller("foo", normal_funcs, wrapper_funcs, kwargs, firstresult)
 
 
 def test_keyword_args() -> None:
