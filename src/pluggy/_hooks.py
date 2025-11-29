@@ -34,15 +34,17 @@ _F = TypeVar("_F", bound=Callable[..., object])
 
 _Namespace: TypeAlias = ModuleType | type
 _Plugin: TypeAlias = object
-# Union type for hook implementations - supports both old HookImpl and new hierarchy
-_AnyHookImpl: TypeAlias = "HookImpl | _HookImplementation"
+# Teardown function: takes (result, exception), returns (result, exception)
+Teardown: TypeAlias = Callable[
+    [object, BaseException | None], tuple[object, BaseException | None]
+]
 # Hook execution function signature:
 # (name, normal_impls, wrapper_impls, kwargs, firstresult)
 _HookExec: TypeAlias = Callable[
     [
         str,
-        Sequence["_NormalHookImplementation | HookImpl"],
-        Sequence["_WrapperHookImplementation | HookImpl"],
+        Sequence["_NormalHookImplementation"],
+        Sequence["_WrapperHookImplementation"],
         Mapping[str, object],
         bool,
     ],
@@ -953,6 +955,21 @@ class _HookImplementation(ABC):
         """Whether this is a wrapper implementation."""
         ...
 
+    def _get_args(self, caller_kwargs: Mapping[str, object]) -> list[object]:
+        """Extract positional args from caller kwargs.
+
+        :raises HookCallError: If a required argument is missing.
+        """
+        from ._result import HookCallError
+
+        try:
+            return [caller_kwargs[argname] for argname in self.argnames]
+        except KeyError:
+            for argname in self.argnames:
+                if argname not in caller_kwargs:
+                    raise HookCallError(f"hook call must provide argument {argname!r}")
+            raise  # pragma: no cover
+
     # Backward compatibility properties - compute from type
     @property
     def wrapper(self) -> bool:
@@ -981,6 +998,11 @@ class _NormalHookImplementation(_HookImplementation):
     def is_wrapper(self) -> bool:
         return False
 
+    def call(self, caller_kwargs: Mapping[str, object]) -> object:
+        """Call this hook implementation with the given kwargs."""
+        args = self._get_args(caller_kwargs)
+        return self.function(*args)
+
 
 class _WrapperHookImplementation(_HookImplementation, ABC):
     """Base class for wrapper hook implementations."""
@@ -990,6 +1012,23 @@ class _WrapperHookImplementation(_HookImplementation, ABC):
     @property
     def is_wrapper(self) -> bool:
         return True
+
+    @abstractmethod
+    def setup_teardown(self, caller_kwargs: Mapping[str, object]) -> Teardown:
+        """Run the wrapper setup phase and return a teardown function.
+
+        :param caller_kwargs: The keyword arguments from the hook call.
+
+        The teardown function takes (result, exception) and returns
+        (result, exception).
+        """
+        ...
+
+
+def _gen_code_location(gen: Generator[None, object, object]) -> str:
+    """Get code location string for a generator."""
+    co = gen.gi_code  # type: ignore[attr-defined]
+    return f"{co.co_name!r} {co.co_filename}:{co.co_firstlineno}"
 
 
 @final
@@ -1002,6 +1041,46 @@ class _NewStyleWrapper(_WrapperHookImplementation):
     def wrapper(self) -> bool:
         return True
 
+    def setup_teardown(self, caller_kwargs: Mapping[str, object]) -> Teardown:
+        """Run the wrapper setup phase and return a teardown function."""
+        args = self._get_args(caller_kwargs)
+        gen: Generator[None, object, object] = self.function(*args)  # type: ignore[assignment]
+        try:
+            next(gen)
+        except StopIteration:
+            raise RuntimeError(
+                f"wrap_controller at {_gen_code_location(gen)} did not yield"
+            )
+
+        def teardown(
+            result: object, exception: BaseException | None
+        ) -> tuple[object, BaseException | None]:
+            __tracebackhide__ = True
+            try:
+                if exception is not None:
+                    # Throw exception into generator
+                    gen.throw(exception)
+                else:
+                    gen.send(result)
+            except StopIteration as si:
+                return si.value, None
+            except RuntimeError as re:
+                # StopIteration from generator causes RuntimeError in Python 3.7+
+                # even for coroutine usage - see #544
+                if isinstance(exception, StopIteration) and re.__cause__ is exception:
+                    gen.close()
+                    return None, exception
+                return None, re
+            except BaseException as e:
+                return None, e
+            # If we get here, the wrapper yielded again (bad)
+            gen.close()
+            return None, RuntimeError(
+                f"wrap_controller at {_gen_code_location(gen)} has second yield"
+            )
+
+        return teardown
+
 
 @final
 class _OldStyleWrapper(_WrapperHookImplementation):
@@ -1012,6 +1091,55 @@ class _OldStyleWrapper(_WrapperHookImplementation):
     @property
     def hookwrapper(self) -> bool:
         return True
+
+    def setup_teardown(self, caller_kwargs: Mapping[str, object]) -> Teardown:
+        """Run the wrapper setup phase and return a teardown function."""
+        import warnings
+
+        from ._result import Result
+        from ._warnings import PluggyTeardownRaisedWarning
+
+        args = self._get_args(caller_kwargs)
+        gen: Generator[None, Result[object], None]
+        gen = self.function(*args)  # type: ignore[assignment]
+        try:
+            next(gen)
+        except StopIteration:
+            loc = _gen_code_location(gen)  # type: ignore[arg-type]
+            raise RuntimeError(f"wrap_controller at {loc} did not yield")
+
+        def teardown(
+            result: object, exception: BaseException | None
+        ) -> tuple[object, BaseException | None]:
+            __tracebackhide__ = True
+            # Old-style wrappers receive Result object
+            result_obj = Result(result, exception)
+            try:
+                gen.send(result_obj)
+            except StopIteration:
+                # Old-style wrapper completed normally
+                return result_obj._result, result_obj._exception
+            except BaseException as e:
+                # Warn about teardown exception in old-style wrapper
+                loc = _gen_code_location(gen)  # type: ignore[arg-type]
+                msg = (
+                    "A plugin raised an exception during an "
+                    "old-style hookwrapper teardown.\n"
+                    f"Plugin: {self.plugin_name}, Hook: {loc}\n"
+                    f"{type(e).__name__}: {e}\n"
+                    "For more information see "
+                    "https://pluggy.readthedocs.io/en/stable/api_reference.html"
+                    "#pluggy.PluggyTeardownRaisedWarning"
+                )
+                warnings.warn(PluggyTeardownRaisedWarning(msg), stacklevel=5)
+                return None, e
+            finally:
+                gen.close()
+            # Unreachable - either StopIteration or exception
+            loc = _gen_code_location(gen)  # type: ignore[arg-type]
+            return None, RuntimeError(f"wrap_controller at {loc} has second yield")
+
+        return teardown
 
 
 def _create_hook_implementation(

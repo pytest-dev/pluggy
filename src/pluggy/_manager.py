@@ -15,7 +15,6 @@ import warnings
 
 from . import _tracing
 from ._callers import _multicall
-from ._hooks import _AnyHookImpl
 from ._hooks import _create_hook_caller
 from ._hooks import _create_hook_implementation
 from ._hooks import _HistoricHookCaller
@@ -28,6 +27,7 @@ from ._hooks import _Plugin
 from ._hooks import _SpecifiedHookCaller
 from ._hooks import _SubsetHookCaller
 from ._hooks import _UnspeccedHookCaller
+from ._hooks import _WrapperHookImplementation
 from ._hooks import HookImpl
 from ._hooks import HookimplOpts
 from ._hooks import HookRelay
@@ -126,8 +126,8 @@ class PluginManager:
     def _hookexec(
         self,
         hook_name: str,
-        normal_impls: Sequence[_AnyHookImpl],
-        wrapper_impls: Sequence[_AnyHookImpl],
+        normal_impls: Sequence[_NormalHookImplementation],
+        wrapper_impls: Sequence[_WrapperHookImplementation],
         kwargs: Mapping[str, object],
         firstresult: bool,
     ) -> object | list[object]:
@@ -493,8 +493,8 @@ class PluginManager:
 
         def traced_hookexec(
             hook_name: str,
-            normal_impls: Sequence[_AnyHookImpl],
-            wrapper_impls: Sequence[_AnyHookImpl],
+            normal_impls: Sequence[_NormalHookImplementation],
+            wrapper_impls: Sequence[_WrapperHookImplementation],
             caller_kwargs: Mapping[str, object],
             firstresult: bool,
         ) -> object | list[object]:

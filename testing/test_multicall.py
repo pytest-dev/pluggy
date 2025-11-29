@@ -8,7 +8,9 @@ from pluggy import HookCallError
 from pluggy import HookimplMarker
 from pluggy import HookspecMarker
 from pluggy._callers import _multicall
-from pluggy._hooks import HookImpl
+from pluggy._hooks import _create_hook_implementation
+from pluggy._hooks import _NormalHookImplementation
+from pluggy._hooks import _WrapperHookImplementation
 
 
 hookspec = HookspecMarker("example")
@@ -21,14 +23,15 @@ def MC(
     firstresult: bool = False,
 ) -> object | list[object]:
     caller = _multicall
-    normal_funcs: list[HookImpl] = []
-    wrapper_funcs: list[HookImpl] = []
+    normal_funcs: list[_NormalHookImplementation] = []
+    wrapper_funcs: list[_WrapperHookImplementation] = []
     for method in methods:
-        f = HookImpl(None, "<temp>", method, method.example_impl)  # type: ignore[attr-defined]
-        if f.wrapper or f.hookwrapper:
-            wrapper_funcs.append(f)
+        opts = method.example_impl  # type: ignore[attr-defined]
+        f = _create_hook_implementation(None, "<temp>", method, opts)
+        if f.is_wrapper:
+            wrapper_funcs.append(f)  # type: ignore[arg-type]
         else:
-            normal_funcs.append(f)
+            normal_funcs.append(f)  # type: ignore[arg-type]
     return caller("foo", normal_funcs, wrapper_funcs, kwargs, firstresult)
 
 
