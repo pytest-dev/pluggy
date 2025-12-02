@@ -29,20 +29,20 @@ class TagTracer:
         else:
             extra = {}
 
-        content = " ".join(map(str, args))
+        content = " ".join(repr(a) for a in args)
         indent = "  " * self.indent
 
         lines = ["{}{} [{}]\n".format(indent, content, ":".join(tags))]
 
         for name, value in extra.items():
-            lines.append(f"{indent}    {name}: {value}\n")
+            lines.append(f"{indent}    {name}: {value!r}\n")
 
         return "".join(lines)
 
     def _processmessage(self, tags: tuple[str, ...], args: tuple[object, ...]) -> None:
         if self._writer is not None and args:
-            msg = self._format_message(tags, args)
-            self._writer(msg.encode("utf-8", "replace").decode("utf-8"))
+            self._writer(self._format_message(tags, args))
+
         try:
             processor = self._tags2proc[tags]
         except KeyError:
