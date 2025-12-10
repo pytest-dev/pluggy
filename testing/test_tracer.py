@@ -15,10 +15,10 @@ def test_simple(rootlogger: TagTracer) -> None:
     rootlogger.setwriter(out.append)
     log("world")
     assert len(out) == 1
-    assert out[0] == "world [pytest]\n"
+    assert out[0] == "'world' [pytest]\n"
     sublog = log.get("collection")
     sublog("hello")
-    assert out[1] == "hello [pytest:collection]\n"
+    assert out[1] == "'hello' [pytest:collection]\n"
 
 
 def test_indent(rootlogger: TagTracer) -> None:
@@ -39,13 +39,13 @@ def test_indent(rootlogger: TagTracer) -> None:
     assert len(out) == 7
     names = [x[: x.rfind(" [")] for x in out]
     assert names == [
-        "hello",
-        "  line1",
-        "  line2",
-        "    line3",
-        "    line4",
-        "  line5",
-        "last",
+        "'hello'",
+        "  'line1'",
+        "  'line2'",
+        "    'line3'",
+        "    'line4'",
+        "  'line5'",
+        "'last'",
     ]
 
 
@@ -54,7 +54,7 @@ def test_readable_output_dictargs(rootlogger: TagTracer) -> None:
     assert out == "1 [test]\n"
 
     out2 = rootlogger._format_message(["test"], ["test", {"a": 1}])
-    assert out2 == "test [test]\n    a: 1\n"
+    assert out2 == "'test' [test]\n    a: 1\n"
 
 
 def test_setprocessor(rootlogger: TagTracer) -> None:
@@ -75,3 +75,13 @@ def test_setprocessor(rootlogger: TagTracer) -> None:
     log2("seen")
     tags, args = l2[0]
     assert args == ("seen",)
+
+
+def test_unicode_surrogate_handling(rootlogger: TagTracer) -> None:
+    out: list[str] = []
+    rootlogger.setwriter(out.append)
+    log = rootlogger.get("pytest")
+    s = "hello \ud800 world"
+    log(s)
+    assert len(out) == 1
+    assert "hello \\ud800 world" in out[0]
