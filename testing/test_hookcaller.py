@@ -327,7 +327,7 @@ def test_hookspec(pm: PluginManager) -> None:
 @pytest.mark.parametrize("name", ["hookwrapper", "optionalhook", "tryfirst", "trylast"])
 @pytest.mark.parametrize("val", [True, False])
 def test_hookimpl(name: str, val: bool) -> None:
-    @hookimpl(**{name: val})  # type: ignore[misc,call-overload]
+    @hookimpl(**{name: val})  # type: ignore[untyped-decorator,call-overload]
     def he_myhook1(arg1) -> None:
         pass
 
