@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from collections.abc import Generator
 from collections.abc import Sequence
+from typing import cast
 from typing import TypeVar
 
 import pytest
@@ -9,8 +10,9 @@ from pluggy import HookimplMarker
 from pluggy import HookspecMarker
 from pluggy import PluginManager
 from pluggy import PluginValidationError
-from pluggy._hooks import HookCaller
-from pluggy._hooks import HookImpl
+from pluggy._hooks import _create_hook_implementation
+from pluggy._hooks import _HookCallerBase
+from pluggy._hooks import _HookImplementation
 
 
 hookspec = HookspecMarker("example")
@@ -18,21 +20,21 @@ hookimpl = HookimplMarker("example")
 
 
 @pytest.fixture
-def hc(pm: PluginManager) -> HookCaller:
+def hc(pm: PluginManager) -> _HookCallerBase:
     class Hooks:
         @hookspec
         def he_method1(self, arg: object) -> None:
             pass
 
     pm.add_hookspecs(Hooks)
-    return pm.hook.he_method1
+    return cast(_HookCallerBase, pm.hook.he_method1)
 
 
 FuncT = TypeVar("FuncT", bound=Callable[..., object])
 
 
 class AddMeth:
-    def __init__(self, hc: HookCaller) -> None:
+    def __init__(self, hc: _HookCallerBase) -> None:
         self.hc = hc
 
     def __call__(
@@ -50,7 +52,12 @@ class AddMeth:
                 wrapper=wrapper,
             )(func)
             self.hc._add_hookimpl(
-                HookImpl(None, "<temp>", func, func.example_impl),  # type: ignore[attr-defined]
+                _create_hook_implementation(
+                    None,
+                    "<temp>",
+                    func,
+                    func.example_impl,  # type: ignore[attr-defined]
+                ),
             )
             return func
 
@@ -58,15 +65,15 @@ class AddMeth:
 
 
 @pytest.fixture
-def addmeth(hc: HookCaller) -> AddMeth:
+def addmeth(hc: _HookCallerBase) -> AddMeth:
     return AddMeth(hc)
 
 
-def funcs(hookmethods: Sequence[HookImpl]) -> list[Callable[..., object]]:
+def funcs(hookmethods: Sequence[_HookImplementation]) -> list[Callable[..., object]]:
     return [hookmethod.function for hookmethod in hookmethods]
 
 
-def test_adding_nonwrappers(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers(hc: _HookCallerBase, addmeth: AddMeth) -> None:
     @addmeth()
     def he_method1() -> None:
         pass
@@ -82,7 +89,7 @@ def test_adding_nonwrappers(hc: HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [he_method1, he_method2, he_method3]
 
 
-def test_adding_nonwrappers_trylast(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers_trylast(hc: _HookCallerBase, addmeth: AddMeth) -> None:
     @addmeth()
     def he_method1_middle() -> None:
         pass
@@ -98,7 +105,7 @@ def test_adding_nonwrappers_trylast(hc: HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [he_method1, he_method1_middle, he_method1_b]
 
 
-def test_adding_nonwrappers_trylast3(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers_trylast3(hc: _HookCallerBase, addmeth: AddMeth) -> None:
     @addmeth()
     def he_method1_a() -> None:
         pass
@@ -123,7 +130,7 @@ def test_adding_nonwrappers_trylast3(hc: HookCaller, addmeth: AddMeth) -> None:
     ]
 
 
-def test_adding_nonwrappers_trylast2(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers_trylast2(hc: _HookCallerBase, addmeth: AddMeth) -> None:
     @addmeth()
     def he_method1_middle() -> None:
         pass
@@ -139,7 +146,7 @@ def test_adding_nonwrappers_trylast2(hc: HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [he_method1, he_method1_middle, he_method1_b]
 
 
-def test_adding_nonwrappers_tryfirst(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers_tryfirst(hc: _HookCallerBase, addmeth: AddMeth) -> None:
     @addmeth(tryfirst=True)
     def he_method1() -> None:
         pass
@@ -155,7 +162,7 @@ def test_adding_nonwrappers_tryfirst(hc: HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [he_method1_middle, he_method1_b, he_method1]
 
 
-def test_adding_wrappers_ordering(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_wrappers_ordering(hc: _HookCallerBase, addmeth: AddMeth) -> None:
     @addmeth(hookwrapper=True)
     def he_method1():
         yield  # pragma: no cover
@@ -185,7 +192,9 @@ def test_adding_wrappers_ordering(hc: HookCaller, addmeth: AddMeth) -> None:
     ]
 
 
-def test_adding_wrappers_ordering_tryfirst(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_wrappers_ordering_tryfirst(
+    hc: _HookCallerBase, addmeth: AddMeth
+) -> None:
     @addmeth(hookwrapper=True, tryfirst=True)
     def he_method1():
         yield  # pragma: no cover
@@ -201,7 +210,7 @@ def test_adding_wrappers_ordering_tryfirst(hc: HookCaller, addmeth: AddMeth) -> 
     assert funcs(hc.get_hookimpls()) == [he_method2, he_method1, he_method3]
 
 
-def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_wrappers_complex(hc: _HookCallerBase, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == []
 
     @addmeth(hookwrapper=True, trylast=True)
@@ -442,7 +451,7 @@ def test_hook_conflict(pm: PluginManager) -> None:
     )
 
 
-def test_call_extra_hook_order(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_call_extra_hook_order(hc: _HookCallerBase, addmeth: AddMeth) -> None:
     """Ensure that call_extra is calling hooks in the right order."""
     order = []
 

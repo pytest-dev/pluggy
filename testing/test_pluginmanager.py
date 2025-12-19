@@ -650,7 +650,7 @@ def test_add_tracefuncs(he_pm: PluginManager) -> None:
     assert isinstance(out[0][2], dict)
     assert out[1] == "he_method1-api2"
     assert out[2] == "he_method1-api1"
-    assert len(out[3]) == 4
+    assert len(out[3]) == 4  # (outcome, hook_name, combined_impls, kwargs)
     assert out[3][1] == out[0][0]
 
     undo()
