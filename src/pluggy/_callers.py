@@ -97,12 +97,9 @@ def _multicall(
                 try:
                     args = [caller_kwargs[argname] for argname in hook_impl.argnames]
                 except KeyError as e:
-                    # coverage bug - this is tested
-                    for argname in hook_impl.argnames:  # pragma: no cover
-                        if argname not in caller_kwargs:
-                            raise HookCallError(
-                                f"hook call must provide argument {argname!r}"
-                            ) from e
+                    raise HookCallError(
+                        f"hook call must provide argument {e.args[0]!r}"
+                    ) from e
 
                 if hook_impl.hookwrapper:
                     function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
