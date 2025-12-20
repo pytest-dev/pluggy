@@ -9,6 +9,7 @@ from collections.abc import Mapping
 from collections.abc import Sequence
 from typing import cast
 from typing import NoReturn
+from typing import TYPE_CHECKING
 from typing import TypeAlias
 import warnings
 
@@ -29,8 +30,10 @@ def run_old_style_hookwrapper(
     """
     backward compatibility wrapper to run a old style hookwrapper as a wrapper
     """
-
-    teardown: Teardown = cast(Teardown, hook_impl.function(*args))
+    if TYPE_CHECKING:
+        teardown = cast(Teardown, hook_impl.function(*args))
+    else:
+        teardown = hook_impl.function(*args)
     try:
         next(teardown)
     except StopIteration:
@@ -107,15 +110,18 @@ def _multicall(
                 teardowns.append(function_gen)
 
             elif hook_impl.wrapper:
-                try:
-                    # If this cast is not valid, a type error is raised below,
-                    # which is the desired response.
-                    res = hook_impl.function(*args)
+                res = hook_impl.function(*args)
+                # If this cast is not valid, a type error is raised below,
+                # which is the desired response.
+                if TYPE_CHECKING:
                     function_gen = cast(Generator[None, object, object], res)
+                else:
+                    function_gen = res
+                try:
                     next(function_gen)  # first yield
-                    teardowns.append(function_gen)
                 except StopIteration:
                     _raise_wrapfail(function_gen, "did not yield")
+                teardowns.append(function_gen)
             else:
                 res = hook_impl.function(*args)
                 if res is not None:
