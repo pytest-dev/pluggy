@@ -90,41 +90,40 @@ def _multicall(
     __tracebackhide__ = True
     results: list[object] = []
     exception = None
+    teardowns: list[Teardown] = []
     try:  # run impl and wrapper setup functions in a loop
-        teardowns: list[Teardown] = []
-        try:
-            for hook_impl in reversed(hook_impls):
+        for hook_impl in reversed(hook_impls):
+            try:
+                args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+            except KeyError as e:
+                raise HookCallError(
+                    f"hook call must provide argument {e.args[0]!r}"
+                ) from e
+
+            if hook_impl.hookwrapper:
+                function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
+
+                next(function_gen)  # first yield
+                teardowns.append(function_gen)
+
+            elif hook_impl.wrapper:
                 try:
-                    args = [caller_kwargs[argname] for argname in hook_impl.argnames]
-                except KeyError as e:
-                    raise HookCallError(
-                        f"hook call must provide argument {e.args[0]!r}"
-                    ) from e
-
-                if hook_impl.hookwrapper:
-                    function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
-
+                    # If this cast is not valid, a type error is raised below,
+                    # which is the desired response.
+                    res = hook_impl.function(*args)
+                    function_gen = cast(Generator[None, object, object], res)
                     next(function_gen)  # first yield
                     teardowns.append(function_gen)
-
-                elif hook_impl.wrapper:
-                    try:
-                        # If this cast is not valid, a type error is raised below,
-                        # which is the desired response.
-                        res = hook_impl.function(*args)
-                        function_gen = cast(Generator[None, object, object], res)
-                        next(function_gen)  # first yield
-                        teardowns.append(function_gen)
-                    except StopIteration:
-                        _raise_wrapfail(function_gen, "did not yield")
-                else:
-                    res = hook_impl.function(*args)
-                    if res is not None:
-                        results.append(res)
-                        if firstresult:  # halt further impl calls
-                            break
-        except BaseException as exc:
-            exception = exc
+                except StopIteration:
+                    _raise_wrapfail(function_gen, "did not yield")
+            else:
+                res = hook_impl.function(*args)
+                if res is not None:
+                    results.append(res)
+                    if firstresult:  # halt further impl calls
+                        break
+    except BaseException as exc:
+        exception = exc
     finally:
         if firstresult:  # first result hooks return a single value
             result = results[0] if results else None
