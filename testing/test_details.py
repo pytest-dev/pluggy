@@ -192,7 +192,7 @@ def test_repr() -> None:
     plugin = Plugin()
     pname = pm.register(plugin)
     assert repr(pm.hook.myhook.get_hookimpls()[0]) == (
-        f"<HookImpl plugin_name={pname!r}, plugin={plugin!r}>"
+        f"<_NormalHookImplementation plugin_name={pname!r}, plugin={plugin!r}>"
     )
 
 

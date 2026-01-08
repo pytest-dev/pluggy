@@ -10,7 +10,9 @@ from pluggy import HookimplMarker
 from pluggy import HookspecMarker
 from pluggy import PluginManager
 from pluggy._callers import _multicall
-from pluggy._hooks import HookImpl
+from pluggy._hooks import _create_hook_implementation
+from pluggy._hooks import _NormalHookImplementation
+from pluggy._hooks import _WrapperHookImplementation
 
 
 hookspec = HookspecMarker("example")
@@ -40,13 +42,19 @@ def wrappers(request: Any) -> list[object]:
 def test_hook_and_wrappers_speed(benchmark, hooks, wrappers) -> None:
     def setup():
         hook_name = "foo"
-        hook_impls = []
-        for method in hooks + wrappers:
-            f = HookImpl(None, "<temp>", method, method.example_impl)
-            hook_impls.append(f)
+        normal_impls: list[_NormalHookImplementation] = []
+        wrapper_impls: list[_WrapperHookImplementation] = []
+        for method in hooks:
+            opts = method.example_impl
+            f = _create_hook_implementation(None, "<temp>", method, opts)
+            normal_impls.append(f)  # type: ignore[arg-type]
+        for method in wrappers:
+            opts = method.example_impl
+            f = _create_hook_implementation(None, "<temp>", method, opts)
+            wrapper_impls.append(f)  # type: ignore[arg-type]
         caller_kwargs = {"arg1": 1, "arg2": 2, "arg3": 3}
         firstresult = False
-        return (hook_name, hook_impls, caller_kwargs, firstresult), {}
+        return (hook_name, normal_impls, wrapper_impls, caller_kwargs, firstresult), {}
 
     benchmark.pedantic(_multicall, setup=setup, rounds=10)
 
