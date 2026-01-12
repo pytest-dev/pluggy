@@ -9,6 +9,7 @@ from collections.abc import Mapping
 from collections.abc import Sequence
 from typing import cast
 from typing import NoReturn
+from typing import TYPE_CHECKING
 from typing import TypeAlias
 import warnings
 
@@ -29,8 +30,10 @@ def run_old_style_hookwrapper(
     """
     backward compatibility wrapper to run a old style hookwrapper as a wrapper
     """
-
-    teardown: Teardown = cast(Teardown, hook_impl.function(*args))
+    if TYPE_CHECKING:
+        teardown = cast(Teardown, hook_impl.function(*args))
+    else:
+        teardown = hook_impl.function(*args)
     try:
         next(teardown)
     except StopIteration:
@@ -90,44 +93,43 @@ def _multicall(
     __tracebackhide__ = True
     results: list[object] = []
     exception = None
+    teardowns: list[Teardown] = []
     try:  # run impl and wrapper setup functions in a loop
-        teardowns: list[Teardown] = []
-        try:
-            for hook_impl in reversed(hook_impls):
-                try:
-                    args = [caller_kwargs[argname] for argname in hook_impl.argnames]
-                except KeyError as e:
-                    # coverage bug - this is tested
-                    for argname in hook_impl.argnames:  # pragma: no cover
-                        if argname not in caller_kwargs:
-                            raise HookCallError(
-                                f"hook call must provide argument {argname!r}"
-                            ) from e
+        for hook_impl in reversed(hook_impls):
+            try:
+                args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+            except KeyError as e:
+                raise HookCallError(
+                    f"hook call must provide argument {e.args[0]!r}"
+                ) from e
 
-                if hook_impl.hookwrapper:
-                    function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
+            if hook_impl.hookwrapper:
+                function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
 
-                    next(function_gen)  # first yield
-                    teardowns.append(function_gen)
+                next(function_gen)  # first yield
+                teardowns.append(function_gen)
 
-                elif hook_impl.wrapper:
-                    try:
-                        # If this cast is not valid, a type error is raised below,
-                        # which is the desired response.
-                        res = hook_impl.function(*args)
-                        function_gen = cast(Generator[None, object, object], res)
-                        next(function_gen)  # first yield
-                        teardowns.append(function_gen)
-                    except StopIteration:
-                        _raise_wrapfail(function_gen, "did not yield")
+            elif hook_impl.wrapper:
+                res = hook_impl.function(*args)
+                # If this cast is not valid, a type error is raised below,
+                # which is the desired response.
+                if TYPE_CHECKING:
+                    function_gen = cast(Generator[None, object, object], res)
                 else:
-                    res = hook_impl.function(*args)
-                    if res is not None:
-                        results.append(res)
-                        if firstresult:  # halt further impl calls
-                            break
-        except BaseException as exc:
-            exception = exc
+                    function_gen = res
+                try:
+                    next(function_gen)  # first yield
+                except StopIteration:
+                    _raise_wrapfail(function_gen, "did not yield")
+                teardowns.append(function_gen)
+            else:
+                res = hook_impl.function(*args)
+                if res is not None:
+                    results.append(res)
+                    if firstresult:  # halt further impl calls
+                        break
+    except BaseException as exc:
+        exception = exc
     finally:
         if firstresult:  # first result hooks return a single value
             result = results[0] if results else None
