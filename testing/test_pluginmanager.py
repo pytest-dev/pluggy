@@ -814,3 +814,76 @@ def test_check_pending_nonspec_hook(
         PluginValidationError, match="unknown hook 'a_hook' in plugin .*"
     ):
         pm.check_pending()
+
+
+def test_unregister_plugin_with_multi_hookimpls(pm: PluginManager) -> None:
+    """Verify that unregistering a plugin with multiple hookimpls on the
+    same hook (via specname) removes all of them (#431)."""
+
+    class Api:
+        @hookspec
+        def hello(self, arg: object) -> object: ...
+
+    pm.add_hookspecs(Api)
+
+    class Plugin:
+        @hookimpl
+        def hello(self, arg: object) -> int:
+            return arg + 1  # type: ignore[operator]
+
+        @hookimpl(specname="hello")
+        def hello_again(self, arg: object) -> int:
+            return arg + 100  # type: ignore[operator]
+
+    plugin = Plugin()
+    pm.register(plugin)
+
+    # Both implementations should be registered.
+    impls = pm.hook.hello.get_hookimpls()
+    assert len(impls) == 2
+
+    # Both implementations should run.
+    out = pm.hook.hello(arg=3)
+    assert sorted(out) == [4, 103]
+
+    # After unregister, no implementations should remain.
+    pm.unregister(plugin)
+    assert pm.hook.hello(arg=3) == []
+    assert pm.hook.hello.get_hookimpls() == []
+
+
+def test_get_hookcallers_no_duplicates(pm: PluginManager) -> None:
+    """Verify that get_hookcallers does not return duplicate HookCaller
+    entries when a plugin has multiple hookimpls on the same hook (#431)."""
+
+    class Api:
+        @hookspec
+        def hello(self, arg: object) -> object: ...
+
+        @hookspec
+        def goodbye(self, arg: object) -> object: ...
+
+    pm.add_hookspecs(Api)
+
+    class Plugin:
+        @hookimpl
+        def hello(self, arg: object) -> int:
+            return arg + 1  # type: ignore[operator]
+
+        @hookimpl(specname="hello")
+        def hello_again(self, arg: object) -> int:
+            return arg + 100  # type: ignore[operator]
+
+        @hookimpl
+        def goodbye(self, arg: object) -> int:
+            return arg + 200  # type: ignore[operator]
+
+    plugin = Plugin()
+    pm.register(plugin)
+
+    hookcallers = pm.get_hookcallers(plugin)
+    assert hookcallers is not None
+    # Should return 2 unique callers (hello + goodbye), not 3.
+    assert len(hookcallers) == 2
+    caller_names = {hc.name for hc in hookcallers}
+    assert caller_names == {"hello", "goodbye"}

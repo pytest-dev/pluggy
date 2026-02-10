@@ -440,11 +440,11 @@ class HookCaller:
         return self._call_history is not None
 
     def _remove_plugin(self, plugin: _Plugin) -> None:
-        for i, method in enumerate(self._hookimpls):
-            if method.plugin == plugin:
-                del self._hookimpls[i]
-                return
-        raise ValueError(f"plugin {plugin!r} not found")
+        """Remove all hook implementations registered by the given plugin."""
+        remaining = [impl for impl in self._hookimpls if impl.plugin != plugin]
+        if len(remaining) == len(self._hookimpls):
+            raise ValueError(f"plugin {plugin!r} not found")
+        self._hookimpls[:] = remaining
 
     def get_hookimpls(self) -> list[HookImpl]:
         """Get all registered hook implementations for this hook."""
