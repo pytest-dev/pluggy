@@ -197,7 +197,7 @@ def test_repr() -> None:
 
 
 def test_dist_facade_list_attributes() -> None:
-    from pluggy._manager import DistFacade
+    from pluggy._compat import DistFacade
 
     fc = DistFacade(distribution("pluggy"))
     res = dir(fc)
