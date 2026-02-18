@@ -21,10 +21,11 @@ from ._hooks import _Plugin
 from ._hooks import _SubsetHookCaller
 from ._hooks import HookCaller
 from ._hooks import HookImpl
+from ._hooks import HookimplOptions
 from ._hooks import HookimplOpts
 from ._hooks import HookRelay
+from ._hooks import HookspecOptions
 from ._hooks import HookspecOpts
-from ._hooks import normalize_hookimpl_opts
 from ._result import Result
 
 
@@ -157,12 +158,11 @@ class PluginManager:
 
         # register matching hook implementations of the plugin
         for name in dir(plugin):
-            hookimpl_opts = self.parse_hookimpl_opts(plugin, name)
+            hookimpl_opts = self._parse_hookimpl_opts(plugin, name)
             if hookimpl_opts is not None:
-                normalize_hookimpl_opts(hookimpl_opts)
                 method: _HookImplFunction[object] = getattr(plugin, name)
                 hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
-                name = hookimpl_opts.get("specname") or name
+                name = hookimpl_opts.specname or name
                 hook: HookCaller | None = getattr(self.hook, name, None)
                 if hook is None:
                     hook = HookCaller(name, self._hookexec)
@@ -173,30 +173,43 @@ class PluginManager:
                 hook._add_hookimpl(hookimpl)
         return plugin_name
 
+    def _parse_hookimpl_opts(
+        self, plugin: _Plugin, name: str
+    ) -> HookimplOptions | None:
+        """Internal: parse hookimpl opts and convert to HookimplOptions."""
+        try:
+            method: object = getattr(plugin, name)
+        except Exception:
+            return None
+        if not inspect.isroutine(method):
+            return None
+        try:
+            res: HookimplOptions | None = getattr(
+                method, self.project_name + "_impl", None
+            )
+        except Exception:
+            return None
+        if res is not None:
+            return res
+        # Check for legacy dict from overridden parse_hookimpl_opts
+        legacy = self.parse_hookimpl_opts(plugin, name)
+        if legacy is not None:
+            return HookimplOptions.from_opts(legacy)
+        return None
+
     def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
         """Try to obtain a hook implementation from an item with the given name
         in the given plugin which is being searched for hook impls.
 
         :returns:
-            The parsed hookimpl options, or None to skip the given item.
+            The parsed hookimpl options as a dict, or None to skip the given item.
 
         This method can be overridden by ``PluginManager`` subclasses to
-        customize how hook implementation are picked up. By default, returns the
-        options for items decorated with :class:`HookimplMarker`.
+        customize how hook implementations are picked up. By default, returns
+        None. Override this method to return a :class:`HookimplOpts` dict for
+        items that should be treated as hook implementations.
         """
-        method: object = getattr(plugin, name)
-        if not inspect.isroutine(method):
-            return None
-        try:
-            res: HookimplOpts | None = getattr(
-                method, self.project_name + "_impl", None
-            )
-        except Exception:  # pragma: no cover
-            res = {}  # type: ignore[assignment] #pragma: no cover
-        if res is not None and not isinstance(res, dict):
-            # false positive
-            res = None  # type:ignore[unreachable] #pragma: no cover
-        return res
+        return None
 
     def unregister(
         self, plugin: _Plugin | None = None, name: str | None = None
@@ -257,7 +270,7 @@ class PluginManager:
         """
         names = []
         for name in dir(module_or_class):
-            spec_opts = self.parse_hookspec_opts(module_or_class, name)
+            spec_opts = self._parse_hookspec_opts(module_or_class, name)
             if spec_opts is not None:
                 hc: HookCaller | None = getattr(self.hook, name, None)
                 if hc is None:
@@ -275,6 +288,20 @@ class PluginManager:
                 f"did not find any {self.project_name!r} hooks in {module_or_class!r}"
             )
 
+    def _parse_hookspec_opts(
+        self, module_or_class: _Namespace, name: str
+    ) -> HookspecOptions | None:
+        """Internal: parse hookspec opts and convert to HookspecOptions."""
+        method = getattr(module_or_class, name)
+        res: HookspecOptions | None = getattr(method, self.project_name + "_spec", None)
+        if res is not None:
+            return res
+        # Check for legacy dict from overridden parse_hookspec_opts
+        legacy = self.parse_hookspec_opts(module_or_class, name)
+        if legacy is not None:
+            return HookspecOptions.from_opts(legacy)
+        return None
+
     def parse_hookspec_opts(
         self, module_or_class: _Namespace, name: str
     ) -> HookspecOpts | None:
@@ -282,16 +309,14 @@ class PluginManager:
         in the given module or class which is being searched for hook specs.
 
         :returns:
-            The parsed hookspec options for defining a hook, or None to skip the
-            given item.
+            The parsed hookspec options as a dict, or None to skip the given item.
 
         This method can be overridden by ``PluginManager`` subclasses to
-        customize how hook specifications are picked up. By default, returns the
-        options for items decorated with :class:`HookspecMarker`.
+        customize how hook specifications are picked up. By default, returns
+        None. Override this method to return a :class:`HookspecOpts` dict for
+        items that should be treated as hook specifications.
         """
-        method = getattr(module_or_class, name)
-        opts: HookspecOpts | None = getattr(method, self.project_name + "_spec", None)
-        return opts
+        return None
 
     def get_plugins(self) -> set[Any]:
         """Return a set of all registered plugin objects."""
