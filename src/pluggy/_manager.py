@@ -224,7 +224,7 @@ class PluginManager:
                 hookcaller._remove_plugin(plugin)
 
         # if self._name2plugin[name] == None registration was blocked: ignore
-        if self._name2plugin.get(name):
+        if self._name2plugin.get(name) is not None:
             assert name is not None
             del self._name2plugin[name]
 
