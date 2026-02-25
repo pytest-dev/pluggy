@@ -442,9 +442,8 @@ class PluginManager:
             return None
         hookcallers = []
         for hookcaller in self.hook.__dict__.values():
-            for hookimpl in hookcaller.get_hookimpls():
-                if hookimpl.plugin is plugin:
-                    hookcallers.append(hookcaller)
+            if any(impl.plugin is plugin for impl in hookcaller.get_hookimpls()):
+                hookcallers.append(hookcaller)
         return hookcallers
 
     def add_hookcall_monitoring(
