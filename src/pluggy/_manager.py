@@ -49,6 +49,17 @@ def _warn_for_function(warning: Warning, function: Callable[..., object]) -> Non
     )
 
 
+def _attr_is_property(obj: object, name: str) -> bool:
+    """Check if a given attr is a @property on a module, class, or object"""
+    if inspect.ismodule(obj):
+        return False  # modules can never have @property methods
+
+    base_class = obj if inspect.isclass(obj) else type(obj)
+    if isinstance(getattr(base_class, name, None), property):
+        return True
+    return False
+
+
 class PluginValidationError(Exception):
     """Plugin failed validation.
 
@@ -184,7 +195,20 @@ class PluginManager:
         customize how hook implementation are picked up. By default, returns the
         options for items decorated with :class:`HookimplMarker`.
         """
-        method: object = getattr(plugin, name)
+
+        if _attr_is_property(plugin, name):
+            # @property methods can have side effects, and are never hookimpls
+            return None
+
+        method: object
+        try:
+            method = getattr(plugin, name)
+        except AttributeError:
+            # AttributeError: '__signature__' attribute of 'plugin' is class-only
+            # can be raised when trying to access some descriptor/proxied fields
+            # https://github.com/pytest-dev/pluggy/pull/536#discussion_r1786431032
+            return None
+
         if not inspect.isroutine(method):
             return None
         try:
@@ -289,7 +313,18 @@ class PluginManager:
         customize how hook specifications are picked up. By default, returns the
         options for items decorated with :class:`HookspecMarker`.
         """
-        method = getattr(module_or_class, name)
+        if _attr_is_property(module_or_class, name):
+            # @property methods can have side effects, and are never hookspecs
+            return None
+
+        method: object
+        try:
+            method = getattr(module_or_class, name)
+        except AttributeError:
+            # AttributeError: '__signature__' attribute of <m_or_c> is class-only
+            # can be raised when trying to access some descriptor/proxied fields
+            # https://github.com/pytest-dev/pluggy/pull/536#discussion_r1786431032
+            return None
         opts: HookspecOpts | None = getattr(method, self.project_name + "_spec", None)
         return opts
 

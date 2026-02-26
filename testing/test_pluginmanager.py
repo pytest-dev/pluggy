@@ -124,6 +124,23 @@ def test_set_blocked(pm: PluginManager) -> None:
     assert pm.register(A(), "somename")
 
 
+def test_register_ignores_properties(he_pm: PluginManager) -> None:
+    class ClassWithProperties:
+        property_was_executed: bool = False
+
+        @property
+        def some_func(self):
+            self.property_was_executed = True  # pragma: no cover
+            return None  # pragma: no cover
+
+    # test registering it as a class
+    he_pm.register(ClassWithProperties)
+    # test registering it as an instance
+    test_plugin = ClassWithProperties()
+    he_pm.register(test_plugin)
+    assert not test_plugin.property_was_executed
+
+
 def test_register_mismatch_method(he_pm: PluginManager) -> None:
     class hello:
         @hookimpl
