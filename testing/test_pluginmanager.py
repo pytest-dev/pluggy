@@ -4,6 +4,7 @@
 
 import importlib.metadata
 from typing import Any
+from typing import cast
 
 import pytest
 
@@ -12,6 +13,7 @@ from pluggy import HookimplMarker
 from pluggy import HookspecMarker
 from pluggy import PluginManager
 from pluggy import PluginValidationError
+from pluggy._compat import DistFacade
 
 
 hookspec = HookspecMarker("example")
@@ -583,7 +585,9 @@ def test_add_hookspecs_nohooks(pm: PluginManager) -> None:
         pm.add_hookspecs(NoHooks)
 
 
-def test_load_setuptools_instantiation(monkeypatch, pm: PluginManager) -> None:
+def test_load_setuptools_instantiation(
+    monkeypatch: pytest.MonkeyPatch, pm: PluginManager
+) -> None:
     class EntryPoint:
         name = "myname"
         group = "hello"
@@ -598,7 +602,8 @@ def test_load_setuptools_instantiation(monkeypatch, pm: PluginManager) -> None:
     class Distribution:
         entry_points = (EntryPoint(),)
 
-    dist = Distribution()
+    # Cast mock Distribution to satisfy mypy type checking
+    dist = cast(importlib.metadata.Distribution, Distribution())
 
     def my_distributions():
         return (dist,)
@@ -610,13 +615,13 @@ def test_load_setuptools_instantiation(monkeypatch, pm: PluginManager) -> None:
     assert plugin is not None
     assert plugin.x == 42
     ret = pm.list_plugin_distinfo()
-    # poor man's `assert ret == [(plugin, mock.ANY)]`
-    assert len(ret) == 1
-    assert len(ret[0]) == 2
-    assert ret[0][0] == plugin
-    assert ret[0][1]._dist == dist  # type: ignore[comparison-overlap]
+    assert ret == [(plugin, DistFacade(dist))]
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 0  # no plugin loaded by this call
+
+    # Test the new modern API returns unwrapped Distribution objects
+    ret_modern = pm.list_plugin_distributions()
+    assert ret_modern == [(plugin, dist)]
 
 
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
