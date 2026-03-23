@@ -996,7 +996,7 @@ Call monitoring
 ---------------
 Instead of using the built-in tracing mechanism you can also add your
 own ``before`` and ``after`` monitoring functions using
-:py:class:`pluggy.PluginManager.add_hookcall_monitoring()`.
+:py:meth:`pluggy.PluginManager.add_hookcall_monitoring()`.
 
 The expected signature and default implementations for these functions is:
 

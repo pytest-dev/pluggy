@@ -1,0 +1,3 @@
+Fix incorrect ``:py:class:`` role used for a method reference in
+``docs/index.rst``; ``PluginManager.add_hookcall_monitoring()`` is
+now correctly referenced with ``:py:meth:``.
