@@ -357,9 +357,9 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     try:
         # func MUST be a function or method here or we won't parse any args.
         func = func.__func__ if inspect.ismethod(func) else func
-        if hasattr(func, "__signature__") and hasattr(func, "__code__"):
+        if hasattr(func, "__code__") and inspect.isroutine(func):
             # Take the optimized approch rather than sit and parse the given signature.
-            args, kwargs = _varnames_from_code(func)
+            args, kwargs = _varnames_from_code(inspect.unwrap(func))
         else:
             # Fallback
             args, kwargs = _varnames_from_signature(func)
