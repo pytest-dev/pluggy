@@ -12,7 +12,6 @@ from collections.abc import Set
 import inspect
 import sys
 from types import ModuleType
-from types import MethodType
 from typing import Any
 from typing import Final
 from typing import final
