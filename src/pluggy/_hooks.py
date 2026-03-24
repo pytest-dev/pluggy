@@ -289,6 +289,7 @@ def normalize_hookimpl_opts(opts: HookimplOpts) -> None:
 
 _PYPY = hasattr(sys, "pypy_version_info")
 
+
 def _varnames_from_code(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Faster shortcut than needing to parse a function's given signature."""
     code = func.__code__
@@ -301,10 +302,11 @@ def _varnames_from_code(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]
     else:
         return args, ()
 
-def _varnames_from_signature(func: object) ->  tuple[tuple[str, ...], tuple[str, ...]]:
+
+def _varnames_from_signature(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """extracts from a function's given signature"""
     sig = inspect.signature(
-            func  # type:ignore[arg-type]
+        func  # type:ignore[arg-type]
     )
 
     _valid_param_kinds = (
@@ -331,6 +333,7 @@ def _varnames_from_signature(func: object) ->  tuple[tuple[str, ...], tuple[str,
         return args[:index], tuple(args[index:])
     else:
         return args, ()
+
 
 def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Return tuple of positional and keywrord argument names for a function,
