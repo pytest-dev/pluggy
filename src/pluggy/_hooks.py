@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from collections.abc import Set
 import inspect
 import sys
+from types import CodeType
 from types import ModuleType
 from typing import Any
 from typing import Final
@@ -292,11 +293,11 @@ _PYPY = hasattr(sys, "pypy_version_info")
 
 def _varnames_from_code(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Faster shortcut than needing to parse a function's given signature."""
-    code = func.__code__
+    code: CodeType = getattr(func, "__code__")
     pos_count = code.co_argcount
     args = code.co_varnames[:pos_count]
 
-    if defaults := func.__defaults__:
+    if defaults := getattr(func, "__defaults__", None):
         index = -len(defaults)
         return args[:index], tuple(args[index:])
     else:
@@ -356,12 +357,12 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     try:
         # func MUST be a function or method here or we won't parse any args.
         func = func.__func__ if inspect.ismethod(func) else func
-        if hasattr(func, "__signature__"):
+        if hasattr(func, "__signature__") and hasattr(func, "__code__"):
             # Take the optimized approch rather than sit and parse the given signature.
             args, kwargs = _varnames_from_code(func)
         else:
             # Fallback
-            args, kwargs = _varnames_from_signature(func)  # type:ignore[arg-type]
+            args, kwargs = _varnames_from_signature(func)
     except TypeError:  # pragma: no cover
         return (), ()
 
