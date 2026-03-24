@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from collections.abc import Set
 import inspect
 import sys
+from types import CodeType
 from types import ModuleType
 from typing import Any
 from typing import Final
@@ -290,31 +291,24 @@ def normalize_hookimpl_opts(opts: HookimplOpts) -> None:
 _PYPY = hasattr(sys, "pypy_version_info")
 
 
-def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """Return tuple of positional and keywrord argument names for a function,
-    method, class or callable.
+def _varnames_from_code(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Faster shortcut than needing to parse a function's given signature."""
+    code: CodeType = getattr(func, "__code__")
+    pos_count = code.co_argcount
+    args = code.co_varnames[:pos_count]
 
-    In case of a class, its ``__init__`` method is considered.
-    For methods the ``self`` parameter is not included.
-    """
-    if inspect.isclass(func):
-        try:
-            func = func.__init__
-        except AttributeError:  # pragma: no cover - pypy special case
-            return (), ()
-    elif not inspect.isroutine(func):  # callable object?
-        try:
-            func = getattr(func, "__call__", func)
-        except Exception:  # pragma: no cover - pypy special case
-            return (), ()
+    if defaults := getattr(func, "__defaults__", None):
+        index = -len(defaults)
+        return args[:index], tuple(args[index:])
+    else:
+        return args, ()
 
-    try:
-        # func MUST be a function or method here or we won't parse any args.
-        sig = inspect.signature(
-            func.__func__ if inspect.ismethod(func) else func  # type:ignore[arg-type]
-        )
-    except TypeError:  # pragma: no cover
-        return (), ()
+
+def _varnames_from_signature(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """extracts from a function's given signature"""
+    sig = inspect.signature(
+        func  # type:ignore[arg-type]
+    )
 
     _valid_param_kinds = (
         inspect.Parameter.POSITIONAL_ONLY,
@@ -337,9 +331,40 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
 
     if defaults:
         index = -len(defaults)
-        args, kwargs = args[:index], tuple(args[index:])
+        return args[:index], tuple(args[index:])
     else:
-        kwargs = ()
+        return args, ()
+
+
+def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Return tuple of positional and keywrord argument names for a function,
+    method, class or callable.
+
+    In case of a class, its ``__init__`` method is considered.
+    For methods the ``self`` parameter is not included.
+    """
+    if inspect.isclass(func):
+        try:
+            func = func.__init__
+        except AttributeError:  # pragma: no cover - pypy special case
+            return (), ()
+    elif not inspect.isroutine(func):  # callable object?
+        try:
+            func = getattr(func, "__call__", func)
+        except Exception:  # pragma: no cover - pypy special case
+            return (), ()
+
+    try:
+        # func MUST be a function or method here or we won't parse any args.
+        func = func.__func__ if inspect.ismethod(func) else func
+        if hasattr(func, "__code__") and inspect.isroutine(func):
+            # Take the optimized approch rather than sit and parse the given signature.
+            args, kwargs = _varnames_from_code(inspect.unwrap(func))
+        else:
+            # Fallback
+            args, kwargs = _varnames_from_signature(func)
+    except TypeError:  # pragma: no cover
+        return (), ()
 
     # strip any implicit instance arg
     # pypy3 uses "obj" instead of "self" for default dunder methods
