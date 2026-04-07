@@ -615,7 +615,7 @@ def test_load_setuptools_instantiation(monkeypatch, pm: PluginManager) -> None:
     assert len(ret[0]) == 2
     assert ret[0][0] == plugin
     assert ret[0][1]._dist == dist  # type: ignore[comparison-overlap]
-    num = pm.load_setuptools_entrypoints("hello")
+    num = pm.load_setuptools_entrypoints("hello")  # type:ignore[unreachable]
     assert num == 0  # no plugin loaded by this call
 
 
