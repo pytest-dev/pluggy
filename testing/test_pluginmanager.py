@@ -695,6 +695,33 @@ def test_hook_tracing(he_pm: PluginManager) -> None:
         undo()
 
 
+def test_hook_tracing_with_broken_repr(he_pm: PluginManager) -> None:
+    class BadRepr:
+        def __repr__(self) -> str:
+            raise RuntimeError("broken repr")
+
+    class api1:
+        @hookimpl
+        def he_method1(self, arg):
+            return None
+
+    he_pm.register(api1())
+    out: list[str] = []
+    he_pm.trace.root.setwriter(out.append)
+    undo = he_pm.enable_tracing()
+    try:
+        result = he_pm.hook.he_method1(arg=BadRepr())
+    finally:
+        undo()
+
+    assert result == []
+    assert len(out) == 2
+    assert "he_method1" in out[0]
+    assert "arg:" in out[0]
+    assert "BadRepr" in out[0]
+    assert "finish" in out[1]
+
+
 @pytest.mark.parametrize("historic", [False, True])
 def test_register_while_calling(
     pm: PluginManager,

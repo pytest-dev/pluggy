@@ -13,6 +13,13 @@ _Writer = Callable[[str], object]
 _Processor = Callable[[tuple[str, ...], tuple[Any, ...]], object]
 
 
+def _safe_str(obj: object) -> str:
+    try:
+        return str(obj)
+    except Exception as exc:
+        return f"{object.__repr__(obj)} (str failed: {type(exc).__name__}: {exc})"
+
+
 class TagTracer:
     def __init__(self) -> None:
         self._tags2proc: dict[tuple[str, ...], _Processor] = {}
@@ -29,13 +36,13 @@ class TagTracer:
         else:
             extra = {}
 
-        content = " ".join(map(str, args))
+        content = " ".join(_safe_str(arg) for arg in args)
         indent = "  " * self.indent
 
         lines = [f"{indent}{content} [{':'.join(tags)}]\n"]
 
         for name, value in extra.items():
-            lines.append(f"{indent}    {name}: {value}\n")
+            lines.append(f"{indent}    {name}: {_safe_str(value)}\n")
 
         return "".join(lines)
 
