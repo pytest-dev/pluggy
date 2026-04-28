@@ -36,6 +36,16 @@ _HookExec: TypeAlias = Callable[
 ]
 _HookImplFunction: TypeAlias = Callable[..., _T | Generator[None, Result[_T], None]]
 
+if sys.version_info >= (3, 14):
+    from annotationlib import Format
+
+    def _signature(func: Callable[..., object]) -> inspect.Signature:
+        return inspect.signature(func, annotation_format=Format.STRING)
+else:
+
+    def _signature(func: Callable[..., object]) -> inspect.Signature:
+        return inspect.signature(func)
+
 
 class HookspecOpts(TypedDict):
     """Options for a hook specification."""
@@ -310,7 +320,7 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
 
     try:
         # func MUST be a function or method here or we won't parse any args.
-        sig = inspect.signature(
+        sig = _signature(
             func.__func__ if inspect.ismethod(func) else func  # type:ignore[arg-type]
         )
     except TypeError:  # pragma: no cover

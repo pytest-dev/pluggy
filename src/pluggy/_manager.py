@@ -18,6 +18,7 @@ from ._callers import _multicall
 from ._hooks import _HookImplFunction
 from ._hooks import _Namespace
 from ._hooks import _Plugin
+from ._hooks import _signature
 from ._hooks import _SubsetHookCaller
 from ._hooks import HookCaller
 from ._hooks import HookImpl
@@ -522,4 +523,4 @@ class PluginManager:
 
 
 def _formatdef(func: Callable[..., object]) -> str:
-    return f"{func.__name__}{inspect.signature(func)}"
+    return f"{func.__name__}{_signature(func)}"
