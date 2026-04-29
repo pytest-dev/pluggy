@@ -1,0 +1,1 @@
+Fix ``varnames()`` to work with Python 3.14+ deferred annotations by using ``__code__`` introspection instead of ``inspect.signature()``, which fails when string annotations cannot be resolved at runtime.
