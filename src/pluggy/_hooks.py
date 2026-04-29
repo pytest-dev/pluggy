@@ -294,7 +294,7 @@ _IMPLICIT_NAMES = ("self", "obj") if _PYPY else ("self",)
 
 
 def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """Return tuple of positional and keywrord argument names for a function,
+    """Return tuple of positional and keyword argument names for a function,
     method, class or callable.
 
     In case of a class, its ``__init__`` method is considered.
