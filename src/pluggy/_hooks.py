@@ -345,7 +345,7 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     # pypy3 uses "obj" instead of "self" for default dunder methods
     if not _PYPY:
         implicit_names: tuple[str, ...] = ("self",)
-    else:  # pragma: no cover
+    else:
         implicit_names = ("self", "obj")
     if args:
         qualname: str = getattr(func, "__qualname__", "")

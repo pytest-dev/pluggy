@@ -7,9 +7,10 @@ include =
   */pypy*/site-packages/pluggy/*
   *\Lib\site-packages\pluggy\*
 branch = 1
+parallel = true
 
 [paths]
-source = pluggy/
+source = src/pluggy/
   */lib/python*/site-packages/pluggy/
   */pypy*/site-packages/pluggy/
   *\Lib\site-packages\pluggy\
