@@ -2,6 +2,8 @@
 Benchmarking and performance tests.
 """
 
+import inspect
+import sys
 from typing import Any
 
 import pytest
@@ -11,6 +13,67 @@ from pluggy import HookspecMarker
 from pluggy import PluginManager
 from pluggy._callers import _multicall
 from pluggy._hooks import HookImpl
+from pluggy._hooks import varnames
+
+
+_PYPY = hasattr(sys, "pypy_version_info")
+
+
+def _varnames_legacy(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Pre-PEP 649 implementation using inspect.signature for comparison."""
+    if inspect.isclass(func):
+        try:
+            func = func.__init__
+        except AttributeError:
+            return (), ()
+    elif not inspect.isroutine(func):
+        try:
+            func = getattr(func, "__call__", func)
+        except Exception:
+            return (), ()
+
+    try:
+        sig = inspect.signature(
+            func.__func__ if inspect.ismethod(func) else func  # type: ignore[arg-type]
+        )
+    except TypeError:
+        return (), ()
+
+    _valid_param_kinds = (
+        inspect.Parameter.POSITIONAL_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+    )
+    _valid_params = {
+        name: param
+        for name, param in sig.parameters.items()
+        if param.kind in _valid_param_kinds
+    }
+    args = tuple(_valid_params)
+    defaults = (
+        tuple(
+            param.default
+            for param in _valid_params.values()
+            if param.default is not param.empty
+        )
+        or None
+    )
+
+    if defaults:
+        index = -len(defaults)
+        args, kwargs = args[:index], tuple(args[index:])
+    else:
+        kwargs = ()
+
+    if not _PYPY:
+        implicit_names: tuple[str, ...] = ("self",)
+    else:
+        implicit_names = ("self", "obj")
+    if args:
+        qualname: str = getattr(func, "__qualname__", "")
+        if inspect.ismethod(func) or ("." in qualname and args[0] in implicit_names):
+            args = args[1:]
+
+    return args, kwargs
 
 
 hookspec = HookspecMarker("example")
@@ -106,3 +169,30 @@ def test_call_hook(benchmark, plugins, wrappers, nesting) -> None:
         pm.register(PluginWrap(i), name=f"wrap_plug_{i}")
 
     benchmark(pm.hook.fun, hooks=pm.hook, nesting=nesting)
+
+
+def _plain_func(x: int, y: str, z: float = 1.0) -> None:
+    pass
+
+
+class _MethodHolder:
+    def method(self, x: int, y: str, z: float = 1.0) -> None:
+        pass
+
+
+_varnames_funcs = [
+    pytest.param(_plain_func, id="plain_function"),
+    pytest.param(_MethodHolder.method, id="unbound_method"),
+    pytest.param(_MethodHolder().method, id="bound_method"),
+    pytest.param(_MethodHolder, id="class"),
+]
+
+
+@pytest.mark.parametrize("func", _varnames_funcs)
+def test_varnames(benchmark, func: object) -> None:
+    benchmark(varnames, func)
+
+
+@pytest.mark.parametrize("func", _varnames_funcs)
+def test_varnames_legacy(benchmark, func: object) -> None:
+    benchmark(_varnames_legacy, func)
