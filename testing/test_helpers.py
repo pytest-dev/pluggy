@@ -116,6 +116,20 @@ def test_varnames_decorator() -> None:
     assert varnames(ex_inst.example_method) == (("x",), ("y",))
 
 
+def test_varnames_bound_method_from_module_function() -> None:
+    """A module-level function assigned to a class attribute becomes a bound
+    method when accessed on an instance, but its __qualname__ has no dot.
+    varnames must still strip ``self``."""
+
+    def standalone(self, x) -> None:
+        pass  # pragma: no cover
+
+    class MyClass:
+        method = standalone
+
+    assert varnames(MyClass().method) == (("x",), ())
+
+
 def test_varnames_unresolvable_annotation() -> None:
     """Test that varnames works with annotations that cannot be resolved.
 

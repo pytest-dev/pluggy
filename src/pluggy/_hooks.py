@@ -311,9 +311,11 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
         except Exception:  # pragma: no cover - pypy special case
             return (), ()
 
-    # Unwrap decorated functions to get the original signature
+    # Track bound methods before unwrapping, since __func__ loses that info.
+    is_bound = inspect.ismethod(func)
     func = inspect.unwrap(func)  # type: ignore[arg-type]
     if inspect.ismethod(func):
+        is_bound = True
         func = func.__func__
 
     try:
@@ -335,8 +337,9 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
         kwargs = ()
 
     # Strip implicit instance arg (self/obj for methods)
-    if args and "." in qualname and args[0] in _IMPLICIT_NAMES:
-        args = args[1:]
+    if args and args[0] in _IMPLICIT_NAMES:
+        if is_bound or "." in qualname:
+            args = args[1:]
 
     return args, kwargs
 
