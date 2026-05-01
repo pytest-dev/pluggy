@@ -12,12 +12,17 @@ jobs:
   package:
     name: Build & inspect our package.
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
       - uses: hynek/build-and-inspect-python-package@v2
+        with:
+          attest-build-provenance-github: 'true'
 
   deploy:
     needs: [package]
