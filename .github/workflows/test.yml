@@ -1,27 +1,29 @@
-name: main
+name: test
 
 on:
   push:
     branches:
       - main
       - test-me-*
-    tags:
-      - "*"
 
   pull_request:
     branches:
       - main
 
+# Set permissions at the job level.
+permissions: {}
+
 jobs:
   check-package:
     name: Build & inspect our package.
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-      - uses: hynek/build-and-inspect-python-package@v2
+          persist-credentials: false
+      - uses: hynek/build-and-inspect-python-package@fe0a0fb1925ca263d076ca4f2c13e93a6e92a33e # v2.17.0
+
   test:
     needs: [check-package]
     runs-on: ${{ matrix.os }}
@@ -102,14 +104,16 @@ jobs:
             tox_env: "benchmark"
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
     - name: Download built packages from the check-package job.
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         name: Packages
         path: dist
     - name: Set up Python ${{ matrix.python }}
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: ${{ matrix.python }}
         allow-prereleases: true
@@ -122,35 +126,22 @@ jobs:
     - name: Test without coverage
       if: "! matrix.use_coverage"
       shell: bash
-      run: "tox run -e ${{ matrix.tox_env }}  --installpkg dist/*.whl"
+      run: "tox run --installpkg dist/*.whl"
+      env:
+        TOX_ENV: ${{ matrix.tox_env }}
 
     - name: Test with coverage
       if: "matrix.use_coverage"
       shell: bash
-      run: "tox run -e ${{ matrix.tox_env }}-coverage --installpkg dist/*.whl"
+      run: "tox run --installpkg dist/*.whl"
+      env:
+        TOX_ENV: ${{ matrix.tox_env }}-coverage
 
     - name: Upload coverage
       if: matrix.use_coverage && github.repository == 'pytest-dev/pluggy'
-      uses: codecov/codecov-action@v6
+      uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
       continue-on-error: true
       with:
         fail_ci_if_error: true
         files: ./coverage.xml
         verbose: true
-
-  deploy:
-    needs: [check-package]
-    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') && github.repository == 'pytest-dev/pluggy'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-    steps:
-      - name: Download built packages from the check-package job.
-        uses: actions/download-artifact@v8
-        with:
-          name: Packages
-          path: dist
-      - name: Publish package
-        uses: pypa/gh-action-pypi-publish@v1.14.0
-        with:
-          attestations: true
