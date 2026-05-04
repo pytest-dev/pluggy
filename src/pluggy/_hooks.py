@@ -75,6 +75,185 @@ class HookimplOpts(TypedDict):
 
 
 @final
+class HookspecOptions:
+    """Immutable hook specification options (internal).
+
+    This is the internal representation used by pluggy. The TypedDict
+    :class:`HookspecOpts` is kept for backward compatibility with pytest.
+    """
+
+    __slots__ = ("firstresult", "historic", "warn_on_impl", "warn_on_impl_args")
+
+    #: Whether to stop at the first non-None result.
+    firstresult: Final[bool]  # type: ignore[misc]
+    #: Whether this hook is :ref:`historic <historic>`.
+    historic: Final[bool]  # type: ignore[misc]
+    #: A warning to emit when a hook implementation is registered.
+    warn_on_impl: Final[Warning | None]  # type: ignore[misc]
+    #: Warnings to emit for specific arguments when a hook implementation is registered.
+    warn_on_impl_args: Final[Mapping[str, Warning] | None]  # type: ignore[misc]
+
+    def __init__(
+        self,
+        firstresult: bool = False,
+        historic: bool = False,
+        warn_on_impl: Warning | None = None,
+        warn_on_impl_args: Mapping[str, Warning] | None = None,
+    ) -> None:
+        object.__setattr__(self, "firstresult", firstresult)
+        object.__setattr__(self, "historic", historic)
+        object.__setattr__(self, "warn_on_impl", warn_on_impl)
+        object.__setattr__(self, "warn_on_impl_args", warn_on_impl_args)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        raise AttributeError("HookspecOptions is immutable")
+
+    def __delattr__(self, name: str) -> None:
+        raise AttributeError("HookspecOptions is immutable")
+
+    def __repr__(self) -> str:
+        return (
+            f"HookspecOptions(firstresult={self.firstresult!r}, "
+            f"historic={self.historic!r}, "
+            f"warn_on_impl={self.warn_on_impl!r}, "
+            f"warn_on_impl_args={self.warn_on_impl_args!r})"
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, HookspecOptions):
+            return NotImplemented
+        return (
+            self.firstresult == other.firstresult
+            and self.historic == other.historic
+            and self.warn_on_impl == other.warn_on_impl
+            and self.warn_on_impl_args == other.warn_on_impl_args
+        )
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.firstresult,
+                self.historic,
+                self.warn_on_impl,
+                # warn_on_impl_args is a Mapping, convert to hashable
+                tuple(self.warn_on_impl_args.items())
+                if self.warn_on_impl_args
+                else None,
+            )
+        )
+
+    @classmethod
+    def from_opts(cls, opts: HookspecOpts) -> HookspecOptions:
+        """Create from a HookspecOpts TypedDict (for backward compatibility)."""
+        return cls(
+            firstresult=opts.get("firstresult", False),
+            historic=opts.get("historic", False),
+            warn_on_impl=opts.get("warn_on_impl"),
+            warn_on_impl_args=opts.get("warn_on_impl_args"),
+        )
+
+
+@final
+class HookimplOptions:
+    """Immutable hook implementation options (internal).
+
+    This is the internal representation used by pluggy. The TypedDict
+    :class:`HookimplOpts` is kept for backward compatibility with pytest.
+    """
+
+    __slots__ = (
+        "wrapper",
+        "hookwrapper",
+        "optionalhook",
+        "tryfirst",
+        "trylast",
+        "specname",
+    )
+
+    #: Whether this is a :ref:`wrapper <hookwrappers>`.
+    wrapper: Final[bool]  # type: ignore[misc]
+    #: Whether this is an :ref:`old-style wrapper <old_style_hookwrappers>`.
+    hookwrapper: Final[bool]  # type: ignore[misc]
+    #: Whether validation against a hook specification is :ref:`optional
+    #: <optionalhook>`.
+    optionalhook: Final[bool]  # type: ignore[misc]
+    #: Whether to try to order this hook implementation :ref:`first <callorder>`.
+    tryfirst: Final[bool]  # type: ignore[misc]
+    #: Whether to try to order this hook implementation :ref:`last <callorder>`.
+    trylast: Final[bool]  # type: ignore[misc]
+    #: The name of the hook specification to match, see :ref:`specname`.
+    specname: Final[str | None]  # type: ignore[misc]
+
+    def __init__(
+        self,
+        wrapper: bool = False,
+        hookwrapper: bool = False,
+        optionalhook: bool = False,
+        tryfirst: bool = False,
+        trylast: bool = False,
+        specname: str | None = None,
+    ) -> None:
+        object.__setattr__(self, "wrapper", wrapper)
+        object.__setattr__(self, "hookwrapper", hookwrapper)
+        object.__setattr__(self, "optionalhook", optionalhook)
+        object.__setattr__(self, "tryfirst", tryfirst)
+        object.__setattr__(self, "trylast", trylast)
+        object.__setattr__(self, "specname", specname)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        raise AttributeError("HookimplOptions is immutable")
+
+    def __delattr__(self, name: str) -> None:
+        raise AttributeError("HookimplOptions is immutable")
+
+    def __repr__(self) -> str:
+        return (
+            f"HookimplOptions(wrapper={self.wrapper!r}, "
+            f"hookwrapper={self.hookwrapper!r}, "
+            f"optionalhook={self.optionalhook!r}, "
+            f"tryfirst={self.tryfirst!r}, "
+            f"trylast={self.trylast!r}, "
+            f"specname={self.specname!r})"
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, HookimplOptions):
+            return NotImplemented
+        return (
+            self.wrapper == other.wrapper
+            and self.hookwrapper == other.hookwrapper
+            and self.optionalhook == other.optionalhook
+            and self.tryfirst == other.tryfirst
+            and self.trylast == other.trylast
+            and self.specname == other.specname
+        )
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.wrapper,
+                self.hookwrapper,
+                self.optionalhook,
+                self.tryfirst,
+                self.trylast,
+                self.specname,
+            )
+        )
+
+    @classmethod
+    def from_opts(cls, opts: HookimplOpts) -> HookimplOptions:
+        """Create from a HookimplOpts TypedDict (for backward compatibility)."""
+        return cls(
+            wrapper=opts.get("wrapper", False),
+            hookwrapper=opts.get("hookwrapper", False),
+            optionalhook=opts.get("optionalhook", False),
+            tryfirst=opts.get("tryfirst", False),
+            trylast=opts.get("trylast", False),
+            specname=opts.get("specname"),
+        )
+
+
+@final
 class HookspecMarker:
     """Decorator for marking functions as hook specifications.
 
@@ -146,12 +325,12 @@ class HookspecMarker:
         def setattr_hookspec_opts(func: _F) -> _F:
             if historic and firstresult:
                 raise ValueError("cannot have a historic firstresult hook")
-            opts: HookspecOpts = {
-                "firstresult": firstresult,
-                "historic": historic,
-                "warn_on_impl": warn_on_impl,
-                "warn_on_impl_args": warn_on_impl_args,
-            }
+            opts = HookspecOptions(
+                firstresult=firstresult,
+                historic=historic,
+                warn_on_impl=warn_on_impl,
+                warn_on_impl_args=warn_on_impl_args,
+            )
             setattr(func, self.project_name + "_spec", opts)
             return func
 
@@ -261,14 +440,14 @@ class HookimplMarker:
         """
 
         def setattr_hookimpl_opts(func: _F) -> _F:
-            opts: HookimplOpts = {
-                "wrapper": wrapper,
-                "hookwrapper": hookwrapper,
-                "optionalhook": optionalhook,
-                "tryfirst": tryfirst,
-                "trylast": trylast,
-                "specname": specname,
-            }
+            opts = HookimplOptions(
+                wrapper=wrapper,
+                hookwrapper=hookwrapper,
+                optionalhook=optionalhook,
+                tryfirst=tryfirst,
+                trylast=trylast,
+                specname=specname,
+            )
             setattr(func, self.project_name + "_impl", opts)
             return func
 
@@ -276,15 +455,6 @@ class HookimplMarker:
             return setattr_hookimpl_opts
         else:
             return setattr_hookimpl_opts(function)
-
-
-def normalize_hookimpl_opts(opts: HookimplOpts) -> None:
-    opts.setdefault("tryfirst", False)
-    opts.setdefault("trylast", False)
-    opts.setdefault("wrapper", False)
-    opts.setdefault("hookwrapper", False)
-    opts.setdefault("optionalhook", False)
-    opts.setdefault("specname", None)
 
 
 _PYPY = hasattr(sys, "pypy_version_info")
@@ -395,7 +565,7 @@ class HookCaller:
         name: str,
         hook_execute: _HookExec,
         specmodule_or_class: _Namespace | None = None,
-        spec_opts: HookspecOpts | None = None,
+        spec_opts: HookspecOptions | None = None,
     ) -> None:
         """:meta private:"""
         #: Name of the hook getting called.
@@ -424,7 +594,7 @@ class HookCaller:
     def set_specification(
         self,
         specmodule_or_class: _Namespace,
-        spec_opts: HookspecOpts,
+        spec_opts: HookspecOptions,
     ) -> None:
         if self.spec is not None:
             raise ValueError(
@@ -432,7 +602,7 @@ class HookCaller:
                 f"within namespace {self.spec.namespace}"
             )
         self.spec = HookSpec(specmodule_or_class, self.name, spec_opts)
-        if spec_opts.get("historic"):
+        if spec_opts.historic:
             self._call_history = []
 
     def is_historic(self) -> bool:
@@ -509,7 +679,7 @@ class HookCaller:
             "Cannot directly call a historic hook - use call_historic instead."
         )
         self._verify_all_args_are_provided(kwargs)
-        firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
+        firstresult = self.spec.opts.firstresult if self.spec else False
         # Copy because plugins may register other plugins during iteration (#438).
         return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
 
@@ -550,14 +720,7 @@ class HookCaller:
             "Cannot directly call a historic hook - use call_historic instead."
         )
         self._verify_all_args_are_provided(kwargs)
-        opts: HookimplOpts = {
-            "wrapper": False,
-            "hookwrapper": False,
-            "optionalhook": False,
-            "trylast": False,
-            "tryfirst": False,
-            "specname": None,
-        }
+        opts = HookimplOptions()
         hookimpls = self._hookimpls.copy()
         for method in methods:
             hookimpl = HookImpl(None, "<temp>", method, opts)
@@ -571,7 +734,7 @@ class HookCaller:
             ):
                 i -= 1
             hookimpls.insert(i + 1, hookimpl)
-        firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
+        firstresult = self.spec.opts.firstresult if self.spec else False
         return self._hookexec(self.name, hookimpls, kwargs, firstresult)
 
     def _maybe_apply_history(self, method: HookImpl) -> None:
@@ -658,7 +821,7 @@ class HookImpl:
         plugin: _Plugin,
         plugin_name: str,
         function: _HookImplFunction[object],
-        hook_impl_opts: HookimplOpts,
+        hook_impl_opts: HookimplOptions,
     ) -> None:
         """:meta private:"""
         #: The hook implementation function.
@@ -670,24 +833,24 @@ class HookImpl:
         self.kwargnames: Final = kwargnames
         #: The plugin which defined this hook implementation.
         self.plugin: Final = plugin
-        #: The :class:`HookimplOpts` used to configure this hook implementation.
+        #: The :class:`HookimplOptions` used to configure this hook implementation.
         self.opts: Final = hook_impl_opts
         #: The name of the plugin which defined this hook implementation.
         self.plugin_name: Final = plugin_name
         #: Whether the hook implementation is a :ref:`wrapper <hookwrapper>`.
-        self.wrapper: Final = hook_impl_opts["wrapper"]
+        self.wrapper: Final = hook_impl_opts.wrapper
         #: Whether the hook implementation is an :ref:`old-style wrapper
         #: <old_style_hookwrappers>`.
-        self.hookwrapper: Final = hook_impl_opts["hookwrapper"]
+        self.hookwrapper: Final = hook_impl_opts.hookwrapper
         #: Whether validation against a hook specification is :ref:`optional
         #: <optionalhook>`.
-        self.optionalhook: Final = hook_impl_opts["optionalhook"]
+        self.optionalhook: Final = hook_impl_opts.optionalhook
         #: Whether to try to order this hook implementation :ref:`first
         #: <callorder>`.
-        self.tryfirst: Final = hook_impl_opts["tryfirst"]
+        self.tryfirst: Final = hook_impl_opts.tryfirst
         #: Whether to try to order this hook implementation :ref:`last
         #: <callorder>`.
-        self.trylast: Final = hook_impl_opts["trylast"]
+        self.trylast: Final = hook_impl_opts.trylast
 
     def __repr__(self) -> str:
         return f"<HookImpl plugin_name={self.plugin_name!r}, plugin={self.plugin!r}>"
@@ -706,11 +869,11 @@ class HookSpec:
         "warn_on_impl_args",
     )
 
-    def __init__(self, namespace: _Namespace, name: str, opts: HookspecOpts) -> None:
+    def __init__(self, namespace: _Namespace, name: str, opts: HookspecOptions) -> None:
         self.namespace = namespace
         self.function: Callable[..., object] = getattr(namespace, name)
         self.name = name
         self.argnames, self.kwargnames = varnames(self.function)
         self.opts = opts
-        self.warn_on_impl = opts.get("warn_on_impl")
-        self.warn_on_impl_args = opts.get("warn_on_impl_args")
+        self.warn_on_impl = opts.warn_on_impl
+        self.warn_on_impl_args = opts.warn_on_impl_args
