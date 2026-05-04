@@ -288,24 +288,33 @@ def normalize_hookimpl_opts(opts: HookimplOpts) -> None:
     opts.setdefault("specname", None)
 
 
-_PYPY = hasattr(sys, "pypy_version_info")
-# pypy3 uses "obj" instead of "self" for default dunder methods
-_IMPLICIT_NAMES = ("self", "obj") if _PYPY else ("self",)
+_PYPY = sys.implementation.name == "pypy"
+_IMPLICIT_NAMES = ("self", "cls", "obj") if _PYPY else ("self", "cls")
 
 
-def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """Return tuple of positional and keyword parameter names for a function,
-    method, class or callable.
+def varnames(
+    func: object, *, legacy_noself: bool = False
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Return tuple of positional and keyword parameter names for a callable.
 
-    Keyword-only parameter names are not included.
     In case of a class, its ``__init__`` method is considered.
-    For methods the ``self`` parameter is not included.
+    For bound methods, the already-bound first parameter is not included.
+    For unbound methods with a dotted ``__qualname__``, the first parameter is
+    stripped only if its name is a known implicit name (``self``, ``cls``).
+    Keyword-only parameters are not included.
+
+    :param legacy_noself:
+        If ``True``, support hookspec classes whose methods omit ``self``.
+        When the function looks like a class method but has no implicit first
+        parameter, a :class:`FutureWarning` is emitted.
     """
+    is_bound = False
     if inspect.isclass(func):
         try:
             func = func.__init__
         except AttributeError:  # pragma: no cover - pypy special case
             return (), ()
+        is_bound = True
     elif not inspect.isroutine(func):  # callable object?
         try:
             func = getattr(func, "__call__", func)
@@ -313,7 +322,8 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
             return (), ()
 
     # Track bound methods before unwrapping, since __func__ loses that info.
-    is_bound = inspect.ismethod(func)
+    if inspect.ismethod(func):
+        is_bound = True
     func = inspect.unwrap(func)  # type: ignore[arg-type]
     if inspect.ismethod(func):
         is_bound = True
@@ -337,10 +347,27 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     else:
         kwargs = ()
 
-    # Strip implicit instance arg (self/obj for methods)
-    if args and args[0] in _IMPLICIT_NAMES:
-        if is_bound or "." in qualname:
+    # Strip implicit instance/class arg.
+    # Check if this looks like a method defined in a class by examining the
+    # qualname after the last "<locals>." segment (if any). A remaining dot
+    # means it's a class method (e.g. "MyClass.method" or
+    # "func.<locals>.MyClass.method"), not just a nested function.
+    _tail = qualname.rsplit("<locals>.", maxsplit=1)[-1]
+    _is_class_method = "." in _tail
+    if args:
+        if is_bound:
             args = args[1:]
+        elif _is_class_method and args[0] in _IMPLICIT_NAMES:
+            args = args[1:]
+        elif _is_class_method and legacy_noself:
+            warnings.warn(
+                f"{qualname} is a method but its first parameter"
+                f" {args[0]!r} is not 'self'."
+                f" Add 'self' as the first parameter or use @staticmethod."
+                f" This will become an error in a future version of pluggy.",
+                FutureWarning,
+                stacklevel=2,
+            )
 
     return args, kwargs
 
@@ -698,9 +725,14 @@ class HookSpec:
 
     def __init__(self, namespace: _Namespace, name: str, opts: HookspecOpts) -> None:
         self.namespace = namespace
-        self.function: Callable[..., object] = getattr(namespace, name)
         self.name = name
-        self.argnames, self.kwargnames = varnames(self.function)
+        self.function: Callable[..., object] = getattr(namespace, name)
+        legacy_noself = inspect.isclass(namespace) and not isinstance(
+            inspect.getattr_static(namespace, name), staticmethod
+        )
+        self.argnames, self.kwargnames = varnames(
+            self.function, legacy_noself=legacy_noself
+        )
         self.opts = opts
         self.warn_on_impl = opts.get("warn_on_impl")
         self.warn_on_impl_args = opts.get("warn_on_impl_args")

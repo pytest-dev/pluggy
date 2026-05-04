@@ -16,11 +16,9 @@ from pluggy._hooks import HookImpl
 from pluggy._hooks import varnames
 
 
-_PYPY = hasattr(sys, "pypy_version_info")
-
-
 def _varnames_legacy(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """Pre-PEP 649 implementation using inspect.signature for comparison."""
+    """Pre-structural-detection implementation using inspect.signature and
+    name-based heuristics for comparison."""
     if inspect.isclass(func):
         try:
             func = func.__init__
@@ -64,7 +62,8 @@ def _varnames_legacy(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
     else:
         kwargs = ()
 
-    if not _PYPY:
+    _pypy = hasattr(sys, "pypy_version_info")
+    if not _pypy:
         implicit_names: tuple[str, ...] = ("self",)
     else:
         implicit_names = ("self", "obj")
