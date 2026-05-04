@@ -1,11 +1,18 @@
 from collections.abc import Callable
 from functools import wraps
+import sys
 from typing import Any
 from typing import cast
+from typing import TYPE_CHECKING
 from typing import TypeVar
 
 from pluggy._hooks import varnames
 from pluggy._manager import _formatdef
+
+
+if TYPE_CHECKING:
+    # Cannot use typing.Tuple due to pyupgrade replacing it with tuple
+    from non_existent_module import Tuple
 
 
 def test_varnames() -> None:
@@ -88,6 +95,32 @@ def test_formatdef() -> None:
         pass
 
     assert _formatdef(function4) == "function4(arg1, *args, **kwargs)"
+
+
+def test_varnames_with_annotations() -> None:
+    if sys.version_info >= (3, 14):
+
+        def hook(arg1: Tuple[int]) -> None:  # type: ignore[no-any-unimported]
+            pass
+    else:
+
+        def hook(arg1: "Tuple[int]") -> "None":  # type: ignore[no-any-unimported]
+            pass
+
+    assert varnames(hook) == (("arg1",), ())
+
+
+def test_formatdef_with_annotations() -> None:
+    if sys.version_info >= (3, 14):
+
+        def hook(arg1: Tuple[int]) -> None:  # type: ignore[no-any-unimported]
+            pass
+    else:
+
+        def hook(arg1: "Tuple[int]") -> "None":  # type: ignore[no-any-unimported]
+            pass
+
+    assert _formatdef(hook) == "hook(arg1: 'Tuple[int]') -> 'None'"
 
 
 def test_varnames_decorator() -> None:
