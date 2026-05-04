@@ -301,6 +301,7 @@ def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
     ]
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_hookspec(pm: PluginManager) -> None:
     class HookSpec:
         @hookspec()

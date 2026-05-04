@@ -1,4 +1,5 @@
 from pathlib import Path
+import warnings
 
 import pytest
 
@@ -47,3 +48,45 @@ def test_teardown_raised_warning(pm: PluginManager) -> None:
             pm.hook.my_hook()
     assert len(wc.list) == 1
     assert Path(wc.list[0].filename).name == "test_warnings.py"
+
+
+def test_hookspec_missing_self_warns(pm: PluginManager) -> None:
+    """A hookspec defined as a method without ``self`` emits a FutureWarning."""
+
+    class Api:
+        @hookspec
+        def my_hook(item, extra):
+            pass
+
+    with pytest.warns(
+        FutureWarning,
+        match=r"is a method but its first parameter 'item' is not 'self'",
+    ):
+        pm.add_hookspecs(Api)
+
+
+def test_hookspec_with_self_no_warning(pm: PluginManager) -> None:
+    """A hookspec with ``self`` does not emit a FutureWarning."""
+
+    class Api:
+        @hookspec
+        def my_hook(self, item, extra):
+            pass
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        pm.add_hookspecs(Api)
+
+
+def test_hookspec_staticmethod_no_warning(pm: PluginManager) -> None:
+    """A hookspec using @staticmethod does not emit a FutureWarning."""
+
+    class Api:
+        @staticmethod
+        @hookspec
+        def my_hook(item, extra) -> None:
+            pass
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        pm.add_hookspecs(Api)
