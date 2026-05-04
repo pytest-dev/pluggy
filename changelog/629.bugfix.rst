@@ -1,0 +1,1 @@
+Fix hooks failing to register on Python 3.14+ when type annotations use forward references.
