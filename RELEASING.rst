@@ -3,7 +3,8 @@ Release Procedure
 
 #. Dependening on the magnitude of the changes in the release, consider testing
    some of the large downstream users of pluggy against the upcoming release.
-   You can do so using the scripts in the ``downstream/`` directory.
+   You can do so with ``uv run downstream/run_downstream.py`` (option
+   ``--list`` lists recipes).
 
 #. From a clean work tree, execute::
 

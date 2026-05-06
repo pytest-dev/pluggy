@@ -1,0 +1,19 @@
+[git]
+url = "https://github.com/conda/conda"
+into = "conda"
+
+[environment]
+kind = "none"
+
+[environment.install]
+editables = ["../.."]
+
+[environment.install.bootstrap]
+source = "dev/start"
+
+[[test]]
+argv = [
+    "bash",
+    "-c",
+    "set +eu; source dev/start; set -eu; pytest -m \"not integration and not installed\"",
+]

@@ -1,0 +1,13 @@
+[git]
+url = "https://github.com/pytest-dev/pytest"
+into = "pytest"
+shallow = false
+
+[environment]
+kind = "stdlib-venv"
+
+[environment.install]
+editables = [".[dev]", "../.."]
+
+[[test]]
+argv = ["pytest"]
