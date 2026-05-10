@@ -22,6 +22,8 @@ sections plus tests:
 3. **`[[test]]`** — one or more `argv` arrays. For `uv-venv` / `stdlib-venv`, the
    driver sets **`VIRTUAL_ENV`** and prepends the venv’s `bin` (or `Scripts` on
    Windows) to **`PATH`**, so test commands can use bare names like `pytest`.
+   Optional **`env`** table sets extra environment variables for the step (e.g.
+   `env = { CI = "false" }` to suppress CI-only behaviour in a downstream suite).
    Install only: `--only-install`.
 
 Run the driver (PEP 723 in `run_downstream.py`):

@@ -1,6 +1,7 @@
 [git]
 url = "https://github.com/tox-dev/tox"
 into = "tox"
+shallow = false
 
 [environment]
 kind = "uv-venv"
@@ -13,3 +14,6 @@ groups = ["test"]
 
 [[test]]
 argv = ["pytest"]
+# tox detects CI=true and enables list_dependencies by default, inserting
+# extra "freeze" steps that its own test expectations don't account for.
+env = { CI = "false" }

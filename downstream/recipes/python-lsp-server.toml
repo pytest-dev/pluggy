@@ -9,4 +9,10 @@ kind = "uv-venv"
 editables = [".[all,test]", "../.."]
 
 [[test]]
-argv = ["pytest"]
+# Deselect two jedi-environment tests that require /tmp/pyenv/ fixture
+# not provided by the default test environment.
+argv = [
+    "pytest",
+    "--deselect=test/plugins/test_completion.py::test_jedi_completion_environment",
+    "--deselect=test/plugins/test_symbols.py::test_symbols_all_scopes_with_jedi_environment",
+]

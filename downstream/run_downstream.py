@@ -110,6 +110,7 @@ class TestStep(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     argv: list[str] = Field(min_length=1)
+    env: dict[str, str] = Field(default_factory=dict)
 
 
 class RecipeFile(BaseModel):
@@ -315,7 +316,12 @@ def run_recipe(
         run_cmd(argv_i, cwd=dest, venv_home=venv_home)
     if not only_install:
         for step in recipe.test:
-            run_cmd(list(step.argv), cwd=dest, venv_home=venv_home)
+            run_cmd(
+                list(step.argv),
+                cwd=dest,
+                env=step.env or None,
+                venv_home=venv_home,
+            )
 
 
 def list_recipes() -> None:
