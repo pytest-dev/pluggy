@@ -11,6 +11,7 @@ editables = [".", "./backend", "../.."]
 [environment.install.uv]
 packages = [
     "pytest",
+    "pytest-mock",
     "pytest-xdist",
     "filelock",
     "flit-core",
