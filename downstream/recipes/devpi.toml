@@ -18,9 +18,9 @@ argv = ["pytest", "common"]
 argv = ["pytest", "server"]
 
 [[test]]
-# Deselect test_upload: upstream conftest bug compares code=[200,200,200]
+# Ignore test_upload: upstream conftest bug compares code=[200,200,200]
 # against integers, causing TypeError on every upload-with-docs test.
-argv = ["pytest", "client", "--deselect=client/testing/test_upload.py"]
+argv = ["pytest", "client", "--ignore=client/testing/test_upload.py"]
 
 [[test]]
 argv = ["pytest", "web"]

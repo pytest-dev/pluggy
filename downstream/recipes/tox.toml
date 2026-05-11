@@ -14,6 +14,7 @@ groups = ["test"]
 
 [[test]]
 argv = ["pytest"]
-# tox detects CI=true and enables list_dependencies by default, inserting
-# extra "freeze" steps that its own test expectations don't account for.
-env = { CI = "false" }
+# tox's is_ci() checks CI, GITHUB_ACTIONS, and many other env vars;
+# all must be unset/false so list_dependencies defaults to False and
+# test expectations (no freeze steps, spinner enabled, etc.) hold.
+env = { CI = "false", GITHUB_ACTIONS = "false" }

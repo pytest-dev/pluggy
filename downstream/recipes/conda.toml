@@ -18,6 +18,3 @@ argv = [
     "-c",
     "set +eu; source dev/start; set -eu; pytest -m 'not integration and not installed'",
 ]
-# Many conda tests create temporary envs that need channels to resolve
-# packages; setting CONDA_CHANNELS provides a sensible default on CI.
-env = { CONDA_CHANNELS = "defaults,conda-forge" }
