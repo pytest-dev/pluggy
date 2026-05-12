@@ -4,7 +4,7 @@ into = "pytest"
 shallow = false
 
 [environment]
-kind = "stdlib-venv"
+kind = "uv-venv"
 
 [environment.install]
 editables = [".[dev]", "../.."]

@@ -40,22 +40,11 @@ class UvInstallOptions(BaseModel):
     packages: list[str] = Field(default_factory=list)
 
 
-class PipInstallOptions(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    packages: list[str] = Field(default_factory=list)
-
-
-class BootstrapConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    source: str
-
-
-class _InstallEditables(BaseModel):
+class UvInstall(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     editables: list[str] = Field(min_length=1)
+    uv: UvInstallOptions | None = None
 
     @field_validator("editables")
     @classmethod
@@ -67,18 +56,6 @@ class _InstallEditables(BaseModel):
         return v
 
 
-class UvInstall(_InstallEditables):
-    uv: UvInstallOptions | None = None
-
-
-class StdlibInstall(_InstallEditables):
-    pip: PipInstallOptions | None = None
-
-
-class NoneInstall(_InstallEditables):
-    bootstrap: BootstrapConfig
-
-
 class EnvironmentUv(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -86,22 +63,15 @@ class EnvironmentUv(BaseModel):
     install: UvInstall
 
 
-class EnvironmentStdlib(BaseModel):
+class EnvironmentScript(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    kind: Literal["stdlib-venv"]
-    install: StdlibInstall
-
-
-class EnvironmentNone(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    kind: Literal["none"]
-    install: NoneInstall
+    kind: Literal["script"]
+    run: str
 
 
 Environment = Annotated[
-    EnvironmentUv | EnvironmentStdlib | EnvironmentNone,
+    EnvironmentUv | EnvironmentScript,
     Field(discriminator="kind"),
 ]
 
@@ -118,15 +88,13 @@ class RecipeFile(BaseModel):
 
     git: GitConfig
     environment: Environment
-    test: list[TestStep] = Field(min_length=1)
+    test: list[TestStep] = Field(default_factory=list)
 
 
 DOWNSTREAM_DIR = Path(__file__).resolve().parent
 RECIPES_DIR = DOWNSTREAM_DIR / "recipes"
 
-# Local venv layout is fixed (simplifies recipes).
 VENV_DIRNAME = "venv"
-PYTHONBIN_FOR_STDLIB_VENV_CREATE = "python"
 
 
 def venv_bin_dir(venv_home: Path) -> Path:
@@ -144,15 +112,6 @@ def venv_python(venv_home: Path) -> Path:
         if candidate.is_file():
             return candidate
     return d / "python"
-
-
-def venv_pip(venv_home: Path) -> Path:
-    d = venv_bin_dir(venv_home)
-    for name in ("pip", "pip.exe"):
-        candidate = d / name
-        if candidate.is_file():
-            return candidate
-    return d / "pip"
 
 
 def subprocess_env(
@@ -209,22 +168,11 @@ def git_clone_or_pull(*, dest: Path, url: str, shallow: bool) -> None:
     run_cmd(args, cwd=dest.parent)
 
 
-def venv_pyvenv_cfg(root: Path) -> Path:
-    return root / VENV_DIRNAME / "pyvenv.cfg"
-
-
-def ensure_environment(*, root: Path, environment: Environment) -> None:
-    if isinstance(environment, EnvironmentNone):
+def ensure_uv_venv(root: Path) -> None:
+    cfg = root / VENV_DIRNAME / "pyvenv.cfg"
+    if cfg.is_file():
         return
-    if venv_pyvenv_cfg(root).is_file():
-        return
-    if isinstance(environment, EnvironmentUv):
-        run_cmd(["uv", "venv", VENV_DIRNAME], cwd=root)
-    else:
-        run_cmd(
-            [PYTHONBIN_FOR_STDLIB_VENV_CREATE, "-m", "venv", VENV_DIRNAME],
-            cwd=root,
-        )
+    run_cmd(["uv", "venv", VENV_DIRNAME], cwd=root)
 
 
 def format_validation_error(path_name: str, err: ValidationError) -> str:
@@ -266,29 +214,6 @@ def build_uv_install_argv(*, venv_home: Path, install: UvInstall) -> list[str]:
     return args
 
 
-def build_stdlib_install_argv(*, venv_home: Path, install: StdlibInstall) -> list[str]:
-    pip_exe = str(venv_pip(venv_home))
-    args: list[str] = [pip_exe, "install"]
-    for spec in install.editables:
-        args.extend(["-e", spec])
-    pip_extra = install.pip
-    if pip_extra is not None:
-        for pkg in pip_extra.packages:
-            args.append(pkg)
-    return args
-
-
-def build_bootstrap_install_argv(*, install: NoneInstall) -> list[str]:
-    boot = install.bootstrap
-    inner_pip: list[str] = ["pip", "install"]
-    for spec in install.editables:
-        inner_pip.extend(["-e", spec])
-    script = (
-        f"set +eu; source {shlex.quote(boot.source)}; set -eu; {shlex.join(inner_pip)}"
-    )
-    return ["bash", "-c", script]
-
-
 def run_recipe(
     name: str,
     *,
@@ -298,26 +223,22 @@ def run_recipe(
     recipe = load_recipe(name)
     dest = DOWNSTREAM_DIR / recipe.git.into
     git_clone_or_pull(dest=dest, url=recipe.git.url, shallow=recipe.git.shallow)
+
     profile = recipe.environment
-    ensure_environment(root=dest, environment=profile)
-    if isinstance(profile, EnvironmentNone):
-        venv_home = None
-    else:
-        venv_home = dest / VENV_DIRNAME
+
+    if isinstance(profile, EnvironmentScript):
+        script = DOWNSTREAM_DIR / profile.run
+        run_cmd(["bash", str(script)], cwd=DOWNSTREAM_DIR)
+        return
+
+    # uv-venv path
+    ensure_uv_venv(dest)
+    venv_home = dest / VENV_DIRNAME
+
     if not skip_install:
-        if isinstance(profile, EnvironmentUv):
-            argv_i = build_uv_install_argv(
-                venv_home=venv_home,
-                install=profile.install,
-            )
-        elif isinstance(profile, EnvironmentStdlib):
-            argv_i = build_stdlib_install_argv(
-                venv_home=venv_home,
-                install=profile.install,
-            )
-        else:
-            argv_i = build_bootstrap_install_argv(install=profile.install)
+        argv_i = build_uv_install_argv(venv_home=venv_home, install=profile.install)
         run_cmd(argv_i, cwd=dest, venv_home=venv_home)
+
     if not only_install:
         for step in recipe.test:
             run_cmd(
