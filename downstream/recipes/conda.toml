@@ -16,8 +16,10 @@ source = "dev/start"
 # conda's own CI uses condarc-file to configure channels; dev/start
 # alone doesn't write one, so tests that create temporary envs fail
 # with NoChannelsConfiguredError.  Mirror their CI config here.
+# test_export_from_history_format fails because our pluggy is pip-installed
+# (editable) rather than conda-installed, breaking history-based export.
 argv = [
     "bash",
     "-c",
-    "set +eu; source dev/start; set -eu; conda config --add channels defaults; pytest -m 'not integration and not installed'",
+    "set +eu; source dev/start; set -eu; conda config --add channels defaults; pytest -m 'not integration and not installed' --deselect=tests/cli/test_main_export.py::test_export_from_history_format",
 ]
