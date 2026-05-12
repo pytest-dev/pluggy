@@ -116,9 +116,9 @@ def subprocess_env(
     extra: Mapping[str, str] | None,
     venv_home: Path | None,
 ) -> dict[str, str]:
-    env = {**os.environ, **dict(extra or {})}
+    env = {**os.environ, **(extra or {})}
     # Empty-string values mean "remove from environment".
-    for key, val in list(env.items()):
+    for key, val in env.items():
         if val == "":
             del env[key]
     if venv_home is None:
@@ -198,7 +198,7 @@ def load_recipe(name: str) -> RecipeFile:
 
 def build_uv_install_argv(*, venv_home: Path, env: EnvironmentUv) -> list[str]:
     py = str(venv_python(venv_home))
-    args: list[str] = ["uv", "pip", "install", "--python", py]
+    args = ["uv", "pip", "install", "--python", py]
     for g in env.groups:
         args.extend(["--group", g])
     for spec in env.editables:
@@ -236,7 +236,7 @@ def run_recipe(
     if not only_install:
         for step in recipe.test:
             run_cmd(
-                list(step.argv),
+                step.argv,
                 cwd=dest,
                 env=step.env or None,
                 venv_home=venv_home,
