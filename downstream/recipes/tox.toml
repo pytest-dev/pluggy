@@ -14,7 +14,8 @@ groups = ["test"]
 
 [[test]]
 argv = ["pytest"]
-# tox's is_ci() checks CI, GITHUB_ACTIONS, and many other env vars;
-# all must be unset/false so list_dependencies defaults to False and
-# test expectations (no freeze steps, spinner enabled, etc.) hold.
-env = { CI = "false", GITHUB_ACTIONS = "false" }
+# tox's is_ci() checks presence of CI, value of GITHUB_ACTIONS, and
+# other env vars.  Empty string = remove from environment, non-empty
+# overrides value.  Both must be gone for list_dependencies to default
+# to False and test expectations (no freeze steps, etc.) to hold.
+env = { CI = "", GITHUB_ACTIONS = "" }
