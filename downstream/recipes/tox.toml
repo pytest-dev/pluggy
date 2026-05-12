@@ -4,12 +4,7 @@ into = "tox"
 shallow = false
 
 [environment]
-kind = "uv-venv"
-
-[environment.install]
 editables = [".[completion]", "../.."]
-
-[environment.install.uv]
 groups = ["test"]
 
 [[test]]

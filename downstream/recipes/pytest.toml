@@ -4,9 +4,6 @@ into = "pytest"
 shallow = false
 
 [environment]
-kind = "uv-venv"
-
-[environment.install]
 editables = [".[dev]", "../.."]
 
 [[test]]

@@ -3,9 +3,6 @@ url = "https://github.com/python-lsp/python-lsp-server.git"
 into = "python-lsp-server"
 
 [environment]
-kind = "uv-venv"
-
-[environment.install]
 editables = [".[all,test]", "../.."]
 
 [[test]]

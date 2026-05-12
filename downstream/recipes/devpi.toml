@@ -3,12 +3,7 @@ url = "https://github.com/devpi/devpi"
 into = "devpi"
 
 [environment]
-kind = "uv-venv"
-
-[environment.install]
 editables = ["common", "server", "client", "web", "../.."]
-
-[environment.install.uv]
 groups = ["pytest"]
 
 [[test]]

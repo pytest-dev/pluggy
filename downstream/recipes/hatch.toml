@@ -3,12 +3,7 @@ url = "https://github.com/pypa/hatch"
 into = "hatch"
 
 [environment]
-kind = "uv-venv"
-
-[environment.install]
 editables = [".", "./backend", "../.."]
-
-[environment.install.uv]
 packages = [
     "pytest",
     "pytest-mock",

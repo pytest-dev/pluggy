@@ -15,12 +15,12 @@ import shlex
 import subprocess
 import sys
 from typing import Annotated
-from typing import Literal
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
+from pydantic import model_validator
 from pydantic import ValidationError
 import tomllib
 
@@ -33,18 +33,14 @@ class GitConfig(BaseModel):
     shallow: bool = True
 
 
-class UvInstallOptions(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+class EnvironmentUv(BaseModel):
+    """uv-venv: create venv, install editables + optional groups/packages."""
 
-    groups: list[str] = Field(default_factory=list)
-    packages: list[str] = Field(default_factory=list)
-
-
-class UvInstall(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     editables: list[str] = Field(min_length=1)
-    uv: UvInstallOptions | None = None
+    groups: list[str] = Field(default_factory=list)
+    packages: list[str] = Field(default_factory=list)
 
     @field_validator("editables")
     @classmethod
@@ -56,23 +52,17 @@ class UvInstall(BaseModel):
         return v
 
 
-class EnvironmentUv(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    kind: Literal["uv-venv"]
-    install: UvInstall
-
-
 class EnvironmentScript(BaseModel):
+    """script: delegate everything to a bash script."""
+
     model_config = ConfigDict(extra="forbid")
 
-    kind: Literal["script"]
     run: str
 
 
 Environment = Annotated[
     EnvironmentUv | EnvironmentScript,
-    Field(discriminator="kind"),
+    Field(union_mode="left_to_right"),
 ]
 
 
@@ -89,6 +79,13 @@ class RecipeFile(BaseModel):
     git: GitConfig
     environment: Environment
     test: list[TestStep] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def script_has_no_test_steps(self) -> RecipeFile:
+        if isinstance(self.environment, EnvironmentScript) and self.test:
+            msg = "script environments handle testing; [[test]] must be empty"
+            raise ValueError(msg)
+        return self
 
 
 DOWNSTREAM_DIR = Path(__file__).resolve().parent
@@ -199,18 +196,15 @@ def load_recipe(name: str) -> RecipeFile:
         sys.exit(2)
 
 
-def build_uv_install_argv(*, venv_home: Path, install: UvInstall) -> list[str]:
+def build_uv_install_argv(*, venv_home: Path, env: EnvironmentUv) -> list[str]:
     py = str(venv_python(venv_home))
     args: list[str] = ["uv", "pip", "install", "--python", py]
-    uv = install.uv
-    if uv is not None:
-        for g in uv.groups:
-            args.extend(["--group", g])
-    for spec in install.editables:
+    for g in env.groups:
+        args.extend(["--group", g])
+    for spec in env.editables:
         args.extend(["-e", spec])
-    if uv is not None:
-        for pkg in uv.packages:
-            args.append(pkg)
+    for pkg in env.packages:
+        args.append(pkg)
     return args
 
 
@@ -236,7 +230,7 @@ def run_recipe(
     venv_home = dest / VENV_DIRNAME
 
     if not skip_install:
-        argv_i = build_uv_install_argv(venv_home=venv_home, install=profile.install)
+        argv_i = build_uv_install_argv(venv_home=venv_home, env=profile)
         run_cmd(argv_i, cwd=dest, venv_home=venv_home)
 
     if not only_install:

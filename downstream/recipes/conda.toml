@@ -4,5 +4,4 @@ into = "conda"
 shallow = false
 
 [environment]
-kind = "script"
 run = "recipes/conda.bash"

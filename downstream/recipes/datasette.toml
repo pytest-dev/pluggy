@@ -3,12 +3,7 @@ url = "https://github.com/simonw/datasette"
 into = "datasette"
 
 [environment]
-kind = "uv-venv"
-
-[environment.install]
 editables = [".", "../.."]
-
-[environment.install.uv]
 groups = ["dev"]
 
 [[test]]
