@@ -13,8 +13,11 @@ editables = ["../.."]
 source = "dev/start"
 
 [[test]]
+# conda's own CI uses condarc-file to configure channels; dev/start
+# alone doesn't write one, so tests that create temporary envs fail
+# with NoChannelsConfiguredError.  Mirror their CI config here.
 argv = [
     "bash",
     "-c",
-    "set +eu; source dev/start; set -eu; pytest -m 'not integration and not installed'",
+    "set +eu; source dev/start; set -eu; conda config --add channels defaults; pytest -m 'not integration and not installed'",
 ]
