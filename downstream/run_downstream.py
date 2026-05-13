@@ -118,9 +118,7 @@ def subprocess_env(
 ) -> dict[str, str]:
     env = {**os.environ, **(extra or {})}
     # Empty-string values mean "remove from environment".
-    for key, val in env.items():
-        if val == "":
-            del env[key]
+    env = {k: v for k, v in env.items() if v != ""}
     if venv_home is None:
         return env
     root = venv_home.resolve()
