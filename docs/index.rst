@@ -160,9 +160,9 @@ To see how ``pluggy`` is used in the real world, have a look at these projects
 documentation and source code:
 
 * :ref:`pytest <pytest:writing-plugins>`
-* :std:doc:`tox <tox:plugins>`
+* `tox <https://tox.wiki/en/latest/plugins.html>`__
 * :std:doc:`devpi <devpi:devguide/index>`
-* :std:doc:`kedro <kedro:hooks/introduction>`
+* `Kedro <https://docs.kedro.org/en/stable/hooks/introduction/>`__
 
 For more details and advanced usage please read on.
 
