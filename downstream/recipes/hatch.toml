@@ -1,0 +1,18 @@
+[git]
+url = "https://github.com/pypa/hatch"
+into = "hatch"
+
+[environment]
+editables = [".", "./backend", "../.."]
+packages = [
+    "pytest",
+    "pytest-mock",
+    "pytest-xdist",
+    "filelock",
+    "flit-core",
+    "trustme",
+    "editables",
+]
+
+[[test]]
+argv = ["pytest", "tests/backend"]

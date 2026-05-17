@@ -1,0 +1,52 @@
+# Downstream checks run on pull requests to main when the head branch name
+# contains "downstream", or any time via workflow_dispatch. For dispatch-only
+# runs: Actions → downstream → Run workflow → pick a branch under "Use workflow from".
+#
+# The workflow must exist on the default branch for it to appear under the
+# upstream repo's Actions tab; until the workflow is merged, use the fork's
+# Actions (or dispatch from a branch that contains this file).
+name: downstream
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  recipe:
+    name: downstream (${{ matrix.recipe }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (github.event_name == 'pull_request' && contains(github.head_ref, 'downstream'))
+    strategy:
+      fail-fast: false
+      matrix:
+        recipe:
+          - conda
+          - datasette
+          - devpi
+          - hatch
+          - pytest
+          - python-lsp-server
+          - tox
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+          allow-prereleases: true
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: Run downstream recipe
+        run: uv run downstream/run_downstream.py "${{ matrix.recipe }}"

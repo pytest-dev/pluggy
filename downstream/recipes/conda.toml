@@ -1,0 +1,7 @@
+[git]
+url = "https://github.com/conda/conda"
+into = "conda"
+shallow = false
+
+[environment]
+run = "recipes/conda.bash"
