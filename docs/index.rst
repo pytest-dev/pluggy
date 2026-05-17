@@ -570,6 +570,12 @@ To allow for *hookspecs* to evolve over the lifetime of a project,
 This allows for extending hook arguments (and thus semantics) without
 breaking existing *hookimpls*.
 
+Only arguments without default values are considered for this opt-in
+matching. Arguments with defaults in a *hookimpl* are treated as optional
+keyword arguments and are not passed by pluggy, even when the hook caller
+provides a value with the same name. If a *hookimpl* needs a value from the
+hook call, declare it without a default value.
+
 In other words this is ok:
 
 .. code-block:: python
