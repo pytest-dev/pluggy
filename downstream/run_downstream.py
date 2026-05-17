@@ -219,6 +219,18 @@ def run_recipe(
     profile = recipe.environment
 
     if isinstance(profile, EnvironmentScript):
+        if skip_install or only_install:
+            flags: list[str] = []
+            if skip_install:
+                flags.append("--skip-install")
+            if only_install:
+                flags.append("--only-install")
+            joined_flags = ", ".join(flags)
+            print(
+                f"{joined_flags} is not supported for script-based recipe {name!r}.",
+                file=sys.stderr,
+            )
+            sys.exit(2)
         script = DOWNSTREAM_DIR / profile.run
         run_cmd(["bash", str(script)], cwd=DOWNSTREAM_DIR)
         return

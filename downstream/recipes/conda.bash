@@ -14,8 +14,11 @@ set -eu
 pip install -e ../..
 
 # Mirror conda's own CI condarc-defaults so tests that create temporary
-# environments can resolve packages.
-conda config --add channels defaults
+# environments can resolve packages without mutating the user's ~/.condarc.
+CONDARC="$(mktemp)"
+trap 'rm -f "$CONDARC"' EXIT
+export CONDARC
+conda config --file "$CONDARC" --add channels defaults
 
 pytest \
     -m 'not integration and not installed' \
