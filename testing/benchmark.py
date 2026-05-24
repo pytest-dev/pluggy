@@ -1,9 +1,3 @@
-"""
-Benchmarking and performance tests.
-"""
-
-from typing import Any
-
 import pytest
 
 from pluggy import HookimplMarker
@@ -28,16 +22,16 @@ def wrapper(arg1, arg2, arg3):
 
 
 @pytest.fixture(params=[10, 100], ids="hooks={}".format)
-def hooks(request: Any) -> list[object]:
+def hooks(request):
     return [hook for i in range(request.param)]
 
 
 @pytest.fixture(params=[10, 100], ids="wrappers={}".format)
-def wrappers(request: Any) -> list[object]:
+def wrappers(request):
     return [wrapper for i in range(request.param)]
 
 
-def test_hook_and_wrappers_speed(benchmark, hooks, wrappers) -> None:
+def test_hook_and_wrappers_speed(benchmark, hooks, wrappers):
     def setup():
         hook_name = "foo"
         hook_impls = []
@@ -67,7 +61,7 @@ def test_hook_and_wrappers_speed(benchmark, hooks, wrappers) -> None:
         (100, 100, 0),
     ],
 )
-def test_call_hook(benchmark, plugins, wrappers, nesting) -> None:
+def test_call_hook(benchmark, plugins, wrappers, nesting):
     pm = PluginManager("example")
 
     class HookSpec:
@@ -95,7 +89,7 @@ def test_call_hook(benchmark, plugins, wrappers, nesting) -> None:
             return f"<PluginWrap {self.num}>"
 
         @hookimpl(wrapper=True)
-        def fun(self):
+        def fun(self, hooks, nesting: int):
             return (yield)
 
     pm.add_hookspecs(HookSpec)
