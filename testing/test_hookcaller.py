@@ -304,15 +304,15 @@ def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
 def test_hookspec(pm: PluginManager) -> None:
     class HookSpec:
         @hookspec()
-        def he_myhook1(arg1) -> None:
+        def he_myhook1(self, arg1) -> None:
             pass
 
         @hookspec(firstresult=True)
-        def he_myhook2(arg1) -> None:
+        def he_myhook2(self, arg1) -> None:
             pass
 
         @hookspec(firstresult=False)
-        def he_myhook3(arg1) -> None:
+        def he_myhook3(self, arg1) -> None:
             pass
 
     pm.add_hookspecs(HookSpec)
