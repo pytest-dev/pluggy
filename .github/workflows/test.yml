@@ -189,28 +189,27 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           TAG="$VERSION"
-
-          # Generate release notes from the PR's CHANGELOG.rst changes.
           NOTES="Release $VERSION — built from \`${{ github.head_ref }}\` at ${{ github.event.pull_request.head.sha }}."
 
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            # Delete existing assets and re-upload.
+          if gh release view "$TAG" --json isDraft --jq '.isDraft' 2>/dev/null | grep -q 'true'; then
+            # Update existing draft: replace assets with freshly tested ones.
             gh release edit "$TAG" \
               --draft \
               --title "pluggy $VERSION" \
               --notes "$NOTES" \
               --target "${{ github.event.pull_request.head.sha }}"
-            # Remove old assets.
             for asset in $(gh release view "$TAG" --json assets --jq '.assets[].name'); do
               gh release delete-asset "$TAG" "$asset" --yes
             done
+            gh release upload "$TAG" dist/*
+          elif gh release view "$TAG" >/dev/null 2>&1; then
+            # A published (non-draft) release exists — version is locked.
+            echo "::notice::Release $VERSION is already published — skipping."
           else
-            gh release create "$TAG" \
+            # No release exists yet — create a fresh draft.
+            gh release create "$TAG" dist/* \
               --draft \
               --title "pluggy $VERSION" \
               --notes "$NOTES" \
               --target "${{ github.event.pull_request.head.sha }}"
           fi
-
-          # Upload the wheel and sdist as release assets.
-          gh release upload "$TAG" dist/* --clobber

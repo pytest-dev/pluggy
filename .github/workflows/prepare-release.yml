@@ -36,12 +36,24 @@ jobs:
           echo "branch=release-$VERSION" >> "$GITHUB_OUTPUT"
           echo "Computed version: $VERSION"
 
-      - name: Check for existing identical release branch
+      - name: Check if release is already published or branch is up-to-date
         if: steps.version.outputs.version
         id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           BRANCH="release-$VERSION"
+
+          # A published (non-draft) release means the version is locked in
+          # and already on PyPI — do not touch the release branch.
+          IS_DRAFT=$(gh release view "$VERSION" --json isDraft --jq '.isDraft' 2>/dev/null || echo "")
+          if [ "$IS_DRAFT" = "false" ]; then
+            echo "::notice::Release $VERSION is already published — nothing to do."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           # If the release branch already exists and was built from this
           # exact main commit, there is nothing to update.
           if git rev-parse --verify "origin/$BRANCH" >/dev/null 2>&1; then
