@@ -1,42 +1,114 @@
 name: deploy
 
 on:
-  push:
-    tags:
-      - "*"
+  release:
+    types: [published]
 
-# Set permissions at the job level.
 permissions: {}
 
 jobs:
-  package:
-    name: Build & inspect our package.
+  verify:
+    name: Verify release PR status
+    if: github.repository == 'pytest-dev/pluggy'
+    runs-on: ubuntu-latest
+    permissions:
+      checks: read
+      pull-requests: read
+    outputs:
+      pr-number: ${{ steps.find-pr.outputs.number }}
+    steps:
+      - name: Find release PR
+        id: find-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          BRANCH="release-$VERSION"
+          PR_NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$PR_NUMBER" ]; then
+            echo "::error::No open PR found for branch $BRANCH"
+            exit 1
+          fi
+          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "Found PR #$PR_NUMBER for $BRANCH"
+
+      - name: Check PR CI status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          PR_NUMBER="${{ steps.find-pr.outputs.number }}"
+          # Verify all required checks passed on the PR.
+          FAILED=$(gh pr checks "$PR_NUMBER" --json name,state \
+                   --jq '[.[] | select(.state != "SUCCESS" and .state != "SKIPPED")] | length')
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::error::PR #$PR_NUMBER has failing checks — refusing to deploy."
+            gh pr checks "$PR_NUMBER" --json name,state \
+              --jq '.[] | select(.state != "SUCCESS" and .state != "SKIPPED") | "\(.name): \(.state)"'
+            exit 1
+          fi
+          echo "All PR checks passed."
+
+  deploy:
+    name: Publish to PyPI
+    needs: [verify]
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       attestations: write
+      contents: write
     steps:
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir dist
+          gh release download "${GITHUB_REF_NAME}" --dir dist
+          echo "Downloaded assets:"
+          ls -la dist/
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          fetch-depth: 0
+          path: repo
+          sparse-checkout: |
+            .github
           persist-credentials: false
-      - uses: hynek/build-and-inspect-python-package@fe0a0fb1925ca263d076ca4f2c13e93a6e92a33e # v2.17.0
-        with:
-          attest-build-provenance-github: 'true'
 
-  deploy:
-    needs: [package]
-    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') && github.repository == 'pytest-dev/pluggy'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-    steps:
-      - name: Download built packages from the check-package job.
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Generate build provenance attestations
+        uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
         with:
-          name: Packages
-          path: dist
-      - name: Publish package
+          subject-path: "dist/*"
+
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           attestations: true
+
+  merge:
+    name: Merge release PR
+    needs: [verify, deploy]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Merge PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          PR_NUMBER="${{ needs.verify.outputs.pr-number }}"
+          gh pr merge "$PR_NUMBER" --merge \
+            --subject "Merge release ${{ github.ref_name }} (#$PR_NUMBER)"
+          echo "Merged PR #$PR_NUMBER"
+
+      - name: Delete release branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          BRANCH="release-${GITHUB_REF_NAME}"
+          gh api -X DELETE "repos/${GH_REPO}/git/refs/heads/$BRANCH" || true
+          echo "Deleted branch $BRANCH"

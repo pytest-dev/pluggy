@@ -1,0 +1,113 @@
+name: prepare-release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  prepare:
+    name: Prepare release PR
+    runs-on: ubuntu-latest
+    # Only run in the upstream repo, not forks.
+    if: github.repository == 'pytest-dev/pluggy'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install "setuptools-scm[toml]>=10.0" packaging towncrier
+
+      - name: Compute next version
+        id: version
+        run: |
+          VERSION=$(python scripts/compute_version.py) || exit 0
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "branch=release-$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Computed version: $VERSION"
+
+      - name: Check for existing identical release branch
+        if: steps.version.outputs.version
+        id: check
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BRANCH="release-$VERSION"
+          # If the release branch already exists and was built from this
+          # exact main commit, there is nothing to update.
+          if git rev-parse --verify "origin/$BRANCH" >/dev/null 2>&1; then
+            BRANCH_BASE=$(git log "origin/$BRANCH" --format='%H' --max-count=1 --skip=1)
+            if [ "$BRANCH_BASE" = "${{ github.sha }}" ]; then
+              echo "Release branch $BRANCH already up-to-date with main."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Create release branch
+        if: steps.version.outputs.version && steps.check.outputs.skip != 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BRANCH="${{ steps.version.outputs.branch }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Start a fresh branch from the current main HEAD.
+          git checkout -B "$BRANCH"
+
+          # Build the changelog (removes fragments, updates CHANGELOG.rst).
+          towncrier build --yes --version "$VERSION"
+
+          git add -A
+          git commit -m "Preparing release $VERSION"
+          git push --force origin "$BRANCH"
+
+      - name: Create or update pull request
+        if: steps.version.outputs.version && steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BRANCH="${{ steps.version.outputs.branch }}"
+
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number // empty')
+
+          BODY="$(cat <<'EOF'
+          Automated release PR created by CI.
+
+          ## Checklist
+
+          - [ ] Review the generated CHANGELOG.rst
+          - [ ] Ensure all CI checks pass
+          - [ ] When ready, **publish the draft GitHub release** to trigger PyPI deployment and merge
+          EOF
+          )"
+
+          if [ -n "$EXISTING_PR" ]; then
+            gh pr edit "$EXISTING_PR" \
+              --title "Release $VERSION" \
+              --body "$BODY"
+            echo "Updated existing PR #$EXISTING_PR"
+          else
+            # Close any stale release PRs for a different version.
+            for pr in $(gh pr list --head 'release-' --json number,headRefName \
+                        --jq '.[] | select(.headRefName != "'"$BRANCH"'") | .number'); do
+              gh pr close "$pr" --comment "Superseded by release $VERSION."
+            done
+
+            gh pr create \
+              --head "$BRANCH" \
+              --base main \
+              --title "Release $VERSION" \
+              --body "$BODY"
+            echo "Created new PR for $BRANCH"
+          fi

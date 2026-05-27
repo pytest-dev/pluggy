@@ -22,7 +22,17 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Detect release branch version
+        id: release
+        if: startsWith(github.head_ref || '', 'release-')
+        run: |
+          VERSION="${GITHUB_HEAD_REF#release-}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - uses: hynek/build-and-inspect-python-package@fe0a0fb1925ca263d076ca4f2c13e93a6e92a33e # v2.17.0
+        env:
+          SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PLUGGY: ${{ steps.release.outputs.version || '' }}
 
   test:
     needs: [check-package]
@@ -145,3 +155,62 @@ jobs:
         fail_ci_if_error: true
         files: ./coverage.xml
         verbose: true
+
+  release-artifacts:
+    name: Update draft GitHub release
+    needs: [check-package, test]
+    if: >-
+      github.repository == 'pytest-dev/pluggy'
+      && github.event_name == 'pull_request'
+      && startsWith(github.head_ref, 'release-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Determine version from branch
+        id: version
+        run: |
+          VERSION="${GITHUB_HEAD_REF#release-}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Download built packages
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: Packages
+          path: dist
+
+      - name: Create or update draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="$VERSION"
+
+          # Generate release notes from the PR's CHANGELOG.rst changes.
+          NOTES="Release $VERSION — built from \`${{ github.head_ref }}\` at ${{ github.event.pull_request.head.sha }}."
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # Delete existing assets and re-upload.
+            gh release edit "$TAG" \
+              --draft \
+              --title "pluggy $VERSION" \
+              --notes "$NOTES" \
+              --target "${{ github.event.pull_request.head.sha }}"
+            # Remove old assets.
+            for asset in $(gh release view "$TAG" --json assets --jq '.assets[].name'); do
+              gh release delete-asset "$TAG" "$asset" --yes
+            done
+          else
+            gh release create "$TAG" \
+              --draft \
+              --title "pluggy $VERSION" \
+              --notes "$NOTES" \
+              --target "${{ github.event.pull_request.head.sha }}"
+          fi
+
+          # Upload the wheel and sdist as release assets.
+          gh release upload "$TAG" dist/* --clobber
