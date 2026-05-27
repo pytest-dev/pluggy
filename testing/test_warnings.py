@@ -51,7 +51,7 @@ def test_teardown_raised_warning(pm: PluginManager) -> None:
 
 
 def test_hookspec_missing_self_warns(pm: PluginManager) -> None:
-    """A hookspec defined as a method without ``self`` emits a FutureWarning."""
+    """A hookspec defined as a method without ``self`` emits a DeprecationWarning."""
 
     class Api:
         @hookspec
@@ -59,14 +59,14 @@ def test_hookspec_missing_self_warns(pm: PluginManager) -> None:
             pass
 
     with pytest.warns(
-        FutureWarning,
+        DeprecationWarning,
         match=r"is a method but its first parameter 'item' is not 'self'",
     ):
         pm.add_hookspecs(Api)
 
 
 def test_hookspec_with_self_no_warning(pm: PluginManager) -> None:
-    """A hookspec with ``self`` does not emit a FutureWarning."""
+    """A hookspec with ``self`` does not emit a DeprecationWarning."""
 
     class Api:
         @hookspec
@@ -79,7 +79,7 @@ def test_hookspec_with_self_no_warning(pm: PluginManager) -> None:
 
 
 def test_hookspec_staticmethod_no_warning(pm: PluginManager) -> None:
-    """A hookspec using @staticmethod does not emit a FutureWarning."""
+    """A hookspec using @staticmethod does not emit a DeprecationWarning."""
 
     class Api:
         @staticmethod

@@ -291,6 +291,17 @@ def normalize_hookimpl_opts(opts: HookimplOpts) -> None:
 _PYPY = sys.implementation.name == "pypy"
 _IMPLICIT_NAMES = ("self", "cls", "obj") if _PYPY else ("self", "cls")
 
+# Qualnames whose missing-self deprecation warning is suppressed because
+# their upstream code is already fixed but not yet released.
+# Remove entries once a release with the fix is available.
+_NOSELF_WARN_SUPPRESS: frozenset[str] = frozenset(
+    {
+        # pytest-timeout >=2.3.2 has the fix, but is unreleased as of 2026-05.
+        "TimeoutHooks.pytest_timeout_set_timer",
+        "TimeoutHooks.pytest_timeout_cancel_timer",
+    }
+)
+
 
 def varnames(
     func: object, *, legacy_noself: bool = False
@@ -306,7 +317,7 @@ def varnames(
     :param legacy_noself:
         If ``True``, support hookspec classes whose methods omit ``self``.
         When the function looks like a class method but has no implicit first
-        parameter, a :class:`FutureWarning` is emitted.
+        parameter, a :class:`DeprecationWarning` is emitted.
     """
     is_bound = False
     if inspect.isclass(func):
@@ -360,14 +371,15 @@ def varnames(
         elif _is_class_method and args[0] in _IMPLICIT_NAMES:
             args = args[1:]
         elif _is_class_method and legacy_noself:
-            warnings.warn(
-                f"{qualname} is a method but its first parameter"
-                f" {args[0]!r} is not 'self'."
-                f" Add 'self' as the first parameter or use @staticmethod."
-                f" This will become an error in a future version of pluggy.",
-                FutureWarning,
-                stacklevel=2,
-            )
+            if _tail not in _NOSELF_WARN_SUPPRESS:
+                warnings.warn(
+                    f"{qualname} is a method but its first parameter"
+                    f" {args[0]!r} is not 'self'."
+                    f" Add 'self' as the first parameter or use @staticmethod."
+                    f" This will become an error in a future version of pluggy.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
 
     return args, kwargs
 

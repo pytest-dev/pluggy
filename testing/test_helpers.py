@@ -201,7 +201,7 @@ def test_varnames_legacy_noself_warns() -> None:
         result = varnames(MySpecs.my_hook, legacy_noself=True)
     assert result == (("item", "extra"), ())
     assert len(w) == 1
-    assert issubclass(w[0].category, FutureWarning)
+    assert issubclass(w[0].category, DeprecationWarning)
     assert "'item' is not 'self'" in str(w[0].message)
 
 
@@ -232,6 +232,28 @@ def test_varnames_no_legacy_noself_no_warn() -> None:
         warnings.simplefilter("always")
         result = varnames(MySpecs.my_hook)
     assert result == (("item", "extra"), ())
+    assert len(w) == 0
+
+
+def test_varnames_legacy_noself_suppressed_for_timeout_hooks() -> None:
+    """The deprecation warning is suppressed for known upstream-fixed packages."""
+    import warnings
+
+    class TimeoutHooks:
+        def pytest_timeout_set_timer(item, settings) -> None:
+            pass  # pragma: no cover
+
+        def pytest_timeout_cancel_timer(item) -> None:
+            pass  # pragma: no cover
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result_set = varnames(TimeoutHooks.pytest_timeout_set_timer, legacy_noself=True)
+        result_cancel = varnames(
+            TimeoutHooks.pytest_timeout_cancel_timer, legacy_noself=True
+        )
+    assert result_set == (("item", "settings"), ())
+    assert result_cancel == (("item",), ())
     assert len(w) == 0
 
 
