@@ -22,6 +22,17 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Detect release branch version
+        id: release
+        if: startsWith(github.head_ref || '', 'release-')
+        run: |
+          VERSION="${GITHUB_HEAD_REF#release-}"
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PLUGGY=$VERSION" >> "$GITHUB_ENV"
+          fi
+
       - uses: hynek/build-and-inspect-python-package@fe0a0fb1925ca263d076ca4f2c13e93a6e92a33e # v2.17.0
 
   test:
@@ -145,3 +156,109 @@ jobs:
         fail_ci_if_error: true
         files: ./coverage.xml
         verbose: true
+
+  release-artifacts:
+    name: Update draft GitHub release
+    needs: [check-package, test]
+    if: >-
+      github.repository == 'pytest-dev/pluggy'
+      && github.event_name == 'pull_request'
+      && startsWith(github.head_ref, 'release-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Determine version from branch
+        id: version
+        run: |
+          VERSION="${GITHUB_HEAD_REF#release-}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "::notice::Branch $GITHUB_HEAD_REF is not a release version branch — skipping."
+            exit 0
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        if: steps.version.outputs.version
+        with:
+          persist-credentials: false
+
+      - name: Download built packages
+        if: steps.version.outputs.version
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: Packages
+          path: dist
+
+      - name: Create or update draft release
+        if: steps.version.outputs.version
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const { VERSION, HEAD_REF, HEAD_SHA } = process.env;
+            const tag = VERSION;
+            const title = `pluggy ${VERSION}`;
+            const body = `Release ${VERSION} — built from \`${HEAD_REF}\` at ${HEAD_SHA}.`;
+
+            let release;
+            try {
+              const { data } = await github.rest.repos.getReleaseByTag({
+                ...context.repo,
+                tag,
+              });
+              release = data;
+            } catch (e) {
+              if (e.status !== 404) throw e;
+            }
+
+            if (release && !release.draft) {
+              core.notice(`Release ${VERSION} is already published — skipping.`);
+              return;
+            }
+
+            if (release) {
+              // Update existing draft: replace assets with freshly tested ones.
+              await github.rest.repos.updateRelease({
+                ...context.repo,
+                release_id: release.id,
+                tag_name: tag,
+                name: title,
+                body,
+                draft: true,
+                target_commitish: HEAD_SHA,
+              });
+              for (const asset of release.assets) {
+                await github.rest.repos.deleteReleaseAsset({
+                  ...context.repo,
+                  asset_id: asset.id,
+                });
+              }
+            } else {
+              const { data } = await github.rest.repos.createRelease({
+                ...context.repo,
+                tag_name: tag,
+                name: title,
+                body,
+                draft: true,
+                target_commitish: HEAD_SHA,
+              });
+              release = data;
+            }
+
+            // Upload all assets from dist/.
+            for (const file of fs.readdirSync('dist')) {
+              const filePath = path.join('dist', file);
+              await github.rest.repos.uploadReleaseAsset({
+                ...context.repo,
+                release_id: release.id,
+                name: file,
+                data: fs.readFileSync(filePath),
+              });
+              core.info(`Uploaded ${file}`);
+            }

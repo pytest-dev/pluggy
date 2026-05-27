@@ -1,0 +1,165 @@
+name: prepare-release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  prepare:
+    name: Prepare release PR
+    runs-on: ubuntu-latest
+    # Only run in the upstream repo, not forks.
+    if: github.repository == 'pytest-dev/pluggy'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install "setuptools-scm[toml]>=10.0" towncrier
+
+      - name: Compute next version
+        id: version
+        run: |
+          VERSION=$(python -m setuptools_scm --strip-dev) || exit 0
+          if [ -z "$VERSION" ]; then exit 0; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "branch=release-$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Computed version: $VERSION"
+
+      - name: Check if release is already published or branch is up-to-date
+        if: steps.version.outputs.version
+        id: check
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BRANCH: release-${{ steps.version.outputs.version }}
+          PUSH_SHA: ${{ github.sha }}
+        with:
+          script: |
+            const { VERSION, BRANCH, PUSH_SHA } = process.env;
+
+            // A published (non-draft) release means the version is locked in.
+            try {
+              const release = await github.rest.repos.getReleaseByTag({
+                ...context.repo,
+                tag: VERSION,
+              });
+              if (!release.data.draft) {
+                core.notice(`Release ${VERSION} is already published — nothing to do.`);
+                core.setOutput('skip', 'true');
+                return;
+              }
+            } catch (e) {
+              if (e.status !== 404) throw e;
+            }
+
+            // If the release branch already exists and was built from this
+            // exact main commit, there is nothing to update.
+            try {
+              const commits = await github.rest.repos.listCommits({
+                ...context.repo,
+                sha: BRANCH,
+                per_page: 2,
+              });
+              if (commits.data.length >= 2 && commits.data[1].sha === PUSH_SHA) {
+                core.info(`Release branch ${BRANCH} already up-to-date with main.`);
+                core.setOutput('skip', 'true');
+                return;
+              }
+            } catch (e) {
+              if (e.status !== 404 && e.status !== 409) throw e;
+            }
+
+      - name: Create release branch
+        if: steps.version.outputs.version && steps.check.outputs.skip != 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BRANCH="${{ steps.version.outputs.branch }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout -B "$BRANCH"
+
+          towncrier build --yes --version "$VERSION"
+
+          git add -A
+          git commit -m "Preparing release $VERSION"
+          git push --force origin "$BRANCH"
+
+      - name: Create or update pull request
+        if: steps.version.outputs.version && steps.check.outputs.skip != 'true'
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BRANCH: release-${{ steps.version.outputs.version }}
+        with:
+          script: |
+            const { VERSION, BRANCH } = process.env;
+            const body = [
+              'Automated release PR created by CI.',
+              '',
+              '## Checklist',
+              '',
+              '- [ ] Review the generated CHANGELOG.rst',
+              '- [ ] Ensure all CI checks pass',
+              '- [ ] When ready, **publish the draft GitHub release** to trigger PyPI deployment and merge',
+            ].join('\n');
+
+            // Look for an existing PR from this release branch.
+            const { data: prs } = await github.rest.pulls.list({
+              ...context.repo,
+              head: `${context.repo.owner}:${BRANCH}`,
+              state: 'open',
+            });
+
+            if (prs.length > 0) {
+              await github.rest.pulls.update({
+                ...context.repo,
+                pull_number: prs[0].number,
+                title: `Release ${VERSION}`,
+                body,
+              });
+              core.info(`Updated existing PR #${prs[0].number}`);
+            } else {
+              // Close any stale release PRs for a different version.
+              const { data: allPrs } = await github.rest.pulls.list({
+                ...context.repo,
+                state: 'open',
+              });
+              for (const pr of allPrs) {
+                if (pr.head.ref.startsWith('release-') && pr.head.ref !== BRANCH) {
+                  await github.rest.pulls.update({
+                    ...context.repo,
+                    pull_number: pr.number,
+                    state: 'closed',
+                  });
+                  await github.rest.issues.createComment({
+                    ...context.repo,
+                    issue_number: pr.number,
+                    body: `Superseded by release ${VERSION}.`,
+                  });
+                  core.info(`Closed stale PR #${pr.number} (${pr.head.ref})`);
+                }
+              }
+
+              const { data: newPr } = await github.rest.pulls.create({
+                ...context.repo,
+                head: BRANCH,
+                base: 'main',
+                title: `Release ${VERSION}`,
+                body,
+              });
+              core.info(`Created new PR #${newPr.number} for ${BRANCH}`);
+            }

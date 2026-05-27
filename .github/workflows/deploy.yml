@@ -1,42 +1,131 @@
 name: deploy
 
 on:
-  push:
-    tags:
-      - "*"
+  release:
+    types: [published]
 
-# Set permissions at the job level.
 permissions: {}
 
 jobs:
-  package:
-    name: Build & inspect our package.
+  verify:
+    name: Verify release PR status
+    if: github.repository == 'pytest-dev/pluggy'
+    runs-on: ubuntu-latest
+    permissions:
+      checks: read
+      pull-requests: read
+    outputs:
+      pr-number: ${{ steps.verify.outputs.pr-number }}
+    steps:
+      - name: Find release PR and verify CI status
+        id: verify
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          VERSION: ${{ github.ref_name }}
+        with:
+          script: |
+            const { VERSION } = process.env;
+            const branch = `release-${VERSION}`;
+
+            // Find the open release PR.
+            const { data: prs } = await github.rest.pulls.list({
+              ...context.repo,
+              head: `${context.repo.owner}:${branch}`,
+              state: 'open',
+            });
+            if (prs.length === 0) {
+              core.setFailed(`No open PR found for branch ${branch}`);
+              return;
+            }
+            const prNumber = prs[0].number;
+            core.setOutput('pr-number', prNumber);
+            core.info(`Found PR #${prNumber} for ${branch}`);
+
+            // Verify all required checks passed on the PR head commit.
+            const { data: checks } = await github.rest.checks.listForRef({
+              ...context.repo,
+              ref: prs[0].head.sha,
+            });
+            const failed = checks.check_runs.filter(
+              cr => cr.conclusion !== 'success' && cr.conclusion !== 'skipped' && cr.conclusion !== null
+            );
+            if (failed.length > 0) {
+              for (const cr of failed) {
+                core.error(`${cr.name}: ${cr.conclusion}`);
+              }
+              core.setFailed(`PR #${prNumber} has ${failed.length} failing check(s) — refusing to deploy.`);
+              return;
+            }
+            core.info('All PR checks passed.');
+
+  deploy:
+    name: Publish to PyPI
+    needs: [verify]
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       attestations: write
+      contents: write
     steps:
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir dist
+          gh release download "${GITHUB_REF_NAME}" --dir dist
+          ls -la dist/
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          fetch-depth: 0
+          path: repo
+          sparse-checkout: |
+            .github
           persist-credentials: false
-      - uses: hynek/build-and-inspect-python-package@fe0a0fb1925ca263d076ca4f2c13e93a6e92a33e # v2.17.0
-        with:
-          attest-build-provenance-github: 'true'
 
-  deploy:
-    needs: [package]
-    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') && github.repository == 'pytest-dev/pluggy'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-    steps:
-      - name: Download built packages from the check-package job.
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Generate build provenance attestations
+        uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517141b2 # v2.2.3
         with:
-          name: Packages
-          path: dist
-      - name: Publish package
+          subject-path: "dist/*"
+
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           attestations: true
+
+  merge:
+    name: Merge release PR
+    needs: [verify, deploy]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Merge PR and delete release branch
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        env:
+          PR_NUMBER: ${{ needs.verify.outputs.pr-number }}
+          VERSION: ${{ github.ref_name }}
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const branch = `release-${process.env.VERSION}`;
+
+            await github.rest.pulls.merge({
+              ...context.repo,
+              pull_number: prNumber,
+              merge_method: 'merge',
+              commit_title: `Merge release ${process.env.VERSION} (#${prNumber})`,
+            });
+            core.info(`Merged PR #${prNumber}`);
+
+            try {
+              await github.rest.git.deleteRef({
+                ...context.repo,
+                ref: `heads/${branch}`,
+              });
+              core.info(`Deleted branch ${branch}`);
+            } catch (e) {
+              if (e.status !== 422) throw e;
+              core.info(`Branch ${branch} already deleted.`);
+            }

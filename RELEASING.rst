@@ -1,28 +1,53 @@
 Release Procedure
 -----------------
 
-#. Depending on the magnitude of the changes in the release, consider testing
-   some of the large downstream users of pluggy against the upcoming release.
-   You can do so with ``uv run downstream/run_downstream.py <recipe>``;
-   use ``--list`` to discover available recipes.
+Releases are largely automated via GitHub Actions.  The version is derived
+automatically from changelog fragment types using the ``towncrier-fragments``
+version scheme (``feature`` → minor, ``bugfix`` → patch, ``removal`` → major).
 
-#. From a clean work tree, execute::
+Automated flow
+~~~~~~~~~~~~~~
+
+#. Contributors add changelog fragments (``changelog.d/<id>.<type>.rst``) in
+   their pull requests as usual.
+
+#. Every push to ``main`` triggers the ``prepare-release`` workflow, which:
+
+   * Computes the next version from the fragment types.
+   * Creates (or force-updates) a ``release-X.Y.Z`` branch with the
+     towncrier-built ``CHANGELOG.rst`` committed.
+   * Opens (or updates) a PR targeting ``main``.
+
+#. The normal CI (``test`` workflow) runs on the release PR.  Once all checks
+   pass, the built wheel and sdist are uploaded to a **draft GitHub release**.
+
+#. A maintainer reviews the PR and, when satisfied, **publishes the draft
+   release** in the GitHub UI.
+
+#. Publishing the release triggers the ``deploy`` workflow, which:
+
+   * Verifies all PR checks are green.
+   * Downloads the release assets (bit-identical to the draft).
+   * Uploads them to PyPI via trusted publishing.
+   * Merges the release PR into ``main``.
+   * Cleans up the release branch.
+
+Downstream testing
+~~~~~~~~~~~~~~~~~~
+
+Before publishing a release, consider running downstream integration tests::
+
+    uv run downstream/run_downstream.py <recipe>
+
+Use ``--list`` to discover available recipes.
+
+Manual fallback
+~~~~~~~~~~~~~~~
+
+For local testing or exceptional situations, the legacy script is still
+available::
 
     tox -e release -- VERSION
 
-   This will create the branch ready to be pushed.
-
-#. Open a PR targeting ``main``.
-
-#. All tests must pass and the PR must be approved by at least another maintainer.
-
-#. Publish to PyPI by pushing a tag::
-
-     git tag X.Y.Z release-X.Y.Z
-     git push git@github.com:pytest-dev/pluggy.git X.Y.Z
-
-   The tag will trigger a new build, which will deploy to PyPI.
-
-#. Make sure it is `available on PyPI <https://pypi.org/project/pluggy>`_.
-
-#. Merge the PR into ``main``, either manually or using GitHub's web interface.
+This creates a ``release-VERSION`` branch with the changelog committed,
+ready to be pushed and opened as a PR manually.
