@@ -1,9 +1,9 @@
 """Release script — local fallback for the automated CI pipeline.
 
 Typical CI usage (automated):
-    The ``prepare-release`` GitHub Actions workflow calls
-    ``scripts/compute_version.py`` and handles branching, towncrier,
-    and PR creation automatically.
+    The ``prepare-release`` GitHub Actions workflow uses
+    ``python -m setuptools_scm --strip-dev`` and handles branching,
+    towncrier, and PR creation automatically.
 
 Manual usage::
 
@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 from subprocess import check_call
+from subprocess import check_output
 import sys
 
 from colorama import Fore
@@ -24,12 +25,16 @@ from git import Repo
 
 
 def compute_version_auto() -> str:
-    """Derive the next release version from changelog fragments."""
-    from scripts.compute_version import compute_version
-
-    version = compute_version()
-    if version is None:
-        raise RuntimeError("No changelog fragments found — cannot determine version.")
+    """Derive the next release version via ``setuptools_scm --strip-dev``."""
+    version = (
+        check_output(
+            [sys.executable, "-m", "setuptools_scm", "--strip-dev"],
+        )
+        .decode()
+        .strip()
+    )
+    if not version:
+        raise RuntimeError("setuptools_scm returned an empty version.")
     return version
 
 

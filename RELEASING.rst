@@ -8,7 +8,7 @@ version scheme (``feature`` → minor, ``bugfix`` → patch, ``removal`` → maj
 Automated flow
 ~~~~~~~~~~~~~~
 
-#. Contributors add changelog fragments (``changelog/<id>.<type>.rst``) in
+#. Contributors add changelog fragments (``changelog.d/<id>.<type>.rst``) in
    their pull requests as usual.
 
 #. Every push to ``main`` triggers the ``prepare-release`` workflow, which:

@@ -26,12 +26,13 @@ jobs:
           python-version: "3.13"
 
       - name: Install dependencies
-        run: pip install "setuptools-scm[toml]>=10.0" packaging towncrier
+        run: pip install "setuptools-scm[toml]>=10.0" towncrier
 
       - name: Compute next version
         id: version
         run: |
-          VERSION=$(python scripts/compute_version.py) || exit 0
+          VERSION=$(python -m setuptools_scm --strip-dev) || exit 0
+          if [ -z "$VERSION" ]; then exit 0; fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "branch=release-$VERSION" >> "$GITHUB_OUTPUT"
           echo "Computed version: $VERSION"

@@ -76,9 +76,9 @@ default-groups = ["dev", "testing"]
 package = "pluggy"
 package_dir = "src/pluggy"
 filename = "CHANGELOG.rst"
-directory = "changelog/"
+directory = "changelog.d/"
 title_format = "pluggy {version} ({project_date})"
-template = "changelog/_template.rst"
+template = "changelog.d/_template.rst"
 
   [[tool.towncrier.type]]
   directory = "removal"
