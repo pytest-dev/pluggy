@@ -40,30 +40,46 @@ jobs:
       - name: Check if release is already published or branch is up-to-date
         if: steps.version.outputs.version
         id: check
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          BRANCH="release-$VERSION"
+          VERSION: ${{ steps.version.outputs.version }}
+          BRANCH: release-${{ steps.version.outputs.version }}
+          PUSH_SHA: ${{ github.sha }}
+        with:
+          script: |
+            const { VERSION, BRANCH, PUSH_SHA } = process.env;
 
-          # A published (non-draft) release means the version is locked in
-          # and already on PyPI — do not touch the release branch.
-          IS_DRAFT=$(gh release view "$VERSION" --json isDraft --jq '.isDraft' 2>/dev/null || echo "")
-          if [ "$IS_DRAFT" = "false" ]; then
-            echo "::notice::Release $VERSION is already published — nothing to do."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+            // A published (non-draft) release means the version is locked in.
+            try {
+              const release = await github.rest.repos.getReleaseByTag({
+                ...context.repo,
+                tag: VERSION,
+              });
+              if (!release.data.draft) {
+                core.notice(`Release ${VERSION} is already published — nothing to do.`);
+                core.setOutput('skip', 'true');
+                return;
+              }
+            } catch (e) {
+              if (e.status !== 404) throw e;
+            }
 
-          # If the release branch already exists and was built from this
-          # exact main commit, there is nothing to update.
-          if git rev-parse --verify "origin/$BRANCH" >/dev/null 2>&1; then
-            BRANCH_BASE=$(git log "origin/$BRANCH" --format='%H' --max-count=1 --skip=1)
-            if [ "$BRANCH_BASE" = "${{ github.sha }}" ]; then
-              echo "Release branch $BRANCH already up-to-date with main."
-              echo "skip=true" >> "$GITHUB_OUTPUT"
-            fi
-          fi
+            // If the release branch already exists and was built from this
+            // exact main commit, there is nothing to update.
+            try {
+              const commits = await github.rest.repos.listCommits({
+                ...context.repo,
+                sha: BRANCH,
+                per_page: 2,
+              });
+              if (commits.data.length >= 2 && commits.data[1].sha === PUSH_SHA) {
+                core.info(`Release branch ${BRANCH} already up-to-date with main.`);
+                core.setOutput('skip', 'true');
+                return;
+              }
+            } catch (e) {
+              if (e.status !== 404 && e.status !== 409) throw e;
+            }
 
       - name: Create release branch
         if: steps.version.outputs.version && steps.check.outputs.skip != 'true'
@@ -74,10 +90,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Start a fresh branch from the current main HEAD.
           git checkout -B "$BRANCH"
 
-          # Build the changelog (removes fragments, updates CHANGELOG.rst).
           towncrier build --yes --version "$VERSION"
 
           git add -A
@@ -86,41 +100,66 @@ jobs:
 
       - name: Create or update pull request
         if: steps.version.outputs.version && steps.check.outputs.skip != 'true'
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          BRANCH="${{ steps.version.outputs.branch }}"
+          VERSION: ${{ steps.version.outputs.version }}
+          BRANCH: release-${{ steps.version.outputs.version }}
+        with:
+          script: |
+            const { VERSION, BRANCH } = process.env;
+            const body = [
+              'Automated release PR created by CI.',
+              '',
+              '## Checklist',
+              '',
+              '- [ ] Review the generated CHANGELOG.rst',
+              '- [ ] Ensure all CI checks pass',
+              '- [ ] When ready, **publish the draft GitHub release** to trigger PyPI deployment and merge',
+            ].join('\n');
 
-          EXISTING_PR=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number // empty')
+            // Look for an existing PR from this release branch.
+            const { data: prs } = await github.rest.pulls.list({
+              ...context.repo,
+              head: `${context.repo.owner}:${BRANCH}`,
+              state: 'open',
+            });
 
-          BODY="$(cat <<'EOF'
-          Automated release PR created by CI.
+            if (prs.length > 0) {
+              await github.rest.pulls.update({
+                ...context.repo,
+                pull_number: prs[0].number,
+                title: `Release ${VERSION}`,
+                body,
+              });
+              core.info(`Updated existing PR #${prs[0].number}`);
+            } else {
+              // Close any stale release PRs for a different version.
+              const { data: allPrs } = await github.rest.pulls.list({
+                ...context.repo,
+                state: 'open',
+              });
+              for (const pr of allPrs) {
+                if (pr.head.ref.startsWith('release-') && pr.head.ref !== BRANCH) {
+                  await github.rest.pulls.update({
+                    ...context.repo,
+                    pull_number: pr.number,
+                    state: 'closed',
+                  });
+                  await github.rest.issues.createComment({
+                    ...context.repo,
+                    issue_number: pr.number,
+                    body: `Superseded by release ${VERSION}.`,
+                  });
+                  core.info(`Closed stale PR #${pr.number} (${pr.head.ref})`);
+                }
+              }
 
-          ## Checklist
-
-          - [ ] Review the generated CHANGELOG.rst
-          - [ ] Ensure all CI checks pass
-          - [ ] When ready, **publish the draft GitHub release** to trigger PyPI deployment and merge
-          EOF
-          )"
-
-          if [ -n "$EXISTING_PR" ]; then
-            gh pr edit "$EXISTING_PR" \
-              --title "Release $VERSION" \
-              --body "$BODY"
-            echo "Updated existing PR #$EXISTING_PR"
-          else
-            # Close any stale release PRs for a different version.
-            for pr in $(gh pr list --json number,headRefName \
-                        --jq '.[] | select(.headRefName | startswith("release-")) | select(.headRefName != "'"$BRANCH"'") | .number'); do
-              gh pr close "$pr" --comment "Superseded by release $VERSION."
-            done
-
-            gh pr create \
-              --head "$BRANCH" \
-              --base main \
-              --title "Release $VERSION" \
-              --body "$BODY"
-            echo "Created new PR for $BRANCH"
-          fi
+              const { data: newPr } = await github.rest.pulls.create({
+                ...context.repo,
+                head: BRANCH,
+                base: 'main',
+                title: `Release ${VERSION}`,
+                body,
+              });
+              core.info(`Created new PR #${newPr.number} for ${BRANCH}`);
+            }

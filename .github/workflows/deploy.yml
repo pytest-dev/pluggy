@@ -15,40 +15,48 @@ jobs:
       checks: read
       pull-requests: read
     outputs:
-      pr-number: ${{ steps.find-pr.outputs.number }}
+      pr-number: ${{ steps.verify.outputs.pr-number }}
     steps:
-      - name: Find release PR
-        id: find-pr
+      - name: Find release PR and verify CI status
+        id: verify
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          VERSION="${GITHUB_REF_NAME}"
-          BRANCH="release-$VERSION"
-          PR_NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
-          if [ -z "$PR_NUMBER" ]; then
-            echo "::error::No open PR found for branch $BRANCH"
-            exit 1
-          fi
-          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "Found PR #$PR_NUMBER for $BRANCH"
+          VERSION: ${{ github.ref_name }}
+        with:
+          script: |
+            const { VERSION } = process.env;
+            const branch = `release-${VERSION}`;
 
-      - name: Check PR CI status
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          PR_NUMBER="${{ steps.find-pr.outputs.number }}"
-          # Verify all required checks passed on the PR.
-          FAILED=$(gh pr checks "$PR_NUMBER" --json name,state \
-                   --jq '[.[] | select(.state != "SUCCESS" and .state != "SKIPPED")] | length')
-          if [ "$FAILED" -gt 0 ]; then
-            echo "::error::PR #$PR_NUMBER has failing checks — refusing to deploy."
-            gh pr checks "$PR_NUMBER" --json name,state \
-              --jq '.[] | select(.state != "SUCCESS" and .state != "SKIPPED") | "\(.name): \(.state)"'
-            exit 1
-          fi
-          echo "All PR checks passed."
+            // Find the open release PR.
+            const { data: prs } = await github.rest.pulls.list({
+              ...context.repo,
+              head: `${context.repo.owner}:${branch}`,
+              state: 'open',
+            });
+            if (prs.length === 0) {
+              core.setFailed(`No open PR found for branch ${branch}`);
+              return;
+            }
+            const prNumber = prs[0].number;
+            core.setOutput('pr-number', prNumber);
+            core.info(`Found PR #${prNumber} for ${branch}`);
+
+            // Verify all required checks passed on the PR head commit.
+            const { data: checks } = await github.rest.checks.listForRef({
+              ...context.repo,
+              ref: prs[0].head.sha,
+            });
+            const failed = checks.check_runs.filter(
+              cr => cr.conclusion !== 'success' && cr.conclusion !== 'skipped' && cr.conclusion !== null
+            );
+            if (failed.length > 0) {
+              for (const cr of failed) {
+                core.error(`${cr.name}: ${cr.conclusion}`);
+              }
+              core.setFailed(`PR #${prNumber} has ${failed.length} failing check(s) — refusing to deploy.`);
+              return;
+            }
+            core.info('All PR checks passed.');
 
   deploy:
     name: Publish to PyPI
@@ -66,7 +74,6 @@ jobs:
         run: |
           mkdir dist
           gh release download "${GITHUB_REF_NAME}" --dir dist
-          echo "Downloaded assets:"
           ls -la dist/
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -94,21 +101,31 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - name: Merge PR
+      - name: Merge PR and delete release branch
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          PR_NUMBER="${{ needs.verify.outputs.pr-number }}"
-          gh pr merge "$PR_NUMBER" --merge \
-            --subject "Merge release ${{ github.ref_name }} (#$PR_NUMBER)"
-          echo "Merged PR #$PR_NUMBER"
+          PR_NUMBER: ${{ needs.verify.outputs.pr-number }}
+          VERSION: ${{ github.ref_name }}
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const branch = `release-${process.env.VERSION}`;
 
-      - name: Delete release branch
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          BRANCH="release-${GITHUB_REF_NAME}"
-          gh api -X DELETE "repos/${GH_REPO}/git/refs/heads/$BRANCH" || true
-          echo "Deleted branch $BRANCH"
+            await github.rest.pulls.merge({
+              ...context.repo,
+              pull_number: prNumber,
+              merge_method: 'merge',
+              commit_title: `Merge release ${process.env.VERSION} (#${prNumber})`,
+            });
+            core.info(`Merged PR #${prNumber}`);
+
+            try {
+              await github.rest.git.deleteRef({
+                ...context.repo,
+                ref: `heads/${branch}`,
+              });
+              core.info(`Deleted branch ${branch}`);
+            } catch (e) {
+              if (e.status !== 422) throw e;
+              core.info(`Branch ${branch} already deleted.`);
+            }

@@ -192,32 +192,73 @@ jobs:
 
       - name: Create or update draft release
         if: steps.version.outputs.version
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          TAG="$VERSION"
-          NOTES="Release $VERSION — built from \`${{ github.head_ref }}\` at ${{ github.event.pull_request.head.sha }}."
+          VERSION: ${{ steps.version.outputs.version }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const { VERSION, HEAD_REF, HEAD_SHA } = process.env;
+            const tag = VERSION;
+            const title = `pluggy ${VERSION}`;
+            const body = `Release ${VERSION} — built from \`${HEAD_REF}\` at ${HEAD_SHA}.`;
 
-          if gh release view "$TAG" --json isDraft --jq '.isDraft' 2>/dev/null | grep -q 'true'; then
-            # Update existing draft: replace assets with freshly tested ones.
-            gh release edit "$TAG" \
-              --draft \
-              --title "pluggy $VERSION" \
-              --notes "$NOTES" \
-              --target "${{ github.event.pull_request.head.sha }}"
-            for asset in $(gh release view "$TAG" --json assets --jq '.assets[].name'); do
-              gh release delete-asset "$TAG" "$asset" --yes
-            done
-            gh release upload "$TAG" dist/*
-          elif gh release view "$TAG" >/dev/null 2>&1; then
-            # A published (non-draft) release exists — version is locked.
-            echo "::notice::Release $VERSION is already published — skipping."
-          else
-            # No release exists yet — create a fresh draft.
-            gh release create "$TAG" dist/* \
-              --draft \
-              --title "pluggy $VERSION" \
-              --notes "$NOTES" \
-              --target "${{ github.event.pull_request.head.sha }}"
-          fi
+            let release;
+            try {
+              const { data } = await github.rest.repos.getReleaseByTag({
+                ...context.repo,
+                tag,
+              });
+              release = data;
+            } catch (e) {
+              if (e.status !== 404) throw e;
+            }
+
+            if (release && !release.draft) {
+              core.notice(`Release ${VERSION} is already published — skipping.`);
+              return;
+            }
+
+            if (release) {
+              // Update existing draft: replace assets with freshly tested ones.
+              await github.rest.repos.updateRelease({
+                ...context.repo,
+                release_id: release.id,
+                tag_name: tag,
+                name: title,
+                body,
+                draft: true,
+                target_commitish: HEAD_SHA,
+              });
+              for (const asset of release.assets) {
+                await github.rest.repos.deleteReleaseAsset({
+                  ...context.repo,
+                  asset_id: asset.id,
+                });
+              }
+            } else {
+              const { data } = await github.rest.repos.createRelease({
+                ...context.repo,
+                tag_name: tag,
+                name: title,
+                body,
+                draft: true,
+                target_commitish: HEAD_SHA,
+              });
+              release = data;
+            }
+
+            // Upload all assets from dist/.
+            for (const file of fs.readdirSync('dist')) {
+              const filePath = path.join('dist', file);
+              await github.rest.repos.uploadReleaseAsset({
+                ...context.repo,
+                release_id: release.id,
+                name: file,
+                data: fs.readFileSync(filePath),
+              });
+              core.info(`Uploaded ${file}`);
+            }
