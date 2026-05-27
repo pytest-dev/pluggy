@@ -30,11 +30,10 @@ jobs:
           VERSION="${GITHUB_HEAD_REF#release-}"
           if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
             echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PLUGGY=$VERSION" >> "$GITHUB_ENV"
           fi
 
       - uses: hynek/build-and-inspect-python-package@fe0a0fb1925ca263d076ca4f2c13e93a6e92a33e # v2.17.0
-        env:
-          SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PLUGGY: ${{ steps.release.outputs.version || '' }}
 
   test:
     needs: [check-package]

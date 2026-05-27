@@ -112,8 +112,8 @@ jobs:
             echo "Updated existing PR #$EXISTING_PR"
           else
             # Close any stale release PRs for a different version.
-            for pr in $(gh pr list --head 'release-' --json number,headRefName \
-                        --jq '.[] | select(.headRefName != "'"$BRANCH"'") | .number'); do
+            for pr in $(gh pr list --json number,headRefName \
+                        --jq '.[] | select(.headRefName | startswith("release-")) | select(.headRefName != "'"$BRANCH"'") | .number'); do
               gh pr close "$pr" --comment "Superseded by release $VERSION."
             done
 
