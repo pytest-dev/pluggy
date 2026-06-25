@@ -1,0 +1,1 @@
+Fix outdated links in ``README.rst``: update ``http://pytest.org`` to ``https://pytest.org``, ``tox.readthedocs.org`` to ``tox.wiki``, ``http://doc.devpi.net`` to ``https://doc.devpi.net``, and the Black badge link from ``ambv/black`` to ``psf/black``.
