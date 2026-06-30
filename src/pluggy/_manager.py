@@ -515,7 +515,12 @@ class PluginManager:
         method which manages calls to all registered plugins except the ones
         from remove_plugins."""
         orig: HookCaller = getattr(self.hook, name)
-        plugins_to_remove = {plug for plug in remove_plugins if hasattr(plug, name)}
+        remove_plugins = list(remove_plugins)
+        plugins_to_remove = {
+            hookimpl.plugin
+            for hookimpl in orig.get_hookimpls()
+            if any(hookimpl.plugin is plugin for plugin in remove_plugins)
+        }
         if plugins_to_remove:
             return _SubsetHookCaller(orig, plugins_to_remove)
         return orig
