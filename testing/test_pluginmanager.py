@@ -151,6 +151,39 @@ def test_register_mismatch_arg(he_pm: PluginManager) -> None:
     assert excinfo.value.plugin is plugin
 
 
+def test_register_validation_failure_rolls_back(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec
+        def he_alpha(self, arg: int) -> int:
+            raise NotImplementedError()
+
+        @hookspec
+        def he_beta(self, arg: int) -> int:
+            raise NotImplementedError()
+
+    pm.add_hookspecs(Hooks)
+
+    class Plugin:
+        @hookimpl
+        def he_alpha(self, arg: int) -> int:
+            return arg
+
+        @hookimpl
+        def he_beta(self, arg: int, extra: int) -> int:
+            return arg + extra  # pragma: no cover
+
+    plugin = Plugin()
+
+    with pytest.raises(PluginValidationError) as excinfo:
+        pm.register(plugin, name="bad")
+    assert excinfo.value.plugin is plugin
+    assert pm.get_plugin("bad") is None
+    assert not pm.is_registered(plugin)
+    assert pm.get_plugins() == set()
+    assert pm.hook.he_alpha.get_hookimpls() == []
+    assert pm.hook.he_beta.get_hookimpls() == []
+
+
 def test_register_hookwrapper_not_a_generator_function(he_pm: PluginManager) -> None:
     class hello:
         @hookimpl(hookwrapper=True)

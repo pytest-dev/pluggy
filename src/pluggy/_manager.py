@@ -151,26 +151,28 @@ class PluginManager:
                 f"{plugin_name}={plugin}\n{self._name2plugin}"
             )
 
-        # XXX if an error happens we should make sure no state has been
-        # changed at point of return
         self._name2plugin[plugin_name] = plugin
 
-        # register matching hook implementations of the plugin
-        for name in dir(plugin):
-            hookimpl_opts = self.parse_hookimpl_opts(plugin, name)
-            if hookimpl_opts is not None:
-                normalize_hookimpl_opts(hookimpl_opts)
-                method: _HookImplFunction[object] = getattr(plugin, name)
-                hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
-                name = hookimpl_opts.get("specname") or name
-                hook: HookCaller | None = getattr(self.hook, name, None)
-                if hook is None:
-                    hook = HookCaller(name, self._hookexec)
-                    setattr(self.hook, name, hook)
-                elif hook.has_spec():
-                    self._verify_hook(hook, hookimpl)
-                    hook._maybe_apply_history(hookimpl)
-                hook._add_hookimpl(hookimpl)
+        try:
+            # register matching hook implementations of the plugin
+            for name in dir(plugin):
+                hookimpl_opts = self.parse_hookimpl_opts(plugin, name)
+                if hookimpl_opts is not None:
+                    normalize_hookimpl_opts(hookimpl_opts)
+                    method: _HookImplFunction[object] = getattr(plugin, name)
+                    hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
+                    name = hookimpl_opts.get("specname") or name
+                    hook: HookCaller | None = getattr(self.hook, name, None)
+                    if hook is None:
+                        hook = HookCaller(name, self._hookexec)
+                        setattr(self.hook, name, hook)
+                    elif hook.has_spec():
+                        self._verify_hook(hook, hookimpl)
+                        hook._maybe_apply_history(hookimpl)
+                    hook._add_hookimpl(hookimpl)
+        except BaseException:
+            self.unregister(plugin, plugin_name)
+            raise
         return plugin_name
 
     def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
