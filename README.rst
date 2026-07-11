@@ -84,7 +84,7 @@ Running this directly gets us::
     :target: https://gitter.im/pytest-dev/pluggy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
 .. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
-    :target: https://github.com/ambv/black
+    :target: https://github.com/psf/black
 
 .. |codecov| image:: https://codecov.io/gh/pytest-dev/pluggy/branch/main/graph/badge.svg
     :target: https://codecov.io/gh/pytest-dev/pluggy
@@ -92,11 +92,11 @@ Running this directly gets us::
 
 .. links
 .. _pytest:
-    http://pytest.org
+    https://pytest.org
 .. _tox:
-    https://tox.readthedocs.org
+    https://tox.wiki/
 .. _devpi:
-    http://doc.devpi.net
+    https://doc.devpi.net
 .. _read the docs:
    https://pluggy.readthedocs.io/en/latest/
 
