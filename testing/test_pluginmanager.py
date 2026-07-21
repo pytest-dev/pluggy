@@ -141,8 +141,25 @@ def test_register_ignores_properties(he_pm: PluginManager) -> None:
     assert not test_plugin.property_was_executed
 
 
+def test_register_ignores_cached_property(he_pm: PluginManager) -> None:
+    from functools import cached_property
+
+    class ClassWithCachedProperty:
+        cached_was_executed: bool = False
+
+        @cached_property
+        def some_func(self) -> None:
+            self.cached_was_executed = True  # pragma: no cover
+            return None  # pragma: no cover
+
+    test_plugin = ClassWithCachedProperty()
+    he_pm.register(test_plugin)
+    assert not test_plugin.cached_was_executed
+    assert "some_func" not in test_plugin.__dict__
+
+
 def test_register_ignores_raising_descriptors(he_pm: PluginManager) -> None:
-    """Names in dir() whose getattr raises AttributeError are skipped."""
+    """Descriptor attrs are skipped without accessing them via getattr."""
 
     class RaisingDescriptor:
         def __get__(self, obj: object, owner: type | None = None) -> object:
@@ -161,6 +178,32 @@ def test_register_ignores_raising_descriptors(he_pm: PluginManager) -> None:
         getattr(plugin, "weird_attr")
 
     he_pm.register(plugin)
+    assert he_pm.hook.he_method1(arg=1) == [[1]]
+
+
+def test_register_hookimpl_above_classmethod(he_pm: PluginManager) -> None:
+    """@hookimpl applied above @classmethod is discoverable via static lookup."""
+
+    class Plugin:
+        @hookimpl
+        @classmethod
+        def he_method1(cls, arg: object) -> list[object]:
+            return [arg]
+
+    he_pm.register(Plugin())
+    assert he_pm.hook.he_method1(arg=1) == [[1]]
+
+
+def test_register_hookimpl_above_staticmethod(he_pm: PluginManager) -> None:
+    """@hookimpl applied above @staticmethod is discoverable via static lookup."""
+
+    class Plugin:
+        @hookimpl
+        @staticmethod
+        def he_method1(arg: object) -> list[object]:
+            return [arg]
+
+    he_pm.register(Plugin())
     assert he_pm.hook.he_method1(arg=1) == [[1]]
 
 
