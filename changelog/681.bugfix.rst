@@ -1,0 +1,2 @@
+Fixed tracing crashes when hook arguments or return values contain surrogate
+characters.

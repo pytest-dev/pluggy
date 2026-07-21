@@ -35,7 +35,7 @@ class TagTracer:
         lines = [f"{indent}{content} [{':'.join(tags)}]\n"]
 
         for name, value in extra.items():
-            lines.append(f"{indent}    {name}: {value}\n")
+            lines.append(f"{indent}    {name}: {value!r}\n")
 
         return "".join(lines)
 
