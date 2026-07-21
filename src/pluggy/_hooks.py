@@ -4,23 +4,23 @@ Internal hook annotation, representation and calling machinery.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from collections.abc import Generator
 from collections.abc import Mapping
 from collections.abc import Sequence
 from collections.abc import Set
 import inspect
 import sys
+import types
 from types import ModuleType
 from typing import Any
-from typing import Callable
 from typing import Final
 from typing import final
-from typing import Optional
 from typing import overload
 from typing import TYPE_CHECKING
+from typing import TypeAlias
 from typing import TypedDict
 from typing import TypeVar
-from typing import Union
 import warnings
 
 from ._result import Result
@@ -28,13 +28,14 @@ from ._result import Result
 
 _T = TypeVar("_T")
 _F = TypeVar("_F", bound=Callable[..., object])
-_Namespace = Union[ModuleType, type]
-_Plugin = object
-_HookExec = Callable[
+
+_Namespace: TypeAlias = ModuleType | type
+_Plugin: TypeAlias = object
+_HookExec: TypeAlias = Callable[
     [str, Sequence["HookImpl"], Mapping[str, object], bool],
-    Union[object, list[object]],
+    object | list[object],
 ]
-_HookImplFunction = Callable[..., Union[_T, Generator[None, Result[_T], None]]]
+_HookImplFunction: TypeAlias = Callable[..., _T | Generator[None, Result[_T], None]]
 
 
 class HookspecOpts(TypedDict):
@@ -287,70 +288,98 @@ def normalize_hookimpl_opts(opts: HookimplOpts) -> None:
     opts.setdefault("specname", None)
 
 
-_PYPY = hasattr(sys, "pypy_version_info")
+_PYPY = sys.implementation.name == "pypy"
+_IMPLICIT_NAMES = ("self", "cls", "obj") if _PYPY else ("self", "cls")
+
+# Qualnames whose missing-self deprecation warning is suppressed because
+# their upstream code is already fixed but not yet released.
+# Remove entries once a release with the fix is available.
+_NOSELF_WARN_SUPPRESS: frozenset[str] = frozenset(
+    {
+        # pytest-timeout >=2.3.2 has the fix, but is unreleased as of 2026-05.
+        "TimeoutHooks.pytest_timeout_set_timer",
+        "TimeoutHooks.pytest_timeout_cancel_timer",
+    }
+)
 
 
-def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """Return tuple of positional and keywrord argument names for a function,
-    method, class or callable.
+def varnames(
+    func: object, *, legacy_noself: bool = False
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Return tuple of positional and keyword parameter names for a callable.
 
     In case of a class, its ``__init__`` method is considered.
-    For methods the ``self`` parameter is not included.
+    For bound methods, the already-bound first parameter is not included.
+    For unbound methods with a dotted ``__qualname__``, the first parameter is
+    stripped only if its name is a known implicit name (``self``, ``cls``).
+    Keyword-only parameters are not included.
+
+    :param legacy_noself:
+        If ``True``, support hookspec classes whose methods omit ``self``.
+        When the function looks like a class method but has no implicit first
+        parameter, a :class:`DeprecationWarning` is emitted.
     """
+    is_bound = False
     if inspect.isclass(func):
         try:
             func = func.__init__
-        except AttributeError:
+        except AttributeError:  # pragma: no cover - pypy special case
             return (), ()
+        is_bound = True
     elif not inspect.isroutine(func):  # callable object?
         try:
             func = getattr(func, "__call__", func)
-        except Exception:
+        except Exception:  # pragma: no cover - pypy special case
             return (), ()
 
+    # Track bound methods before unwrapping, since __func__ loses that info.
+    if inspect.ismethod(func):
+        is_bound = True
+    func = inspect.unwrap(func)  # type: ignore[arg-type]
+    if inspect.ismethod(func):
+        is_bound = True
+        func = func.__func__
+
     try:
-        # func MUST be a function or method here or we won't parse any args.
-        sig = inspect.signature(
-            func.__func__ if inspect.ismethod(func) else func  # type:ignore[arg-type]
-        )
-    except TypeError:
+        code: types.CodeType = func.__code__  # type: ignore[attr-defined]
+        defaults: tuple[object, ...] | None = func.__defaults__  # type: ignore[attr-defined]
+        qualname: str = func.__qualname__  # type: ignore[attr-defined]
+    except AttributeError:  # pragma: no cover
         return (), ()
 
-    _valid_param_kinds = (
-        inspect.Parameter.POSITIONAL_ONLY,
-        inspect.Parameter.POSITIONAL_OR_KEYWORD,
-    )
-    _valid_params = {
-        name: param
-        for name, param in sig.parameters.items()
-        if param.kind in _valid_param_kinds
-    }
-    args = tuple(_valid_params)
-    defaults = (
-        tuple(
-            param.default
-            for param in _valid_params.values()
-            if param.default is not param.empty
-        )
-        or None
-    )
+    # Get positional argument names (positional-only + positional-or-keyword)
+    args: tuple[str, ...] = code.co_varnames[: code.co_argcount]
 
+    # Determine which args have defaults
+    kwargs: tuple[str, ...]
     if defaults:
         index = -len(defaults)
-        args, kwargs = args[:index], tuple(args[index:])
+        args, kwargs = args[:index], args[index:]
     else:
         kwargs = ()
 
-    # strip any implicit instance arg
-    # pypy3 uses "obj" instead of "self" for default dunder methods
-    if not _PYPY:
-        implicit_names: tuple[str, ...] = ("self",)
-    else:
-        implicit_names = ("self", "obj")
+    # Strip implicit instance/class arg.
+    # Check if this looks like a method defined in a class by examining the
+    # qualname after the last "<locals>." segment (if any). A remaining dot
+    # means it's a class method (e.g. "MyClass.method" or
+    # "func.<locals>.MyClass.method"), not just a nested function.
+    _tail = qualname.rsplit("<locals>.", maxsplit=1)[-1]
+    _is_class_method = "." in _tail
     if args:
-        qualname: str = getattr(func, "__qualname__", "")
-        if inspect.ismethod(func) or ("." in qualname and args[0] in implicit_names):
+        if is_bound:
             args = args[1:]
+        elif _is_class_method and args[0] in _IMPLICIT_NAMES:
+            args = args[1:]
+        elif _is_class_method and legacy_noself:
+            if _tail not in _NOSELF_WARN_SUPPRESS:
+                warnings.warn(
+                    f"{qualname} is a method but its first parameter"
+                    f" {args[0]!r} is not 'self'."
+                    f" Add 'self' as the first parameter or use @staticmethod."
+                    f" This will become an error in a future version of pluggy.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
 
     return args, kwargs
 
@@ -374,7 +403,9 @@ class HookRelay:
 _HookRelay = HookRelay
 
 
-_CallHistory = list[tuple[Mapping[str, object], Optional[Callable[[Any], None]]]]
+_CallHistory: TypeAlias = list[
+    tuple[Mapping[str, object], Callable[[Any], None] | None]
+]
 
 
 class HookCaller:
@@ -438,11 +469,11 @@ class HookCaller:
         return self._call_history is not None
 
     def _remove_plugin(self, plugin: _Plugin) -> None:
-        for i, method in enumerate(self._hookimpls):
-            if method.plugin == plugin:
-                del self._hookimpls[i]
-                return
-        raise ValueError(f"plugin {plugin!r} not found")
+        """Remove all hook implementations registered by the given plugin."""
+        remaining = [impl for impl in self._hookimpls if impl.plugin != plugin]
+        if len(remaining) == len(self._hookimpls):
+            raise ValueError(f"plugin {plugin!r} not found")
+        self._hookimpls[:] = remaining
 
     def get_hookimpls(self) -> list[HookImpl]:
         """Get all registered hook implementations for this hook."""
@@ -483,7 +514,8 @@ class HookCaller:
                     notincall = ", ".join(
                         repr(argname)
                         for argname in self.spec.argnames
-                        # Avoid self.spec.argnames - kwargs.keys() - doesn't preserve order.
+                        # Avoid self.spec.argnames - kwargs.keys()
+                        # it doesn't preserve order.
                         if argname not in kwargs.keys()
                     )
                     warnings.warn(
@@ -502,9 +534,9 @@ class HookCaller:
         Returns the result(s) of calling all registered plugins, see
         :ref:`calling`.
         """
-        assert (
-            not self.is_historic()
-        ), "Cannot directly call a historic hook - use call_historic instead."
+        assert not self.is_historic(), (
+            "Cannot directly call a historic hook - use call_historic instead."
+        )
         self._verify_all_args_are_provided(kwargs)
         firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
         # Copy because plugins may register other plugins during iteration (#438).
@@ -543,9 +575,9 @@ class HookCaller:
         """Call the hook with some additional temporarily participating
         methods using the specified ``kwargs`` as call parameters, see
         :ref:`call_extra`."""
-        assert (
-            not self.is_historic()
-        ), "Cannot directly call a historic hook - use call_historic instead."
+        assert not self.is_historic(), (
+            "Cannot directly call a historic hook - use call_historic instead."
+        )
         self._verify_all_args_are_provided(kwargs)
         opts: HookimplOpts = {
             "wrapper": False,
@@ -705,9 +737,14 @@ class HookSpec:
 
     def __init__(self, namespace: _Namespace, name: str, opts: HookspecOpts) -> None:
         self.namespace = namespace
-        self.function: Callable[..., object] = getattr(namespace, name)
         self.name = name
-        self.argnames, self.kwargnames = varnames(self.function)
+        self.function: Callable[..., object] = getattr(namespace, name)
+        legacy_noself = inspect.isclass(namespace) and not isinstance(
+            inspect.getattr_static(namespace, name), staticmethod
+        )
+        self.argnames, self.kwargnames = varnames(
+            self.function, legacy_noself=legacy_noself
+        )
         self.opts = opts
         self.warn_on_impl = opts.get("warn_on_impl")
         self.warn_on_impl_args = opts.get("warn_on_impl_args")

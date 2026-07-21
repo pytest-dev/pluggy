@@ -67,3 +67,6 @@ pip-wheel-metadata/
 
 # pytest-benchmark
 .benchmarks/
+
+# Claude Code local settings
+.claude/settings.local.json

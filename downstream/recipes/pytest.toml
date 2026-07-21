@@ -1,0 +1,10 @@
+[git]
+url = "https://github.com/pytest-dev/pytest"
+into = "pytest"
+shallow = false
+
+[environment]
+editables = [".[dev]", "../.."]
+
+[[test]]
+argv = ["pytest"]

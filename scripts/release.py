@@ -12,7 +12,7 @@ from git import Remote
 from git import Repo
 
 
-def create_branch(version):
+def create_branch(version: str) -> Repo:
     """Create a fresh branch from upstream/main"""
     repo = Repo.init(".")
     if repo.is_dirty(untracked_files=True):
@@ -36,7 +36,7 @@ def get_upstream(repo: Repo) -> Remote:
     raise RuntimeError("could not find pytest-dev/pluggy remote")
 
 
-def pre_release(version):
+def pre_release(version: str) -> None:
     """Generates new docs, release announcements and creates a local tag."""
     create_branch(version)
     changelog(version, write_out=True)
@@ -47,7 +47,7 @@ def pre_release(version):
     print(f"{Fore.GREEN}Please push your branch to your fork and open a PR.")
 
 
-def changelog(version, write_out=False):
+def changelog(version: str, write_out: bool = False) -> None:
     if write_out:
         addopts = []
     else:
@@ -56,7 +56,7 @@ def changelog(version, write_out=False):
     check_call(["towncrier", "build", "--yes", "--version", version] + addopts)
 
 
-def main():
+def main() -> int:
     init(autoreset=True)
     parser = argparse.ArgumentParser()
     parser.add_argument("version", help="Release version")
@@ -66,6 +66,8 @@ def main():
     except RuntimeError as e:
         print(f"{Fore.RED}ERROR: {e}")
         return 1
+    else:
+        return 0
 
 
 if __name__ == "__main__":

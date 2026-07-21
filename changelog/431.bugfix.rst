@@ -1,0 +1,1 @@
+Fix ``HookCaller._remove_plugin()`` to remove all hook implementations for a plugin in a single call, instead of only the first one. Also fix ``PluginManager.get_hookcallers()`` to not return duplicate ``HookCaller`` entries when a plugin has multiple implementations on the same hook (e.g. via ``specname``).

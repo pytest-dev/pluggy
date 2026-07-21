@@ -1,0 +1,1 @@
+Hookspec methods defined without ``self`` as the first parameter now emit a :class:`DeprecationWarning`. Add ``self`` as the first parameter or use ``@staticmethod``.

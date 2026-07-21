@@ -1,10 +1,3 @@
-try:
-    from ._version import version as __version__
-except ImportError:
-    # broken installation, we don't even try
-    # unknown only works because we do poor mans version compare
-    __version__ = "unknown"
-
 __all__ = [
     "__version__",
     "PluginManager",
@@ -21,7 +14,6 @@ __all__ = [
     "PluggyWarning",
     "PluggyTeardownRaisedWarning",
 ]
-
 from ._hooks import HookCaller
 from ._hooks import HookImpl
 from ._hooks import HookimplMarker
@@ -35,3 +27,12 @@ from ._result import HookCallError
 from ._result import Result
 from ._warnings import PluggyTeardownRaisedWarning
 from ._warnings import PluggyWarning
+
+
+def __getattr__(name: str) -> str:
+    if name == "__version__":
+        from importlib.metadata import version
+
+        return version("pluggy")
+
+    raise AttributeError(f"module {__name__} has no attribute {name!r}")

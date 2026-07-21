@@ -73,7 +73,7 @@ Running this directly gets us::
 .. |versions| image:: https://img.shields.io/pypi/pyversions/pluggy.svg
     :target: https://pypi.org/pypi/pluggy
 
-.. |github-actions| image:: https://github.com/pytest-dev/pluggy/workflows/main/badge.svg
+.. |github-actions| image:: https://github.com/pytest-dev/pluggy/workflows/test/badge.svg
     :target: https://github.com/pytest-dev/pluggy/actions
 
 .. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/pluggy.svg
@@ -84,19 +84,19 @@ Running this directly gets us::
     :target: https://gitter.im/pytest-dev/pluggy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
 .. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
-    :target: https://github.com/ambv/black
+    :target: https://github.com/psf/black
 
-.. |codecov| image:: https://codecov.io/gh/pytest-dev/pluggy/branch/master/graph/badge.svg
+.. |codecov| image:: https://codecov.io/gh/pytest-dev/pluggy/branch/main/graph/badge.svg
     :target: https://codecov.io/gh/pytest-dev/pluggy
     :alt: Code coverage Status
 
 .. links
 .. _pytest:
-    http://pytest.org
+    https://pytest.org
 .. _tox:
-    https://tox.readthedocs.org
+    https://tox.wiki/
 .. _devpi:
-    http://doc.devpi.net
+    https://doc.devpi.net
 .. _read the docs:
    https://pluggy.readthedocs.io/en/latest/
 

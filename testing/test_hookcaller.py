@@ -1,6 +1,6 @@
+from collections.abc import Callable
 from collections.abc import Generator
 from collections.abc import Sequence
-from typing import Callable
 from typing import TypeVar
 
 import pytest
@@ -158,23 +158,23 @@ def test_adding_nonwrappers_tryfirst(hc: HookCaller, addmeth: AddMeth) -> None:
 def test_adding_wrappers_ordering(hc: HookCaller, addmeth: AddMeth) -> None:
     @addmeth(hookwrapper=True)
     def he_method1():
-        yield
+        yield  # pragma: no cover
 
     @addmeth(wrapper=True)
     def he_method1_fun():
-        yield
+        yield  # pragma: no cover
 
     @addmeth()
     def he_method1_middle():
-        return
+        return  # pragma: no cover
 
     @addmeth(hookwrapper=True)
     def he_method3_fun():
-        yield
+        yield  # pragma: no cover
 
     @addmeth(hookwrapper=True)
     def he_method3():
-        yield
+        yield  # pragma: no cover
 
     assert funcs(hc.get_hookimpls()) == [
         he_method1_middle,
@@ -188,15 +188,15 @@ def test_adding_wrappers_ordering(hc: HookCaller, addmeth: AddMeth) -> None:
 def test_adding_wrappers_ordering_tryfirst(hc: HookCaller, addmeth: AddMeth) -> None:
     @addmeth(hookwrapper=True, tryfirst=True)
     def he_method1():
-        yield
+        yield  # pragma: no cover
 
     @addmeth(hookwrapper=True)
     def he_method2():
-        yield
+        yield  # pragma: no cover
 
     @addmeth(wrapper=True, tryfirst=True)
     def he_method3():
-        yield
+        yield  # pragma: no cover
 
     assert funcs(hc.get_hookimpls()) == [he_method2, he_method1, he_method3]
 
@@ -206,7 +206,7 @@ def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
 
     @addmeth(hookwrapper=True, trylast=True)
     def m1():
-        yield
+        yield  # pragma: no cover
 
     assert funcs(hc.get_hookimpls()) == [m1]
 
@@ -227,7 +227,7 @@ def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
 
     @addmeth(wrapper=True, tryfirst=True)
     def m5():
-        yield
+        yield  # pragma: no cover
 
     assert funcs(hc.get_hookimpls()) == [m3, m2, m1, m4, m5]
 
@@ -243,7 +243,7 @@ def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
 
     @addmeth(wrapper=True)
     def m8():
-        yield
+        yield  # pragma: no cover
 
     assert funcs(hc.get_hookimpls()) == [m3, m2, m7, m6, m1, m4, m8, m5]
 
@@ -264,7 +264,7 @@ def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
 
     @addmeth(wrapper=True)
     def m12():
-        yield
+        yield  # pragma: no cover
 
     assert funcs(hc.get_hookimpls()) == [
         m9,
@@ -304,15 +304,15 @@ def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
 def test_hookspec(pm: PluginManager) -> None:
     class HookSpec:
         @hookspec()
-        def he_myhook1(arg1) -> None:
+        def he_myhook1(self, arg1) -> None:
             pass
 
         @hookspec(firstresult=True)
-        def he_myhook2(arg1) -> None:
+        def he_myhook2(self, arg1) -> None:
             pass
 
         @hookspec(firstresult=False)
-        def he_myhook3(arg1) -> None:
+        def he_myhook3(self, arg1) -> None:
             pass
 
     pm.add_hookspecs(HookSpec)
@@ -327,7 +327,7 @@ def test_hookspec(pm: PluginManager) -> None:
 @pytest.mark.parametrize("name", ["hookwrapper", "optionalhook", "tryfirst", "trylast"])
 @pytest.mark.parametrize("val", [True, False])
 def test_hookimpl(name: str, val: bool) -> None:
-    @hookimpl(**{name: val})  # type: ignore[misc,call-overload]
+    @hookimpl(**{name: val})  # type: ignore[untyped-decorator,call-overload]
     def he_myhook1(arg1) -> None:
         pass
 
@@ -405,7 +405,7 @@ def test_hookrelay_registration_by_specname_raises(pm: PluginManager) -> None:
     class Plugin:
         @hookimpl(specname="hello")
         def foo(self, arg: int, too, many, args) -> int:
-            return arg + 1
+            return arg + 1  # pragma: no cover
 
     with pytest.raises(PluginValidationError):
         pm.register(Plugin())
@@ -415,7 +415,7 @@ def test_hookrelay_registration_by_specname_raises(pm: PluginManager) -> None:
     class Plugin2:
         @hookimpl(specname="bar")
         def hello(self, arg: int) -> int:
-            return arg + 1
+            return arg + 1  # pragma: no cover
 
     pm.register(Plugin2())
     with pytest.raises(PluginValidationError):

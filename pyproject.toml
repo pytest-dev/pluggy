@@ -1,6 +1,5 @@
 [build-system]
 requires = [
-  # sync with setup.py until we discard non-pep-517/518
   "setuptools>=65.0",
   "setuptools-scm[toml]>=8.0",
 ]
@@ -9,7 +8,8 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pluggy"
 license = {text = "MIT"}
-authors = [{name = "Holger Krekel", email = "holger@merlinux.eu"}]
+authors = [{name = "Holger Krekel"}]
+maintainers = [{name="pytest core team", email="core@pytest.org"}]
 classifiers = [
   "Development Status :: 6 - Mature",
   "Intended Audience :: Developers",
@@ -24,20 +24,21 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 description = "plugin and hook calling mechanisms for python"
 readme = {file = "README.rst", content-type = "text/x-rst"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 dynamic = ["version"]
-[project.optional-dependencies]
+[dependency-groups]
 dev = ["pre-commit", "tox"]
-testing = ["pytest", "pytest-benchmark"]
+testing = ["pytest", "pytest-benchmark", "coverage"]
+
 
 [tool.setuptools]
 packages = ["pluggy"]
@@ -48,8 +49,14 @@ package-data = {"pluggy" = ["py.typed"]}
 [tool.ruff.lint]
 extend-select = [
   "I",  # isort
-  "UP",
+  "F","E", "W",
+  "UP", "ANN",
 ]
+extend-ignore = ["ANN401"]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"testing/*.py" = ["ANN001", "ANN002", "ANN003",  "ANN201", "ANN202","ANN204" ,]
+"docs/*.py" = ["ANN001", "ANN002", "ANN003",  "ANN201", "ANN202","ANN204" ,]
 
 [tool.ruff.lint.isort]
 force-single-line = true
@@ -60,7 +67,9 @@ known-local-folder = ["pluggy"]
 lines-after-imports = 2
 
 [tool.setuptools_scm]
-version_file = "src/pluggy/_version.py"
+
+[tool.uv]
+default-groups = ["dev", "testing"]
 
 [tool.towncrier]
 package = "pluggy"

@@ -1,0 +1,16 @@
+[git]
+url = "https://github.com/tox-dev/tox"
+into = "tox"
+shallow = false
+
+[environment]
+editables = [".[completion]", "../.."]
+groups = ["test"]
+
+[[test]]
+argv = ["pytest"]
+# tox's is_ci() checks presence of CI, value of GITHUB_ACTIONS, and
+# other env vars.  Empty string = remove from environment, non-empty
+# overrides value.  Both must be gone for list_dependencies to default
+# to False and test expectations (no freeze steps, etc.) to hold.
+env = { CI = "", GITHUB_ACTIONS = "" }

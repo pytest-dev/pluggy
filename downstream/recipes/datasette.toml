@@ -1,0 +1,10 @@
+[git]
+url = "https://github.com/simonw/datasette"
+into = "datasette"
+
+[environment]
+editables = [".", "../.."]
+groups = ["dev"]
+
+[[test]]
+argv = ["pytest"]

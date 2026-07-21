@@ -160,9 +160,9 @@ To see how ``pluggy`` is used in the real world, have a look at these projects
 documentation and source code:
 
 * :ref:`pytest <pytest:writing-plugins>`
-* :std:doc:`tox <tox:plugins>`
+* `tox <https://tox.wiki/en/latest/plugins.html>`__
 * :std:doc:`devpi <devpi:devguide/index>`
-* :std:doc:`kedro <kedro:hooks/introduction>`
+* `Kedro <https://docs.kedro.org/en/stable/hooks/introduction/>`__
 
 For more details and advanced usage please read on.
 
@@ -569,6 +569,12 @@ To allow for *hookspecs* to evolve over the lifetime of a project,
 *hookimpls* can accept **less** arguments than defined in the spec.
 This allows for extending hook arguments (and thus semantics) without
 breaking existing *hookimpls*.
+
+Only arguments without default values are considered for this opt-in
+matching. Arguments with defaults in a *hookimpl* are treated as optional
+keyword arguments and are not passed by pluggy, even when the hook caller
+provides a value with the same name. If a *hookimpl* needs a value from the
+hook call, declare it without a default value.
 
 In other words this is ok:
 

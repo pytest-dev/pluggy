@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import Mapping
 from collections.abc import Sequence
 import inspect
 import types
 from typing import Any
-from typing import Callable
 from typing import cast
 from typing import Final
 from typing import TYPE_CHECKING
+from typing import TypeAlias
 import warnings
 
 from . import _tracing
@@ -32,8 +33,10 @@ if TYPE_CHECKING:
     import importlib.metadata
 
 
-_BeforeTrace = Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]
-_AfterTrace = Callable[[Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None]
+_BeforeTrace: TypeAlias = Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]
+_AfterTrace: TypeAlias = Callable[
+    [Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None
+]
 
 
 def _warn_for_function(warning: Warning, function: Callable[..., object]) -> None:
@@ -212,11 +215,11 @@ class PluginManager:
             res: HookimplOpts | None = getattr(
                 method, self.project_name + "_impl", None
             )
-        except Exception:
-            res = {}  # type: ignore[assignment]
+        except Exception:  # pragma: no cover
+            res = {}  # type: ignore[assignment] #pragma: no cover
         if res is not None and not isinstance(res, dict):
             # false positive
-            res = None  # type:ignore[unreachable]
+            res = None  # type:ignore[unreachable] #pragma: no cover
         return res
 
     def unregister(
@@ -413,15 +416,16 @@ class PluginManager:
         hook specification are optional, otherwise raise
         :exc:`PluginValidationError`."""
         for name in self.hook.__dict__:
-            if name[0] != "_":
-                hook: HookCaller = getattr(self.hook, name)
-                if not hook.has_spec():
-                    for hookimpl in hook.get_hookimpls():
-                        if not hookimpl.optionalhook:
-                            raise PluginValidationError(
-                                hookimpl.plugin,
-                                f"unknown hook {name!r} in plugin {hookimpl.plugin!r}",
-                            )
+            if name[0] == "_":
+                continue
+            hook: HookCaller = getattr(self.hook, name)
+            if not hook.has_spec():
+                for hookimpl in hook.get_hookimpls():
+                    if not hookimpl.optionalhook:
+                        raise PluginValidationError(
+                            hookimpl.plugin,
+                            f"unknown hook {name!r} in plugin {hookimpl.plugin!r}",
+                        )
 
     def load_setuptools_entrypoints(self, group: str, name: str | None = None) -> int:
         """Load modules from querying the specified setuptools ``group``.
@@ -473,9 +477,8 @@ class PluginManager:
             return None
         hookcallers = []
         for hookcaller in self.hook.__dict__.values():
-            for hookimpl in hookcaller.get_hookimpls():
-                if hookimpl.plugin is plugin:
-                    hookcallers.append(hookcaller)
+            if any(impl.plugin is plugin for impl in hookcaller.get_hookimpls()):
+                hookcallers.append(hookcaller)
         return hookcallers
 
     def add_hookcall_monitoring(

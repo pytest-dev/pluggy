@@ -1,0 +1,21 @@
+[git]
+url = "https://github.com/devpi/devpi"
+into = "devpi"
+
+[environment]
+editables = ["common", "server", "client", "web", "../.."]
+groups = ["pytest"]
+
+[[test]]
+argv = ["pytest", "common"]
+
+[[test]]
+argv = ["pytest", "server"]
+
+[[test]]
+# Ignore test_upload: upstream conftest bug compares code=[200,200,200]
+# against integers, causing TypeError on every upload-with-docs test.
+argv = ["pytest", "client", "--ignore=client/testing/test_upload.py"]
+
+[[test]]
+argv = ["pytest", "web"]

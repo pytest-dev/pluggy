@@ -1,65 +1,78 @@
-name: main
+name: test
 
 on:
   push:
     branches:
-      - "*"
-    tags:
-      - "*"
+      - main
+      - test-me-*
 
   pull_request:
     branches:
       - main
 
+# Set permissions at the job level.
+permissions: {}
+
 jobs:
-  build:
+  check-package:
+    name: Build & inspect our package.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: hynek/build-and-inspect-python-package@fe0a0fb1925ca263d076ca4f2c13e93a6e92a33e # v2.17.0
+
+  test:
+    needs: [check-package]
     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
         name: [
-          "windows-py39",
-          "windows-py313",
+          "windows-py310",
+          "windows-py314",
           "windows-pypy3",
 
-          "ubuntu-py39-pytestmain",
-          "ubuntu-py39",
+          "ubuntu-py310-pytestmain",
           "ubuntu-py310",
           "ubuntu-py311",
           "ubuntu-py312",
           "ubuntu-py313",
+          "ubuntu-py314",
           "ubuntu-pypy3",
           "ubuntu-benchmark",
         ]
 
         include:
-          - name: "windows-py39"
-            python: "3.9"
+          - name: "windows-py310"
+            python: "3.10"
             os: windows-latest
-            tox_env: "py39"
+            tox_env: "py310"
           - name: "windows-py313"
             python: "3.13"
             os: windows-latest
             tox_env: "py313"
+          - name: "windows-py314"
+            python: "3.14"
+            os: windows-latest
+            tox_env: "py314"
           - name: "windows-pypy3"
-            python: "pypy3.9"
+            python: "pypy3.10"
             os: windows-latest
             tox_env: "pypy3"
-          - name: "ubuntu-py39-pytestmain"
-            python: "3.9"
+          - name: "ubuntu-py310-pytestmain"
+            python: "3.10"
             os: ubuntu-latest
-            tox_env: "py39-pytestmain"
-            use_coverage: true
-          - name: "ubuntu-py39"
-            python: "3.9"
-            os: ubuntu-latest
-            tox_env: "py39"
+            tox_env: "py310-pytestmain"
             use_coverage: true
           - name: "ubuntu-py310"
             python: "3.10"
             os: ubuntu-latest
             tox_env: "py310"
+            use_coverage: true
           - name: "ubuntu-py311"
             python: "3.11"
             os: ubuntu-latest
@@ -75,23 +88,32 @@ jobs:
             os: ubuntu-latest
             tox_env: "py313"
             use_coverage: true
+          - name: "ubuntu-py314"
+            python: "3.14"
+            os: ubuntu-latest
+            tox_env: "py314"
+            use_coverage: true
           - name: "ubuntu-pypy3"
-            python: "pypy3.9"
+            python: "pypy3.10"
             os: ubuntu-latest
             tox_env: "pypy3"
             use_coverage: true
           - name: "ubuntu-benchmark"
-            python: "3.9"
+            python: "3.10"
             os: ubuntu-latest
             tox_env: "benchmark"
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
-        fetch-depth: 0
-
+        persist-credentials: false
+    - name: Download built packages from the check-package job.
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: Packages
+        path: dist
     - name: Set up Python ${{ matrix.python }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
       with:
         python-version: ${{ matrix.python }}
         allow-prereleases: true
@@ -103,44 +125,23 @@ jobs:
 
     - name: Test without coverage
       if: "! matrix.use_coverage"
-      run: "tox -e ${{ matrix.tox_env }}"
+      shell: bash
+      run: "tox run --installpkg dist/*.whl"
+      env:
+        TOX_ENV: ${{ matrix.tox_env }}
 
     - name: Test with coverage
       if: "matrix.use_coverage"
-      run: "tox -e ${{ matrix.tox_env }}-coverage"
+      shell: bash
+      run: "tox run --installpkg dist/*.whl"
+      env:
+        TOX_ENV: ${{ matrix.tox_env }}-coverage
 
     - name: Upload coverage
       if: matrix.use_coverage && github.repository == 'pytest-dev/pluggy'
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       continue-on-error: true
       with:
         fail_ci_if_error: true
         files: ./coverage.xml
         verbose: true
-
-  deploy:
-    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') && github.repository == 'pytest-dev/pluggy'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade build
-
-      - name: Build package
-        run: python -m build --sdist --wheel --outdir dist/
-
-      - name: Publish package
-        uses: pypa/gh-action-pypi-publish@v1.12.2
-        with:
-          attestations: true

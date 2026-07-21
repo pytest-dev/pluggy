@@ -1,0 +1,1 @@
+Fixed broken external documentation references in the list of projects using pluggy.
