@@ -15,7 +15,6 @@ import warnings
 
 from . import _tracing
 from ._callers import _multicall
-from ._hooks import _HookImplFunction
 from ._hooks import _Namespace
 from ._hooks import _Plugin
 from ._hooks import _SubsetHookCaller
@@ -48,6 +47,60 @@ def _warn_for_function(warning: Warning, function: Callable[..., object]) -> Non
         lineno=func.__code__.co_firstlineno,
         filename=func.__code__.co_filename,
     )
+
+
+def _get_hookable(obj: object, name: str) -> Callable[..., object] | None:
+    """Return a hookable callable for ``name`` without triggering descriptors.
+
+    Only plain functions, :class:`classmethod`, :class:`staticmethod`, and
+    already-bound :class:`~types.MethodType` objects are supported. Properties,
+    ``cached_property``, and other descriptors are intentionally skipped --
+    hooks provided via such descriptors (or only via ``__getattr__``) are not
+    supported.
+    """
+    static: object = inspect.getattr_static(obj, name, None)
+    if isinstance(static, staticmethod):
+        return static.__func__
+    if isinstance(static, classmethod):
+        owner = obj if inspect.isclass(obj) else type(obj)
+        return cast(Callable[..., object], static.__get__(owner, owner))
+    if isinstance(static, types.MethodType):
+        return static
+    if inspect.isfunction(static):
+        if inspect.isclass(obj) or inspect.ismodule(obj):
+            return static
+        return static.__get__(obj, type(obj))
+    return None
+
+
+def _hook_marker_holder(obj: object, name: str) -> object | None:
+    """Return the object that may carry hookimpl/hookspec marker options.
+
+    Marker attributes may live on a ``classmethod``/``staticmethod`` wrapper
+    (``@hookimpl`` applied above them) or on the underlying function
+    (``@hookimpl`` applied below them).
+    """
+    static: object = inspect.getattr_static(obj, name, None)
+    if isinstance(static, (classmethod, staticmethod)):
+        return static
+    if isinstance(static, types.MethodType):
+        return static.__func__
+    if inspect.isfunction(static):
+        return static
+    return None
+
+
+def _get_marker_opts(holder: object, attrname: str) -> dict[str, Any] | None:
+    """Read marker options from ``holder``, falling back to ``__func__``."""
+    opts = getattr(holder, attrname, None)
+    if opts is not None:
+        return opts if isinstance(opts, dict) else None
+    func = getattr(holder, "__func__", None)
+    if func is not None:
+        opts = getattr(func, attrname, None)
+        if opts is not None:
+            return opts if isinstance(opts, dict) else None
+    return None
 
 
 class PluginValidationError(Exception):
@@ -145,7 +198,8 @@ class PluginManager:
             hookimpl_opts = self.parse_hookimpl_opts(plugin, name)
             if hookimpl_opts is not None:
                 normalize_hookimpl_opts(hookimpl_opts)
-                method: _HookImplFunction[object] = getattr(plugin, name)
+                method = _get_hookable(plugin, name)
+                assert method is not None
                 hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
                 name = hookimpl_opts.get("specname") or name
                 hook: HookCaller | None = getattr(self.hook, name, None)
@@ -168,20 +222,18 @@ class PluginManager:
         This method can be overridden by ``PluginManager`` subclasses to
         customize how hook implementation are picked up. By default, returns the
         options for items decorated with :class:`HookimplMarker`.
+
+        Discovery uses :func:`inspect.getattr_static` so properties and other
+        descriptors are not executed. Only functions, classmethods,
+        staticmethods, and bound methods are considered.
         """
-        method: object = getattr(plugin, name)
-        if not inspect.isroutine(method):
+        holder = _hook_marker_holder(plugin, name)
+        if holder is None:
             return None
-        try:
-            res: HookimplOpts | None = getattr(
-                method, self.project_name + "_impl", None
-            )
-        except Exception:  # pragma: no cover
-            res = {}  # type: ignore[assignment] #pragma: no cover
-        if res is not None and not isinstance(res, dict):
-            # false positive
-            res = None  # type:ignore[unreachable] #pragma: no cover
-        return res
+        return cast(
+            HookimplOpts | None,
+            _get_marker_opts(holder, self.project_name + "_impl"),
+        )
 
     def unregister(
         self, plugin: _Plugin | None = None, name: str | None = None
@@ -273,10 +325,18 @@ class PluginManager:
         This method can be overridden by ``PluginManager`` subclasses to
         customize how hook specifications are picked up. By default, returns the
         options for items decorated with :class:`HookspecMarker`.
+
+        Discovery uses :func:`inspect.getattr_static` so properties and other
+        descriptors are not executed. Only functions, classmethods,
+        staticmethods, and bound methods are considered.
         """
-        method = getattr(module_or_class, name)
-        opts: HookspecOpts | None = getattr(method, self.project_name + "_spec", None)
-        return opts
+        holder = _hook_marker_holder(module_or_class, name)
+        if holder is None:
+            return None
+        return cast(
+            HookspecOpts | None,
+            _get_marker_opts(holder, self.project_name + "_spec"),
+        )
 
     def get_plugins(self) -> set[Any]:
         """Return a set of all registered plugin objects."""
