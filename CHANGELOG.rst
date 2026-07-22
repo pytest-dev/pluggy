@@ -222,7 +222,7 @@ Features
 
   .. code-block:: python
 
-      def my_hook_implementation(arg):
+      def my_hook_impl(arg):
           print("before")
           yield
           print("after")
@@ -230,7 +230,7 @@ Features
 
       @hookimpl(hookwrapper=True)
       def my_hook(arg):
-          return my_hook_implementation(arg)
+          return my_hook_impl(arg)
 
   change it to use ``yield from`` instead:
 
@@ -238,7 +238,7 @@ Features
 
       @hookimpl(hookwrapper=True)
       def my_hook(arg):
-          yield from my_hook_implementation(arg)
+          yield from my_hook_impl(arg)
 
 
 - `#309 <https://github.com/pytest-dev/pluggy/issues/309>`_: Add official support for Python 3.9.
