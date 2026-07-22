@@ -17,8 +17,8 @@ from typing import TypeAlias
 from typing import TypeVar
 import warnings
 
-from ._config import HookimplOpts
-from ._config import HookspecOpts
+from ._config import HookimplConfiguration
+from ._config import HookspecConfiguration
 
 
 _F = TypeVar("_F", bound=Callable[..., object])
@@ -96,15 +96,13 @@ class HookspecMarker:
         """
 
         def setattr_hookspec_opts(func: _F) -> _F:
-            if historic and firstresult:
-                raise ValueError("cannot have a historic firstresult hook")
-            opts: HookspecOpts = {
-                "firstresult": firstresult,
-                "historic": historic,
-                "warn_on_impl": warn_on_impl,
-                "warn_on_impl_args": warn_on_impl_args,
-            }
-            setattr(func, self.project_name + "_spec", opts)
+            config = HookspecConfiguration(
+                firstresult=firstresult,
+                historic=historic,
+                warn_on_impl=warn_on_impl,
+                warn_on_impl_args=warn_on_impl_args,
+            )
+            setattr(func, self.project_name + "_spec", config)
             return func
 
         if function is not None:
@@ -213,15 +211,15 @@ class HookimplMarker:
         """
 
         def setattr_hookimpl_opts(func: _F) -> _F:
-            opts: HookimplOpts = {
-                "wrapper": wrapper,
-                "hookwrapper": hookwrapper,
-                "optionalhook": optionalhook,
-                "tryfirst": tryfirst,
-                "trylast": trylast,
-                "specname": specname,
-            }
-            setattr(func, self.project_name + "_impl", opts)
+            config = HookimplConfiguration(
+                wrapper=wrapper,
+                hookwrapper=hookwrapper,
+                optionalhook=optionalhook,
+                tryfirst=tryfirst,
+                trylast=trylast,
+                specname=specname,
+            )
+            setattr(func, self.project_name + "_impl", config)
             return func
 
         if function is None:
@@ -339,7 +337,9 @@ class HookSpec:
         "warn_on_impl_args",
     )
 
-    def __init__(self, namespace: _Namespace, name: str, opts: HookspecOpts) -> None:
+    def __init__(
+        self, namespace: _Namespace, name: str, opts: HookspecConfiguration
+    ) -> None:
         self.namespace = namespace
         self.name = name
         self.function: Callable[..., object] = getattr(namespace, name)
@@ -350,5 +350,5 @@ class HookSpec:
             self.function, legacy_noself=legacy_noself
         )
         self.opts = opts
-        self.warn_on_impl = opts.get("warn_on_impl")
-        self.warn_on_impl_args = opts.get("warn_on_impl_args")
+        self.warn_on_impl = opts.warn_on_impl
+        self.warn_on_impl_args = opts.warn_on_impl_args
