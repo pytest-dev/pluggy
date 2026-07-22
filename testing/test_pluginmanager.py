@@ -702,6 +702,34 @@ def test_hook_tracing(he_pm: PluginManager) -> None:
         undo()
 
 
+def test_hook_tracing_safely_formats_surrogate_result() -> None:
+    class Hooks:
+        @hookspec(firstresult=True)
+        def result(self) -> str:
+            raise NotImplementedError()
+
+    class Plugin:
+        @hookimpl
+        def result(self) -> str:
+            return "\ud800"
+
+    pm = PluginManager("example")
+    pm.add_hookspecs(Hooks)
+    pm.register(Plugin())
+    out: list[bytes] = []
+    pm.trace.root.setwriter(lambda message: out.append(message.encode("utf-8")))
+    undo = pm.enable_tracing()
+    try:
+        assert pm.hook.result() == "\ud800"
+    finally:
+        undo()
+
+    assert out == [
+        b"  result [hook]\n",
+        b"  finish result --> '\\ud800' [hook]\n",
+    ]
+
+
 @pytest.mark.parametrize("historic", [False, True])
 def test_register_while_calling(
     pm: PluginManager,
