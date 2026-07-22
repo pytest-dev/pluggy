@@ -197,12 +197,37 @@ def test_repr() -> None:
 
 
 def test_dist_facade_list_attributes() -> None:
-    from pluggy._manager import DistFacade
+    from pluggy._compat import DistFacade
 
     fc = DistFacade(distribution("pluggy"))
     res = dir(fc)
     assert res == sorted(res)
     assert set(res) - set(dir(fc._dist)) == {"_dist", "project_name"}
+
+
+def test_dist_facade_project_name_and_delegation() -> None:
+    from pluggy._compat import DistFacade
+
+    dist = distribution("pluggy")
+    fc = DistFacade(dist)
+    assert fc.project_name == dist.metadata["name"]
+    assert fc.version == dist.version
+    assert fc._dist is dist
+    with pytest.raises(AttributeError):
+        _ = fc.definitely_missing_attribute
+
+
+def test_dist_facade_identity_equality_and_hash() -> None:
+    from pluggy._compat import DistFacade
+
+    dist = distribution("pluggy")
+    fc1 = DistFacade(dist)
+    fc2 = DistFacade(dist)
+    assert fc1 == fc1
+    assert fc1 is not fc2
+    assert fc1 != fc2
+    assert hash(fc1) == hash(fc1)
+    assert {fc1: "ok"}[fc1] == "ok"
 
 
 def test_hookimpl_disallow_invalid_combination() -> None:
