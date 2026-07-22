@@ -125,6 +125,46 @@ def test_set_blocked(pm: PluginManager) -> None:
     assert pm.register(A(), "somename")
 
 
+def test_register_ignores_properties(he_pm: PluginManager) -> None:
+    class ClassWithProperties:
+        property_was_executed: bool = False
+
+        @property
+        def some_func(self):
+            self.property_was_executed = True  # pragma: no cover
+            return None  # pragma: no cover
+
+    # Registering the class is harmless (getattr returns the property object).
+    he_pm.register(ClassWithProperties)
+    # Registering an instance must not evaluate the property getter.
+    test_plugin = ClassWithProperties()
+    he_pm.register(test_plugin)
+    assert not test_plugin.property_was_executed
+
+
+def test_register_ignores_raising_descriptors(he_pm: PluginManager) -> None:
+    """Names in dir() whose getattr raises AttributeError are skipped."""
+
+    class RaisingDescriptor:
+        def __get__(self, obj: object, owner: type | None = None) -> object:
+            raise AttributeError("descriptor access failed")
+
+    class PluginWithRaisingDescriptor:
+        weird_attr = RaisingDescriptor()
+
+        @hookimpl
+        def he_method1(self, arg: object) -> list[object]:
+            return [arg]
+
+    plugin = PluginWithRaisingDescriptor()
+    assert "weird_attr" in dir(plugin)
+    with pytest.raises(AttributeError):
+        getattr(plugin, "weird_attr")
+
+    he_pm.register(plugin)
+    assert he_pm.hook.he_method1(arg=1) == [[1]]
+
+
 def test_register_mismatch_method(he_pm: PluginManager) -> None:
     class hello:
         @hookimpl
