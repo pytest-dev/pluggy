@@ -11,8 +11,11 @@ from ._caller import _HookCaller
 from ._caller import _HookExec
 from ._caller import _HookRelay
 from ._caller import _SubsetHookCaller
+from ._caller import HistoricHookCaller
 from ._caller import HookCaller
 from ._caller import HookRelay
+from ._caller import NormalHookCaller
+from ._caller import SubsetHookCaller
 from ._config import HookimplConfiguration
 from ._config import HookspecConfiguration
 from ._decorators import _Namespace
@@ -30,6 +33,7 @@ from ._implementation import WrapperImpl
 
 __all__ = [
     "CompletionHook",
+    "HistoricHookCaller",
     "HookCaller",
     "HookImpl",
     "HookRelay",
@@ -38,7 +42,9 @@ __all__ = [
     "HookimplMarker",
     "HookspecConfiguration",
     "HookspecMarker",
+    "NormalHookCaller",
     "NormalImpl",
+    "SubsetHookCaller",
     "WrapperImpl",
     "_HookCaller",
     "_HookExec",
