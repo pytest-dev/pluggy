@@ -32,6 +32,7 @@ from ._hooks import NormalHookCaller
 from ._hooks import NormalImpl
 from ._hooks import SubsetHookCaller
 from ._hooks import WrapperImpl
+from ._project import ProjectSpec
 from ._pytest_compat import HookimplOpts
 from ._pytest_compat import HookspecOpts
 from ._result import Result
@@ -86,12 +87,17 @@ class PluginManager:
     which will subsequently send debug information to the trace helper.
 
     :param project_name:
-        The short project name. Prefer snake case. Make sure it's unique!
+        The short project name (prefer snake case, make sure it's unique!),
+        or a :class:`ProjectSpec` instance.
+
+    .. versionchanged:: 1.7
+        A :class:`ProjectSpec` may be passed instead of a plain name.
     """
 
-    def __init__(self, project_name: str) -> None:
-        #: The project name.
-        self.project_name: Final = project_name
+    def __init__(self, project_name: str | ProjectSpec) -> None:
+        self._project_spec: Final = (
+            ProjectSpec(project_name) if isinstance(project_name, str) else project_name
+        )
         self._name2plugin: Final[dict[str, _Plugin]] = {}
         self._plugin_distinfo: Final[
             list[tuple[_Plugin, importlib.metadata.Distribution]]
@@ -104,6 +110,11 @@ class PluginManager:
             "pluginmanage"
         )
         self._inner_hookexec = _multicall
+
+    @property
+    def project_name(self) -> str:
+        """The project name from the associated :class:`ProjectSpec`."""
+        return self._project_spec.project_name
 
     def _hookexec(
         self,

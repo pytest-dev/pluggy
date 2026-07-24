@@ -8,6 +8,9 @@ API Reference
 .. autoclass:: pluggy.PluginManager
     :members:
 
+.. autoclass:: pluggy.ProjectSpec
+    :members:
+
 .. autoclass:: pluggy.PluginValidationError
     :show-inheritance:
     :members:
