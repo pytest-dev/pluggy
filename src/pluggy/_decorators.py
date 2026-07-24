@@ -332,13 +332,13 @@ class HookSpec:
         "name",
         "argnames",
         "kwargnames",
-        "opts",
+        "config",
         "warn_on_impl",
         "warn_on_impl_args",
     )
 
     def __init__(
-        self, namespace: _Namespace, name: str, opts: HookspecConfiguration
+        self, namespace: _Namespace, name: str, config: HookspecConfiguration
     ) -> None:
         self.namespace = namespace
         self.name = name
@@ -349,6 +349,15 @@ class HookSpec:
         self.argnames, self.kwargnames = varnames(
             self.function, legacy_noself=legacy_noself
         )
-        self.opts = opts
-        self.warn_on_impl = opts.warn_on_impl
-        self.warn_on_impl_args = opts.warn_on_impl_args
+        self.config = config
+        self.warn_on_impl = config.warn_on_impl
+        self.warn_on_impl_args = config.warn_on_impl_args
+
+    @property
+    def opts(self) -> HookspecConfiguration:
+        """Alias for :attr:`config`.
+
+        .. deprecated::
+            Use :attr:`config` instead.
+        """
+        return self.config

@@ -222,6 +222,34 @@ def test_markers_attach_configuration_objects() -> None:
     assert impl_config.tryfirst is True
 
 
+def test_historic_firstresult_raises_at_decoration_time() -> None:
+    hookspec = HookspecMarker("test")
+
+    with pytest.raises(ValueError, match="cannot have a historic firstresult"):
+
+        @hookspec(historic=True, firstresult=True)
+        def myspec() -> None:
+            pass
+
+
+def test_hookspec_stores_configuration() -> None:
+    pm = PluginManager("test")
+    hookspec = HookspecMarker("test")
+
+    class Spec:
+        @hookspec(firstresult=True)
+        def myhook(self, arg: object) -> None:
+            pass
+
+    pm.add_hookspecs(Spec)
+    spec = pm.hook.myhook.spec
+    assert spec is not None
+    assert isinstance(spec.config, HookspecConfiguration)
+    assert spec.config.firstresult is True
+    # Deprecated alias.
+    assert spec.opts is spec.config
+
+
 def test_config_integration_with_hooks() -> None:
     pm = PluginManager("test")
     hookspec = HookspecMarker("test")

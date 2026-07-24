@@ -183,7 +183,7 @@ class HookCaller:
             "Cannot directly call a historic hook - use call_historic instead."
         )
         self._verify_all_args_are_provided(kwargs)
-        firstresult = self.spec.opts.firstresult if self.spec else False
+        firstresult = self.spec.config.firstresult if self.spec else False
         # Copy because plugins may register other plugins during iteration (#438).
         return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
 
@@ -238,7 +238,7 @@ class HookCaller:
             ):
                 i -= 1
             hookimpls.insert(i + 1, hookimpl)
-        firstresult = self.spec.opts.firstresult if self.spec else False
+        firstresult = self.spec.config.firstresult if self.spec else False
         return self._hookexec(self.name, hookimpls, kwargs, firstresult)
 
     def _maybe_apply_history(self, method: HookImpl) -> None:
