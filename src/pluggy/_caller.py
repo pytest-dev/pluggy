@@ -192,7 +192,7 @@ class HookCaller:
         )
         call_kwargs = self._apply_defaults(kwargs)
         self._verify_all_args_are_provided(call_kwargs)
-        firstresult = self.spec.opts.firstresult if self.spec else False
+        firstresult = self.spec.config.firstresult if self.spec else False
         # Copy because plugins may register other plugins during iteration (#438).
         return self._hookexec(
             self.name, self._hookimpls.copy(), call_kwargs, firstresult
@@ -251,7 +251,7 @@ class HookCaller:
             ):
                 i -= 1
             hookimpls.insert(i + 1, hookimpl)
-        firstresult = self.spec.opts.firstresult if self.spec else False
+        firstresult = self.spec.config.firstresult if self.spec else False
         return self._hookexec(self.name, hookimpls, kwargs, firstresult)
 
     def _maybe_apply_history(self, method: HookImpl) -> None:
