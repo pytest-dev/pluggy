@@ -13,7 +13,9 @@ from typing import TYPE_CHECKING
 from typing import TypeAlias
 import warnings
 
-from ._implementation import HookImpl
+from ._implementation import CompletionHook
+from ._implementation import NormalImpl
+from ._implementation import WrapperImpl
 from ._result import Result
 from ._warnings import PluggyTeardownRaisedWarning
 
@@ -24,7 +26,7 @@ Teardown: TypeAlias = Generator[None, object, object]
 
 
 def run_old_style_hookwrapper(
-    hook_impl: HookImpl, hook_name: str, args: Sequence[object]
+    hook_impl: WrapperImpl, hook_name: str, args: Sequence[object]
 ) -> Teardown:
     """
     backward compatibility wrapper to run a old style hookwrapper as a wrapper
@@ -67,7 +69,7 @@ def _raise_wrapfail(
 
 
 def _warn_teardown_exception(
-    hook_name: str, hook_impl: HookImpl, e: BaseException
+    hook_name: str, hook_impl: WrapperImpl, e: BaseException
 ) -> None:
     msg = (
         f"A plugin raised an exception during an old-style hookwrapper teardown.\n"
@@ -75,12 +77,13 @@ def _warn_teardown_exception(
         f"{type(e).__name__}: {e}\n"
         f"For more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning"  # noqa: E501
     )
-    warnings.warn(PluggyTeardownRaisedWarning(msg), stacklevel=6)
+    warnings.warn(PluggyTeardownRaisedWarning(msg), stacklevel=7)
 
 
 def _multicall(
     hook_name: str,
-    hook_impls: Sequence[HookImpl],
+    normal_impls: Sequence[NormalImpl],
+    wrapper_impls: Sequence[WrapperImpl],
     caller_kwargs: Mapping[str, object],
     firstresult: bool,
 ) -> object | list[object]:
@@ -88,79 +91,48 @@ def _multicall(
     result(s).
 
     ``caller_kwargs`` comes from HookCaller.__call__().
+
+    Wrappers own their setup/teardown via
+    :meth:`~pluggy._implementation.WrapperImpl.setup_and_get_completion_hook`;
+    this function only orchestrates the phases:
+
+    1. Set up wrappers, collecting their completion hooks.
+    2. Run normal implementations.
+    3. Run completion hooks LIFO, each may replace ``(result, exception)``.
+    4. Raise or return.
     """
     __tracebackhide__ = True
     results: list[object] = []
-    exception = None
-    teardowns: list[Teardown] = []
-    try:  # run impl and wrapper setup functions in a loop
-        for hook_impl in reversed(hook_impls):
-            args = hook_impl._get_call_args(caller_kwargs)
+    exception: BaseException | None = None
+    completion_hooks: list[CompletionHook] = []
+    try:
+        # Set up all wrappers and collect their completion hooks.
+        for wrapper_impl in reversed(wrapper_impls):
+            completion_hooks.append(
+                wrapper_impl.setup_and_get_completion_hook(hook_name, caller_kwargs)
+            )
 
-            if hook_impl.hookwrapper:
-                function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
-
-                next(function_gen)  # first yield
-                teardowns.append(function_gen)
-
-            elif hook_impl.wrapper:
-                res = hook_impl.function(*args)
-                # If this cast is not valid, a type error is raised below,
-                # which is the desired response.
-                if TYPE_CHECKING:
-                    function_gen = cast(Generator[None, object, object], res)
-                else:
-                    function_gen = res
-                try:
-                    next(function_gen)  # first yield
-                except StopIteration:
-                    _raise_wrapfail(function_gen, "did not yield")
-                teardowns.append(function_gen)
-            else:
-                res = hook_impl.function(*args)
-                if res is not None:
-                    results.append(res)
-                    if firstresult:  # halt further impl calls
-                        break
+        # Run normal implementations.
+        for normal_impl in reversed(normal_impls):
+            args = normal_impl._get_call_args(caller_kwargs)
+            res = normal_impl.function(*args)
+            if res is not None:
+                results.append(res)
+                if firstresult:  # halt further impl calls
+                    break
     except BaseException as exc:
         exception = exc
-    finally:
-        if firstresult:  # first result hooks return a single value
-            result = results[0] if results else None
-        else:
-            result = results
 
-        # run all wrapper post-yield blocks
-        for teardown in reversed(teardowns):
-            try:
-                if exception is not None:
-                    try:
-                        teardown.throw(exception)
-                    except RuntimeError as re:
-                        # StopIteration from generator causes RuntimeError
-                        # even for coroutine usage - see #544
-                        if (
-                            isinstance(exception, StopIteration)
-                            and re.__cause__ is exception
-                        ):
-                            teardown.close()
-                            continue
-                        else:
-                            raise
-                else:
-                    teardown.send(result)
-                # Following is unreachable for a well behaved hook wrapper.
-                # Try to force finalizers otherwise postponed till GC action.
-                # Note: close() may raise if generator handles GeneratorExit.
-                teardown.close()
-            except StopIteration as si:
-                result = si.value
-                exception = None
-                continue
-            except BaseException as e:
-                exception = e
-                continue
-            _raise_wrapfail(teardown, "has second yield")
+    result: object | list[object] | None
+    if firstresult:  # first result hooks return a single value
+        result = results[0] if results else None
+    else:
+        result = results
+
+    # Run completion hooks in reverse order (LIFO); each may replace the
+    # current (result, exception) outcome.
+    for completion_hook in reversed(completion_hooks):
+        result, exception = completion_hook(result, exception)
 
     if exception is not None:
         raise exception
