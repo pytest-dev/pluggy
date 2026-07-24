@@ -9,6 +9,7 @@ from pluggy import HookimplMarker
 from pluggy import HookspecMarker
 from pluggy import NormalImpl
 from pluggy import WrapperImpl
+from pluggy._async import Submitter
 from pluggy._callers import _multicall
 
 
@@ -30,7 +31,9 @@ def MC(
             wrapper_impls.append(f)
         else:
             normal_impls.append(f)
-    return _multicall("foo", normal_impls, wrapper_impls, kwargs, firstresult)
+    return _multicall(
+        "foo", normal_impls, wrapper_impls, kwargs, firstresult, Submitter()
+    )
 
 
 def test_keyword_args() -> None:
