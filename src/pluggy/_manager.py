@@ -11,9 +11,11 @@ from typing import cast
 from typing import Final
 from typing import TYPE_CHECKING
 from typing import TypeAlias
+from typing import TypeVar
 import warnings
 
 from . import _tracing
+from ._async import Submitter
 from ._callers import _multicall
 from ._config import hookimpl_config_from_mapping
 from ._config import hookimpl_config_to_mapping
@@ -43,6 +45,8 @@ if TYPE_CHECKING:
 
     from ._compat import DistFacade
 
+
+_T = TypeVar("_T")
 
 _BeforeTrace: TypeAlias = Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]
 _AfterTrace: TypeAlias = Callable[
@@ -89,15 +93,24 @@ class PluginManager:
     :param project_name:
         The short project name (prefer snake case, make sure it's unique!),
         or a :class:`ProjectSpec` instance.
+    :param async_submitter:
+        Custom :class:`~pluggy._async.Submitter` used to await awaitable hook
+        results under :meth:`run_async` (defaults to a fresh one).
 
     .. versionchanged:: 1.7
         A :class:`ProjectSpec` may be passed instead of a plain name.
+        Added ``async_submitter`` and :meth:`run_async`.
     """
 
-    def __init__(self, project_name: str | ProjectSpec) -> None:
+    def __init__(
+        self,
+        project_name: str | ProjectSpec,
+        async_submitter: Submitter | None = None,
+    ) -> None:
         self._project_spec: Final = (
             ProjectSpec(project_name) if isinstance(project_name, str) else project_name
         )
+        self._async_submitter: Final = async_submitter or Submitter()
         self._name2plugin: Final[dict[str, _Plugin]] = {}
         self._plugin_distinfo: Final[
             list[tuple[_Plugin, importlib.metadata.Distribution]]
@@ -123,11 +136,17 @@ class PluginManager:
         wrapper_impls: Sequence[WrapperImpl],
         caller_kwargs: Mapping[str, object],
         firstresult: bool,
+        async_submitter: Submitter,
     ) -> object | list[object]:
         # called from all hookcaller instances.
         # enable_tracing will set its own wrapping function at self._inner_hookexec
         return self._inner_hookexec(
-            hook_name, normal_impls, wrapper_impls, caller_kwargs, firstresult
+            hook_name,
+            normal_impls,
+            wrapper_impls,
+            caller_kwargs,
+            firstresult,
+            async_submitter,
         )
 
     def register(self, plugin: _Plugin, name: str | None = None) -> str | None:
@@ -174,7 +193,11 @@ class PluginManager:
                     self.hook, hook_name, None
                 )
                 if hook is None:
-                    hook = NormalHookCaller(hook_name, self._hookexec)
+                    hook = NormalHookCaller(
+                        hook_name,
+                        self._hookexec,
+                        async_submitter=self._async_submitter,
+                    )
                     setattr(self.hook, hook_name, hook)
                 elif hook.has_spec():
                     self._verify_hook(hook, hookimpl)
@@ -306,11 +329,19 @@ class PluginManager:
                 if hc is None:
                     if spec_config.historic:
                         hc = HistoricHookCaller(
-                            name, self._hookexec, module_or_class, spec_config
+                            name,
+                            self._hookexec,
+                            module_or_class,
+                            spec_config,
+                            async_submitter=self._async_submitter,
                         )
                     else:
                         hc = NormalHookCaller(
-                            name, self._hookexec, module_or_class, spec_config
+                            name,
+                            self._hookexec,
+                            module_or_class,
+                            spec_config,
+                            async_submitter=self._async_submitter,
                         )
                     setattr(self.hook, name, hc)
                 elif spec_config.historic and not hc.is_historic():
@@ -324,7 +355,11 @@ class PluginManager:
                         raise AssertionError("unreachable")  # pragma: no cover
                     old_hookimpls = hc.get_hookimpls()
                     historic_hc = HistoricHookCaller(
-                        name, self._hookexec, module_or_class, spec_config
+                        name,
+                        self._hookexec,
+                        module_or_class,
+                        spec_config,
+                        async_submitter=self._async_submitter,
                     )
                     setattr(self.hook, name, historic_hc)
                     for hookimpl in old_hookimpls:
@@ -591,6 +626,7 @@ class PluginManager:
             wrapper_impls: Sequence[WrapperImpl],
             caller_kwargs: Mapping[str, object],
             firstresult: bool,
+            async_submitter: Submitter,
         ) -> object | list[object]:
             # For backward compatibility of the before/after callback shapes,
             # combine the split lists into one.
@@ -598,7 +634,12 @@ class PluginManager:
             before(hook_name, hook_impls, caller_kwargs)
             outcome = Result.from_call(
                 lambda: oldcall(
-                    hook_name, normal_impls, wrapper_impls, caller_kwargs, firstresult
+                    hook_name,
+                    normal_impls,
+                    wrapper_impls,
+                    caller_kwargs,
+                    firstresult,
+                    async_submitter,
                 )
             )
             after(outcome, hook_name, hook_impls, caller_kwargs)
@@ -635,6 +676,24 @@ class PluginManager:
             hooktrace.root.indent -= 1
 
         return self.add_hookcall_monitoring(before, after)
+
+    async def run_async(self, func: Callable[[], _T]) -> _T:
+        """Run a synchronous function with async support for hook results.
+
+        The function runs in a greenlet context in which awaitable hook
+        results are automatically awaited on the current event loop::
+
+            pm = PluginManager("myapp")
+            ...
+            results = await pm.run_async(lambda: pm.hook.my_hook())
+
+        :raises RuntimeError:
+            If ``greenlet`` is not installed (install ``pluggy[async]``), or
+            if a ``run_async`` call is already active for this manager.
+
+        .. versionadded:: 1.7
+        """
+        return await self._async_submitter.run(func)
 
     def subset_hook_caller(
         self, name: str, remove_plugins: Iterable[_Plugin]
