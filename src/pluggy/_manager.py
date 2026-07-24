@@ -150,7 +150,7 @@ class PluginManager:
             hookimpl_config = self._discover_hookimpl_configuration(plugin, name)
             if hookimpl_config is not None:
                 method: _HookImplFunction[object] = getattr(plugin, name)
-                hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_config)
+                hookimpl = hookimpl_config.create_hookimpl(plugin, plugin_name, method)
                 name = hookimpl_config.specname or name
                 hook: HookCaller | None = getattr(self.hook, name, None)
                 if hook is None:

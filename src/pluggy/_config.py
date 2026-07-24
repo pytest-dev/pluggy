@@ -8,6 +8,14 @@ from collections.abc import Mapping
 from typing import Any
 from typing import Final
 from typing import final
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from ._implementation import _HookImplFunction
+    from ._implementation import _Plugin
+    from ._implementation import NormalImpl
+    from ._implementation import WrapperImpl
 
 
 @final
@@ -97,6 +105,27 @@ class HookimplConfiguration:
         self.trylast = trylast
         #: The name of the hook specification to match, see :ref:`specname`.
         self.specname = specname
+
+    def create_hookimpl(
+        self,
+        plugin: _Plugin,
+        plugin_name: str,
+        function: _HookImplFunction[object],
+    ) -> NormalImpl | WrapperImpl:
+        """Create the appropriate :class:`HookImpl` subclass for this
+        configuration.
+
+        Wrapper configurations produce a :class:`WrapperImpl`; all others
+        produce a :class:`NormalImpl`.
+        """
+        # Local import to avoid a circular import with the implementation
+        # module.
+        from ._implementation import NormalImpl
+        from ._implementation import WrapperImpl
+
+        if self.wrapper or self.hookwrapper:
+            return WrapperImpl(plugin, plugin_name, function, self)
+        return NormalImpl(plugin, plugin_name, function, self)
 
     def __repr__(self) -> str:
         attrs = [
