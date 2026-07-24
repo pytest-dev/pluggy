@@ -363,3 +363,32 @@ class HookSpec:
             Use :attr:`config` instead.
         """
         return self.config
+
+    def apply_defaults(self, kwargs: Mapping[str, object]) -> Mapping[str, object]:
+        """Fill in hookspec argument defaults the call did not provide."""
+        if not self.kwargdefaults:
+            return kwargs
+        return {**self.kwargdefaults, **kwargs}
+
+    def verify_all_args_are_provided(self, kwargs: Mapping[str, object]) -> None:
+        """Warn if a hook call does not provide all declared arguments."""
+        # This is written to avoid expensive operations when not needed.
+        for argname in self.argnames:
+            if argname not in kwargs:
+                notincall = ", ".join(
+                    repr(argname)
+                    for argname in self.argnames
+                    # Avoid self.argnames - kwargs.keys()
+                    # it doesn't preserve order.
+                    if argname not in kwargs
+                )
+                warnings.warn(
+                    f"Argument(s) {notincall} which are declared in the hookspec "
+                    "cannot be found in this hook call",
+                    # 3, not 2: the warning is raised here, in the spec, which
+                    # every caller invokes directly from __call__/
+                    # call_historic/call_extra, which the calling code invokes.
+                    # Adding a hop between those two breaks this.
+                    stacklevel=3,
+                )
+                break
