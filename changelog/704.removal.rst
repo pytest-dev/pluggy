@@ -1,0 +1,8 @@
+Hook options are now :class:`pluggy.HookspecConfiguration` /
+:class:`pluggy.HookimplConfiguration` objects (markers attach these instead of
+dicts). ``PluginManager.parse_hookimpl_opts`` /
+``parse_hookspec_opts`` remain as a deprecated pytest/support concession that
+returns legacy dicts and are only invoked during registration when a subclass
+overrides them and no modern configuration attribute was found.
+``HookspecOpts`` / ``HookimplOpts`` TypedDicts remain importable for
+pytest/typing compatibility.
