@@ -11,8 +11,8 @@ import pytest
 from pluggy import HookimplMarker
 from pluggy import HookspecMarker
 from pluggy import PluginManager
+from pluggy import WrapperImpl
 from pluggy._callers import _multicall
-from pluggy._hooks import HookImpl
 from pluggy._hooks import varnames
 
 
@@ -109,13 +109,17 @@ def wrappers(request: Any) -> list[object]:
 def test_hook_and_wrappers_speed(benchmark, hooks, wrappers) -> None:
     def setup():
         hook_name = "foo"
-        hook_impls = []
+        normal_impls = []
+        wrapper_impls = []
         for method in hooks + wrappers:
-            f = HookImpl(None, "<temp>", method, method.example_impl)
-            hook_impls.append(f)
+            f = method.example_impl.create_hookimpl(None, "<temp>", method)
+            if isinstance(f, WrapperImpl):
+                wrapper_impls.append(f)
+            else:
+                normal_impls.append(f)
         caller_kwargs = {"arg1": 1, "arg2": 2, "arg3": 3}
         firstresult = False
-        return (hook_name, hook_impls, caller_kwargs, firstresult), {}
+        return (hook_name, normal_impls, wrapper_impls, caller_kwargs, firstresult), {}
 
     benchmark.pedantic(_multicall, setup=setup, rounds=100)
 
@@ -128,19 +132,15 @@ def test_hookimpl_with_default_speed(
     benchmark, impl_count: int, pass_arg: bool
 ) -> None:
     def setup():
-        hook_impls = [
-            HookImpl(
-                None,
-                "<temp>",
-                hook_with_default_argument,
-                hook_with_default_argument.example_impl,  # type: ignore[attr-defined]
-            )
+        config = hook_with_default_argument.example_impl  # type: ignore[attr-defined]
+        normal_impls = [
+            config.create_hookimpl(None, "<temp>", hook_with_default_argument)
             for _ in range(impl_count)
         ]
         caller_kwargs = {"arg1": 1}
         if pass_arg:
             caller_kwargs["arg2"] = 2
-        return ("foo", hook_impls, caller_kwargs, False), {}
+        return ("foo", normal_impls, [], caller_kwargs, False), {}
 
     benchmark.pedantic(_multicall, setup=setup, rounds=100)
 
