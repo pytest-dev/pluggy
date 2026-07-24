@@ -4,6 +4,7 @@ Hook call execution (multicall) machinery.
 
 from __future__ import annotations
 
+from collections.abc import Awaitable
 from collections.abc import Generator
 from collections.abc import Mapping
 from collections.abc import Sequence
@@ -18,6 +19,10 @@ from ._implementation import NormalImpl
 from ._implementation import WrapperImpl
 from ._result import Result
 from ._warnings import PluggyTeardownRaisedWarning
+
+
+if TYPE_CHECKING:
+    from ._async import Submitter
 
 
 # Need to distinguish between old- and new-style hook wrappers.
@@ -86,6 +91,7 @@ def _multicall(
     wrapper_impls: Sequence[WrapperImpl],
     caller_kwargs: Mapping[str, object],
     firstresult: bool,
+    async_submitter: Submitter,
 ) -> object | list[object]:
     """Execute a call into multiple python functions/methods and return the
     result(s).
@@ -117,6 +123,10 @@ def _multicall(
             args = normal_impl._get_call_args(caller_kwargs)
             res = normal_impl.function(*args)
             if res is not None:
+                # Awaitable results are awaited when a Submitter is active
+                # (await-me-maybe), otherwise passed through unchanged.
+                if isinstance(res, Awaitable):
+                    res = async_submitter.maybe_submit(res)
                 results.append(res)
                 if firstresult:  # halt further impl calls
                     break

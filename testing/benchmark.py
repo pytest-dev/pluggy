@@ -12,6 +12,7 @@ from pluggy import HookimplMarker
 from pluggy import HookspecMarker
 from pluggy import PluginManager
 from pluggy import WrapperImpl
+from pluggy._async import Submitter
 from pluggy._callers import _multicall
 from pluggy._hooks import varnames
 
@@ -112,7 +113,14 @@ def test_hook_and_wrappers_speed(benchmark, hooks, wrappers) -> None:
                 normal_impls.append(f)
         caller_kwargs = {"arg1": 1, "arg2": 2, "arg3": 3}
         firstresult = False
-        return (hook_name, normal_impls, wrapper_impls, caller_kwargs, firstresult), {}
+        return (
+            hook_name,
+            normal_impls,
+            wrapper_impls,
+            caller_kwargs,
+            firstresult,
+            Submitter(),
+        ), {}
 
     benchmark.pedantic(_multicall, setup=setup, rounds=10)
 
