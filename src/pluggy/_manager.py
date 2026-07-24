@@ -15,16 +15,25 @@ import warnings
 
 from . import _tracing
 from ._callers import _multicall
+from ._config import hookimpl_config_from_mapping
+from ._config import hookimpl_config_to_mapping
+from ._config import HookimplConfiguration
+from ._config import hookspec_config_from_mapping
+from ._config import hookspec_config_to_mapping
+from ._config import HookspecConfiguration
 from ._hooks import _HookImplFunction
 from ._hooks import _Namespace
 from ._hooks import _Plugin
-from ._hooks import _SubsetHookCaller
+from ._hooks import HistoricHookCaller
 from ._hooks import HookCaller
 from ._hooks import HookImpl
-from ._hooks import HookimplOpts
 from ._hooks import HookRelay
-from ._hooks import HookspecOpts
-from ._hooks import normalize_hookimpl_opts
+from ._hooks import NormalHookCaller
+from ._hooks import NormalImpl
+from ._hooks import SubsetHookCaller
+from ._hooks import WrapperImpl
+from ._pytest_compat import HookimplOpts
+from ._pytest_compat import HookspecOpts
 from ._result import Result
 
 
@@ -99,13 +108,16 @@ class PluginManager:
     def _hookexec(
         self,
         hook_name: str,
-        methods: Sequence[HookImpl],
-        kwargs: Mapping[str, object],
+        normal_impls: Sequence[NormalImpl],
+        wrapper_impls: Sequence[WrapperImpl],
+        caller_kwargs: Mapping[str, object],
         firstresult: bool,
     ) -> object | list[object]:
         # called from all hookcaller instances.
         # enable_tracing will set its own wrapping function at self._inner_hookexec
-        return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+        return self._inner_hookexec(
+            hook_name, normal_impls, wrapper_impls, caller_kwargs, firstresult
+        )
 
     def register(self, plugin: _Plugin, name: str | None = None) -> str | None:
         """Register a plugin and return its name.
@@ -142,46 +154,78 @@ class PluginManager:
 
         # register matching hook implementations of the plugin
         for name in dir(plugin):
-            hookimpl_opts = self.parse_hookimpl_opts(plugin, name)
-            if hookimpl_opts is not None:
-                normalize_hookimpl_opts(hookimpl_opts)
+            hookimpl_config = self._discover_hookimpl_configuration(plugin, name)
+            if hookimpl_config is not None:
                 method: _HookImplFunction[object] = getattr(plugin, name)
-                hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
-                name = hookimpl_opts.get("specname") or name
-                hook: HookCaller | None = getattr(self.hook, name, None)
+                hookimpl = hookimpl_config.create_hookimpl(plugin, plugin_name, method)
+                hook_name = hookimpl_config.specname or name
+                hook: NormalHookCaller | HistoricHookCaller | None = getattr(
+                    self.hook, hook_name, None
+                )
                 if hook is None:
-                    hook = HookCaller(name, self._hookexec)
-                    setattr(self.hook, name, hook)
+                    hook = NormalHookCaller(hook_name, self._hookexec)
+                    setattr(self.hook, hook_name, hook)
                 elif hook.has_spec():
                     self._verify_hook(hook, hookimpl)
                     hook._maybe_apply_history(hookimpl)
                 hook._add_hookimpl(hookimpl)
         return plugin_name
 
-    def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
-        """Try to obtain a hook implementation from an item with the given name
-        in the given plugin which is being searched for hook impls.
-
-        :returns:
-            The parsed hookimpl options, or None to skip the given item.
-
-        This method can be overridden by ``PluginManager`` subclasses to
-        customize how hook implementation are picked up. By default, returns the
-        options for items decorated with :class:`HookimplMarker`.
-        """
-        method: object = getattr(plugin, name)
+    def _read_hookimpl_configuration(
+        self, plugin: _Plugin, name: str
+    ) -> HookimplConfiguration | None:
+        """Read a modern :class:`HookimplConfiguration` from a plugin attribute."""
+        try:
+            method: object = getattr(plugin, name)
+        except Exception:
+            # dir() can include properties that are not safely readable yet
+            # (e.g. pytest Config during early registration).
+            return None
         if not inspect.isroutine(method):
             return None
         try:
-            res: HookimplOpts | None = getattr(
-                method, self.project_name + "_impl", None
-            )
+            res: object = getattr(method, self.project_name + "_impl", None)
         except Exception:  # pragma: no cover
-            res = {}  # type: ignore[assignment] #pragma: no cover
-        if res is not None and not isinstance(res, dict):
-            # false positive
-            res = None  # type:ignore[unreachable] #pragma: no cover
-        return res
+            return None
+        if isinstance(res, HookimplConfiguration):
+            return res
+        if isinstance(res, Mapping):
+            return hookimpl_config_from_mapping(res)
+        return None
+
+    def _discover_hookimpl_configuration(
+        self, plugin: _Plugin, name: str
+    ) -> HookimplConfiguration | None:
+        """Discover hookimpl configuration for registration.
+
+        Prefer the modern marker attribute. Only call the deprecated
+        :meth:`parse_hookimpl_opts` when a subclass actually overrides it and
+        no modern configuration was found (pytest unmarked-hook concession).
+        """
+        config = self._read_hookimpl_configuration(plugin, name)
+        if config is not None:
+            return config
+        parse_hookimpl_opts = type(self).parse_hookimpl_opts
+        if parse_hookimpl_opts is PluginManager.parse_hookimpl_opts:
+            return None
+        legacy = parse_hookimpl_opts(self, plugin, name)
+        if legacy is None:
+            return None
+        return hookimpl_config_from_mapping(legacy)
+
+    def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
+        """Return legacy dict-shaped hookimpl options, if any.
+
+        .. deprecated::
+            Thin pytest/support concession. Registration uses private discovery
+            of :class:`HookimplConfiguration` and only invokes this method when
+            a subclass overrides it and no modern configuration attribute was
+            found. Prefer marker-attached configuration objects.
+        """
+        config = self._read_hookimpl_configuration(plugin, name)
+        if config is None:
+            return None
+        return cast(HookimplOpts, hookimpl_config_to_mapping(config))
 
     def unregister(
         self, plugin: _Plugin | None = None, name: str | None = None
@@ -206,6 +250,7 @@ class PluginManager:
         hookcallers = self.get_hookcallers(plugin)
         if hookcallers:
             for hookcaller in hookcallers:
+                assert isinstance(hookcaller, (NormalHookCaller, HistoricHookCaller))
                 hookcaller._remove_plugin(plugin)
 
         # if self._name2plugin[name] == None registration was blocked: ignore
@@ -242,15 +287,41 @@ class PluginManager:
         """
         names = []
         for name in dir(module_or_class):
-            spec_opts = self.parse_hookspec_opts(module_or_class, name)
-            if spec_opts is not None:
-                hc: HookCaller | None = getattr(self.hook, name, None)
+            spec_config = self._discover_hookspec_configuration(module_or_class, name)
+            if spec_config is not None:
+                hc: NormalHookCaller | HistoricHookCaller | None = getattr(
+                    self.hook, name, None
+                )
                 if hc is None:
-                    hc = HookCaller(name, self._hookexec, module_or_class, spec_opts)
+                    if spec_config.historic:
+                        hc = HistoricHookCaller(
+                            name, self._hookexec, module_or_class, spec_config
+                        )
+                    else:
+                        hc = NormalHookCaller(
+                            name, self._hookexec, module_or_class, spec_config
+                        )
                     setattr(self.hook, name, hc)
+                elif spec_config.historic and not hc.is_historic():
+                    # Plugins registered this hook before the historic spec was
+                    # known - hand the implementations over to a
+                    # HistoricHookCaller.
+                    assert isinstance(hc, NormalHookCaller)
+                    if hc.has_spec():
+                        # Let set_specification raise the usual error.
+                        hc.set_specification(module_or_class, spec_config)
+                        raise AssertionError("unreachable")  # pragma: no cover
+                    old_hookimpls = hc.get_hookimpls()
+                    historic_hc = HistoricHookCaller(
+                        name, self._hookexec, module_or_class, spec_config
+                    )
+                    setattr(self.hook, name, historic_hc)
+                    for hookimpl in old_hookimpls:
+                        self._verify_hook(historic_hc, hookimpl)
+                        historic_hc._add_hookimpl(hookimpl)
                 else:
                     # Plugins registered this hook without knowing the spec.
-                    hc.set_specification(module_or_class, spec_opts)
+                    hc.set_specification(module_or_class, spec_config)
                     for hookfunction in hc.get_hookimpls():
                         self._verify_hook(hc, hookfunction)
                 names.append(name)
@@ -260,23 +331,59 @@ class PluginManager:
                 f"did not find any {self.project_name!r} hooks in {module_or_class!r}"
             )
 
+    def _read_hookspec_configuration(
+        self, module_or_class: _Namespace, name: str
+    ) -> HookspecConfiguration | None:
+        """Read a modern :class:`HookspecConfiguration` from a marked function."""
+        try:
+            method = getattr(module_or_class, name)
+        except Exception:
+            return None
+        try:
+            opts: object = getattr(method, self.project_name + "_spec", None)
+        except Exception:  # pragma: no cover
+            return None
+        if isinstance(opts, HookspecConfiguration):
+            return opts
+        if isinstance(opts, Mapping):
+            return hookspec_config_from_mapping(opts)
+        return None
+
+    def _discover_hookspec_configuration(
+        self, module_or_class: _Namespace, name: str
+    ) -> HookspecConfiguration | None:
+        """Discover hookspec configuration for ``add_hookspecs``.
+
+        Prefer the modern marker attribute. Only call the deprecated
+        :meth:`parse_hookspec_opts` when a subclass actually overrides it and
+        no modern configuration was found.
+        """
+        config = self._read_hookspec_configuration(module_or_class, name)
+        if config is not None:
+            return config
+        parse_hookspec_opts = type(self).parse_hookspec_opts
+        if parse_hookspec_opts is PluginManager.parse_hookspec_opts:
+            return None
+        legacy = parse_hookspec_opts(self, module_or_class, name)
+        if legacy is None:
+            return None
+        return hookspec_config_from_mapping(legacy)
+
     def parse_hookspec_opts(
         self, module_or_class: _Namespace, name: str
     ) -> HookspecOpts | None:
-        """Try to obtain a hook specification from an item with the given name
-        in the given module or class which is being searched for hook specs.
+        """Return legacy dict-shaped hookspec options, if any.
 
-        :returns:
-            The parsed hookspec options for defining a hook, or None to skip the
-            given item.
-
-        This method can be overridden by ``PluginManager`` subclasses to
-        customize how hook specifications are picked up. By default, returns the
-        options for items decorated with :class:`HookspecMarker`.
+        .. deprecated::
+            Thin pytest/support concession. ``add_hookspecs`` uses private
+            discovery of :class:`HookspecConfiguration` and only invokes this
+            method when a subclass overrides it and no modern configuration
+            attribute was found. Prefer marker-attached configuration objects.
         """
-        method = getattr(module_or_class, name)
-        opts: HookspecOpts | None = getattr(method, self.project_name + "_spec", None)
-        return opts
+        config = self._read_hookspec_configuration(module_or_class, name)
+        if config is None:
+            return None
+        return cast(HookspecOpts, hookspec_config_to_mapping(config))
 
     def get_plugins(self) -> set[Any]:
         """Return a set of all registered plugin objects."""
@@ -368,7 +475,7 @@ class PluginManager:
         for name in self.hook.__dict__:
             if name[0] == "_":
                 continue
-            hook: HookCaller = getattr(self.hook, name)
+            hook: NormalHookCaller | HistoricHookCaller = getattr(self.hook, name)
             if not hook.has_spec():
                 for hookimpl in hook.get_hookimpls():
                     if not hookimpl.optionalhook:
@@ -469,13 +576,19 @@ class PluginManager:
 
         def traced_hookexec(
             hook_name: str,
-            hook_impls: Sequence[HookImpl],
+            normal_impls: Sequence[NormalImpl],
+            wrapper_impls: Sequence[WrapperImpl],
             caller_kwargs: Mapping[str, object],
             firstresult: bool,
         ) -> object | list[object]:
+            # For backward compatibility of the before/after callback shapes,
+            # combine the split lists into one.
+            hook_impls: list[HookImpl] = [*normal_impls, *wrapper_impls]
             before(hook_name, hook_impls, caller_kwargs)
             outcome = Result.from_call(
-                lambda: oldcall(hook_name, hook_impls, caller_kwargs, firstresult)
+                lambda: oldcall(
+                    hook_name, normal_impls, wrapper_impls, caller_kwargs, firstresult
+                )
             )
             after(outcome, hook_name, hook_impls, caller_kwargs)
             return outcome.get_result()
@@ -518,10 +631,10 @@ class PluginManager:
         """Return a proxy :class:`~pluggy.HookCaller` instance for the named
         method which manages calls to all registered plugins except the ones
         from remove_plugins."""
-        orig: HookCaller = getattr(self.hook, name)
+        orig: NormalHookCaller | HistoricHookCaller = getattr(self.hook, name)
         plugins_to_remove = {plug for plug in remove_plugins if hasattr(plug, name)}
         if plugins_to_remove:
-            return _SubsetHookCaller(orig, plugins_to_remove)
+            return SubsetHookCaller(orig, plugins_to_remove)
         return orig
 
 
