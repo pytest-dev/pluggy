@@ -237,10 +237,10 @@ class HookCaller:
         )
         kwargs = self._apply_defaults(kwargs)
         self._verify_all_args_are_provided(kwargs)
-        opts = HookimplConfiguration()
+        config = HookimplConfiguration()
         hookimpls = self._hookimpls.copy()
         for method in methods:
-            hookimpl = HookImpl(None, "<temp>", method, opts)
+            hookimpl = config.create_hookimpl(None, "<temp>", method)
             # Find last non-tryfirst nonwrapper method.
             i = len(hookimpls) - 1
             while i >= 0 and (
