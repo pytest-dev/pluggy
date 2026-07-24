@@ -767,10 +767,13 @@ and particular plugins in it:
 
 Parsing mark options
 ^^^^^^^^^^^^^^^^^^^^
-You can retrieve the *options* applied to a particular
-*hookspec* or *hookimpl* as per :ref:`marking_hooks` using the
+Markers attach :class:`~pluggy.HookspecConfiguration` /
+:class:`~pluggy.HookimplConfiguration` objects to functions. The
 :py:meth:`~pluggy.PluginManager.parse_hookspec_opts()` and
-:py:meth:`~pluggy.PluginManager.parse_hookimpl_opts()` respectively.
+:py:meth:`~pluggy.PluginManager.parse_hookimpl_opts()` methods remain as a
+**deprecated** pytest/support concession that returns legacy dict-shaped
+options; registration only calls them when a subclass overrides them and no
+modern configuration attribute was found.
 
 
 .. _calling:
