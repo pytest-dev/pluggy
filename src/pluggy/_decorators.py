@@ -361,3 +361,22 @@ class HookSpec:
             Use :attr:`config` instead.
         """
         return self.config
+
+    def verify_all_args_are_provided(self, kwargs: Mapping[str, object]) -> None:
+        """Warn if a hook call does not provide all declared arguments."""
+        # This is written to avoid expensive operations when not needed.
+        for argname in self.argnames:
+            if argname not in kwargs:
+                notincall = ", ".join(
+                    repr(argname)
+                    for argname in self.argnames
+                    # Avoid self.argnames - kwargs.keys()
+                    # it doesn't preserve order.
+                    if argname not in kwargs.keys()
+                )
+                warnings.warn(
+                    f"Argument(s) {notincall} which are declared in the hookspec "
+                    "cannot be found in this hook call",
+                    stacklevel=3,
+                )
+                break

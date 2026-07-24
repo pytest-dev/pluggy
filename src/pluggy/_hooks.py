@@ -11,8 +11,11 @@ from ._caller import _HookCaller
 from ._caller import _HookExec
 from ._caller import _HookRelay
 from ._caller import _SubsetHookCaller
+from ._caller import HistoricHookCaller
 from ._caller import HookCaller
 from ._caller import HookRelay
+from ._caller import NormalHookCaller
+from ._caller import SubsetHookCaller
 from ._config import HookimplConfiguration
 from ._config import HookspecConfiguration
 from ._decorators import _Namespace
@@ -36,6 +39,9 @@ __all__ = [
     "HookSpec",
     "varnames",
     "HookCaller",
+    "NormalHookCaller",
+    "HistoricHookCaller",
+    "SubsetHookCaller",
     "HookRelay",
     "_HookCaller",
     "_HookRelay",
