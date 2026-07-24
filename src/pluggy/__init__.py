@@ -16,6 +16,7 @@ __all__ = [
     "PluggyWarning",
     "PluginManager",
     "PluginValidationError",
+    "ProjectSpec",
     "Result",
     "SubsetHookCaller",
     "WrapperImpl",
@@ -35,6 +36,7 @@ from ._hooks import SubsetHookCaller
 from ._hooks import WrapperImpl
 from ._manager import PluginManager
 from ._manager import PluginValidationError
+from ._project import ProjectSpec
 from ._pytest_compat import HookimplOpts
 from ._pytest_compat import HookspecOpts
 from ._result import HookCallError
