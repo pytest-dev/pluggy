@@ -495,7 +495,7 @@ def test_subset_hook_caller(pm: PluginManager) -> None:
     pm.hook.he_method1(arg=1)
     assert out == [10]
 
-    assert repr(hc) == "<_SubsetHookCaller 'he_method1'>"
+    assert repr(hc) == "<SubsetHookCaller 'he_method1'>"
 
 
 def test_get_hookimpls(pm: PluginManager) -> None:

@@ -1,0 +1,9 @@
+Hook implementations are now represented by dedicated types:
+:class:`pluggy.NormalImpl` for normal implementations and
+:class:`pluggy.WrapperImpl` for (old- and new-style) wrappers, both
+subclasses of :class:`pluggy.HookImpl`.
+``HookimplConfiguration.create_hookimpl()`` selects the appropriate
+subclass, and ``WrapperImpl.setup_and_get_completion_hook()`` exposes
+wrapper setup/teardown as a ``CompletionHook`` callback.
+``HookImpl`` now stores its configuration as ``hookimpl_config``; the old
+``opts`` attribute remains as a deprecated alias property.
