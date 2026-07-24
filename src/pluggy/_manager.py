@@ -238,7 +238,9 @@ class PluginManager:
                     f"{plugin!r}.{attr_name} is not a hookable attribute"
                 )
                 method: _HookImplFunction[object] = found[1]
-                hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_config)
+                hookimpl: HookImpl = hookimpl_config.create_hookimpl(
+                    plugin, plugin_name, method
+                )
                 hook_name = hookimpl_config.specname or attr_name
                 hook: HookCaller | None = getattr(self.hook, hook_name, None)
                 verified = False

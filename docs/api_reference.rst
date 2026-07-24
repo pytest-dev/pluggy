@@ -40,6 +40,14 @@ API Reference
 .. autoclass:: pluggy.HookImpl()
     :members:
 
+.. autoclass:: pluggy.NormalImpl()
+    :show-inheritance:
+    :members:
+
+.. autoclass:: pluggy.WrapperImpl()
+    :show-inheritance:
+    :members:
+
 .. autoclass:: pluggy.HookspecConfiguration()
     :members:
 

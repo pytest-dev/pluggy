@@ -22,10 +22,14 @@ from ._decorators import HookspecMarker
 from ._decorators import varnames
 from ._impl import _HookImplFunction
 from ._impl import _Plugin
+from ._impl import CompletionHook
 from ._impl import HookImpl
+from ._impl import NormalImpl
+from ._impl import WrapperImpl
 
 
 __all__ = [
+    "CompletionHook",
     "HookCaller",
     "HookImpl",
     "HookRelay",
@@ -34,6 +38,8 @@ __all__ = [
     "HookimplMarker",
     "HookspecConfiguration",
     "HookspecMarker",
+    "NormalImpl",
+    "WrapperImpl",
     "_HookCaller",
     "_HookExec",
     "_HookImplFunction",
