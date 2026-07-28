@@ -63,11 +63,19 @@ man_pages = [(master_doc, "pluggy", "pluggy Documentation", [author], 1)]
 autodoc_member_order = "bysource"
 
 nitpicky = True
+# Some annotations in `pluggy._manager` reference names that only exist under
+# `typing.TYPE_CHECKING` (`DistFacade`, `importlib.metadata`), so autodoc cannot
+# evaluate them and falls back to the annotation as written in the source.
+# That means private names show up both fully qualified and as written.
 nitpick_ignore = {
     # Don't want to expose this yet (see #428).
     ("py:class", "pluggy._tracing.TagTracerSub"),
+    ("py:class", "_tracing.TagTracerSub"),
     # Compat hack, don't want to expose it.
     ("py:class", "pluggy._compat.DistFacade"),
+    ("py:class", "DistFacade"),
+    # Private alias for `object`.
+    ("py:class", "_Plugin"),
     # `types.ModuleType` turns into `module` but then fails to resolve...
     ("py:class", "module"),
     # Just a TypeVar.
