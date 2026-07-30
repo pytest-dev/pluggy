@@ -29,13 +29,17 @@ class TagTracer:
         else:
             extra = {}
 
-        content = " ".join(map(str, args))
+        def _safe(obj: object) -> str:
+            text = str(obj)
+            return text.encode("utf-8", "backslashreplace").decode("utf-8")
+
+        content = " ".join(map(_safe, args))
         indent = "  " * self.indent
 
         lines = [f"{indent}{content} [{':'.join(tags)}]\n"]
 
         for name, value in extra.items():
-            lines.append(f"{indent}    {name}: {value}\n")
+            lines.append(f"{indent}    {name}: {_safe(value)}\n")
 
         return "".join(lines)
 
