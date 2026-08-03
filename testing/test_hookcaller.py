@@ -5,11 +5,14 @@ from typing import TypeVar
 
 import pytest
 
+from pluggy import HistoricHookCaller
+from pluggy import HookCaller
 from pluggy import HookimplMarker
+from pluggy import HookspecConfiguration
 from pluggy import HookspecMarker
+from pluggy import NormalHookCaller
 from pluggy import PluginManager
 from pluggy import PluginValidationError
-from pluggy._hooks import HookCaller
 from pluggy._hooks import HookImpl
 
 
@@ -18,21 +21,23 @@ hookimpl = HookimplMarker("example")
 
 
 @pytest.fixture
-def hc(pm: PluginManager) -> HookCaller:
+def hc(pm: PluginManager) -> NormalHookCaller:
     class Hooks:
         @hookspec
         def he_method1(self, arg: object) -> None:
             pass
 
     pm.add_hookspecs(Hooks)
-    return pm.hook.he_method1
+    hc = pm.hook.he_method1
+    assert isinstance(hc, NormalHookCaller)
+    return hc
 
 
 FuncT = TypeVar("FuncT", bound=Callable[..., object])
 
 
 class AddMeth:
-    def __init__(self, hc: HookCaller) -> None:
+    def __init__(self, hc: NormalHookCaller) -> None:
         self.hc = hc
 
     def __call__(
@@ -49,16 +54,15 @@ class AddMeth:
                 hookwrapper=hookwrapper,
                 wrapper=wrapper,
             )(func)
-            self.hc._add_hookimpl(
-                HookImpl(None, "<temp>", func, func.example_impl),  # type: ignore[attr-defined]
-            )
+            config = func.example_impl  # type: ignore[attr-defined]
+            self.hc._add_hookimpl(config.create_hookimpl(None, "<temp>", func))
             return func
 
         return wrap
 
 
 @pytest.fixture
-def addmeth(hc: HookCaller) -> AddMeth:
+def addmeth(hc: NormalHookCaller) -> AddMeth:
     return AddMeth(hc)
 
 
@@ -66,7 +70,7 @@ def funcs(hookmethods: Sequence[HookImpl]) -> list[Callable[..., object]]:
     return [hookmethod.function for hookmethod in hookmethods]
 
 
-def test_adding_nonwrappers(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers(hc: NormalHookCaller, addmeth: AddMeth) -> None:
     @addmeth()
     def he_method1() -> None:
         pass
@@ -82,7 +86,7 @@ def test_adding_nonwrappers(hc: HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [he_method1, he_method2, he_method3]
 
 
-def test_adding_nonwrappers_trylast(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers_trylast(hc: NormalHookCaller, addmeth: AddMeth) -> None:
     @addmeth()
     def he_method1_middle() -> None:
         pass
@@ -98,7 +102,7 @@ def test_adding_nonwrappers_trylast(hc: HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [he_method1, he_method1_middle, he_method1_b]
 
 
-def test_adding_nonwrappers_trylast3(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers_trylast3(hc: NormalHookCaller, addmeth: AddMeth) -> None:
     @addmeth()
     def he_method1_a() -> None:
         pass
@@ -123,7 +127,7 @@ def test_adding_nonwrappers_trylast3(hc: HookCaller, addmeth: AddMeth) -> None:
     ]
 
 
-def test_adding_nonwrappers_trylast2(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers_trylast2(hc: NormalHookCaller, addmeth: AddMeth) -> None:
     @addmeth()
     def he_method1_middle() -> None:
         pass
@@ -139,7 +143,7 @@ def test_adding_nonwrappers_trylast2(hc: HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [he_method1, he_method1_middle, he_method1_b]
 
 
-def test_adding_nonwrappers_tryfirst(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_nonwrappers_tryfirst(hc: NormalHookCaller, addmeth: AddMeth) -> None:
     @addmeth(tryfirst=True)
     def he_method1() -> None:
         pass
@@ -155,7 +159,7 @@ def test_adding_nonwrappers_tryfirst(hc: HookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == [he_method1_middle, he_method1_b, he_method1]
 
 
-def test_adding_wrappers_ordering(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_wrappers_ordering(hc: NormalHookCaller, addmeth: AddMeth) -> None:
     @addmeth(hookwrapper=True)
     def he_method1():
         yield  # pragma: no cover
@@ -185,7 +189,9 @@ def test_adding_wrappers_ordering(hc: HookCaller, addmeth: AddMeth) -> None:
     ]
 
 
-def test_adding_wrappers_ordering_tryfirst(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_wrappers_ordering_tryfirst(
+    hc: NormalHookCaller, addmeth: AddMeth
+) -> None:
     @addmeth(hookwrapper=True, tryfirst=True)
     def he_method1():
         yield  # pragma: no cover
@@ -201,7 +207,7 @@ def test_adding_wrappers_ordering_tryfirst(hc: HookCaller, addmeth: AddMeth) -> 
     assert funcs(hc.get_hookimpls()) == [he_method2, he_method1, he_method3]
 
 
-def test_adding_wrappers_complex(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_adding_wrappers_complex(hc: NormalHookCaller, addmeth: AddMeth) -> None:
     assert funcs(hc.get_hookimpls()) == []
 
     @addmeth(hookwrapper=True, trylast=True)
@@ -317,11 +323,11 @@ def test_hookspec(pm: PluginManager) -> None:
 
     pm.add_hookspecs(HookSpec)
     assert pm.hook.he_myhook1.spec is not None
-    assert not pm.hook.he_myhook1.spec.opts["firstresult"]
+    assert not pm.hook.he_myhook1.spec.config.firstresult
     assert pm.hook.he_myhook2.spec is not None
-    assert pm.hook.he_myhook2.spec.opts["firstresult"]
+    assert pm.hook.he_myhook2.spec.config.firstresult
     assert pm.hook.he_myhook3.spec is not None
-    assert not pm.hook.he_myhook3.spec.opts["firstresult"]
+    assert not pm.hook.he_myhook3.spec.config.firstresult
 
 
 @pytest.mark.parametrize("name", ["hookwrapper", "optionalhook", "tryfirst", "trylast"])
@@ -332,7 +338,7 @@ def test_hookimpl(name: str, val: bool) -> None:
         pass
 
     if val:
-        assert he_myhook1.example_impl.get(name)
+        assert getattr(he_myhook1.example_impl, name)
     else:
         assert not hasattr(he_myhook1, name)
 
@@ -442,7 +448,7 @@ def test_hook_conflict(pm: PluginManager) -> None:
     )
 
 
-def test_call_extra_hook_order(hc: HookCaller, addmeth: AddMeth) -> None:
+def test_call_extra_hook_order(hc: NormalHookCaller, addmeth: AddMeth) -> None:
     """Ensure that call_extra is calling hooks in the right order."""
     order = []
 
@@ -511,3 +517,83 @@ def test_call_extra_hook_order(hc: HookCaller, addmeth: AddMeth) -> None:
         "2",
         "3",
     ]
+
+
+def test_hookcaller_is_runtime_checkable_protocol(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec
+        def he_method1(self, arg: object) -> None:
+            pass
+
+        @hookspec(historic=True)
+        def he_history(self, arg: object) -> None:
+            pass
+
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg: object) -> object:
+            return arg
+
+    pm.add_hookspecs(Hooks)
+    pm.register(Plugin())
+
+    normal = pm.hook.he_method1
+    historic = pm.hook.he_history
+    subset = pm.subset_hook_caller("he_method1", [])
+
+    assert isinstance(normal, NormalHookCaller)
+    assert isinstance(historic, HistoricHookCaller)
+    for caller in (normal, historic, subset):
+        assert isinstance(caller, HookCaller)
+
+    assert not normal.is_historic()
+    assert historic.is_historic()
+
+
+def test_historic_spec_after_registration_hands_over(pm: PluginManager) -> None:
+    """Impls registered before a historic spec move to a HistoricHookCaller."""
+    out: list[object] = []
+
+    class Plugin:
+        @hookimpl
+        def he_history(self, arg: object) -> object:
+            out.append(arg)
+            return arg
+
+    pm.register(Plugin())
+    pre_spec_caller = pm.hook.he_history
+    assert isinstance(pre_spec_caller, NormalHookCaller)
+
+    class Hooks:
+        @hookspec(historic=True)
+        def he_history(self, arg: object) -> None:
+            pass
+
+    pm.add_hookspecs(Hooks)
+    hc = pm.hook.he_history
+    assert isinstance(hc, HistoricHookCaller)
+    assert len(hc.get_hookimpls()) == 1
+
+    hc.call_historic(kwargs=dict(arg=1))
+    assert out == [1]
+
+
+def test_historic_rejects_direct_call_and_call_extra(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec(historic=True)
+        def he_history(self, arg: object) -> None:
+            pass
+
+    pm.add_hookspecs(Hooks)
+    hc = pm.hook.he_history
+    with pytest.raises(AssertionError, match="use call_historic"):
+        hc(arg=1)
+    with pytest.raises(AssertionError, match="use call_historic"):
+        hc.call_extra([], dict(arg=1))
+    with pytest.raises(ValueError, match="already registered"):
+        hc.set_specification(Hooks, HookspecConfiguration(historic=True))
+
+
+def test_normal_caller_rejects_call_historic(hc: NormalHookCaller) -> None:
+    with pytest.raises(AssertionError, match="not historic"):
+        hc.call_historic(kwargs=dict(arg=1))
