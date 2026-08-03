@@ -441,9 +441,8 @@ def test_call_with_too_few_args(pm: PluginManager) -> None:
     with pytest.raises(ZeroDivisionError):
         pm.hook.he_method1(arg="works")
 
-    with pytest.raises(HookCallError):
-        with pytest.warns(UserWarning):
-            pm.hook.he_method1()
+    with pytest.raises(HookCallError), pytest.warns(UserWarning):
+        pm.hook.he_method1()
 
 
 def test_subset_hook_caller(pm: PluginManager) -> None:

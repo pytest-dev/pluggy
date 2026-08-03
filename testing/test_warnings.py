@@ -40,12 +40,14 @@ def test_teardown_raised_warning(pm: PluginManager) -> None:
     pm.register(Plugin1(), "plugin1")
     pm.register(Plugin2(), "plugin2")
     pm.register(Plugin3(), "plugin3")
-    with pytest.warns(
-        PluggyTeardownRaisedWarning,
-        match=r"\bplugin2\b.*\bmy_hook\b.*\n.*ZeroDivisionError",
-    ) as wc:
-        with pytest.raises(ZeroDivisionError):
-            pm.hook.my_hook()
+    with (
+        pytest.warns(
+            PluggyTeardownRaisedWarning,
+            match=r"\bplugin2\b.*\bmy_hook\b.*\n.*ZeroDivisionError",
+        ) as wc,
+        pytest.raises(ZeroDivisionError),
+    ):
+        pm.hook.my_hook()
     assert len(wc.list) == 1
     assert Path(wc.list[0].filename).name == "test_warnings.py"
 
