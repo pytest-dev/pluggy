@@ -1,0 +1,6 @@
+New :class:`pluggy.ProjectSpec` hub bundles a project's
+:class:`~pluggy.HookspecMarker`, :class:`~pluggy.HookimplMarker` and
+:meth:`~pluggy.ProjectSpec.create_plugin_manager` under one project name.
+:class:`~pluggy.HookspecMarker`, :class:`~pluggy.HookimplMarker` and
+:class:`~pluggy.PluginManager` now accept either a project name string or
+a ``ProjectSpec`` instance; plain strings keep working unchanged.
