@@ -16,10 +16,11 @@ def test_parse_hookimpl_override() -> None:
     class MyPluginManager(PluginManager):
         def parse_hookimpl_opts(self, module_or_class, name):
             opts = PluginManager.parse_hookimpl_opts(self, module_or_class, name)
-            if opts is None:
-                if name.startswith("x1"):
-                    opts = {}  # type: ignore[assignment]
-            return opts
+            if opts is not None:
+                return opts
+            if name.startswith("x1"):
+                return {}
+            return None
 
     class Plugin:
         def x1meth(self):
