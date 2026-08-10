@@ -99,8 +99,8 @@ class HookspecMarker:
         warn_on_impl_args: Mapping[str, Warning] | None = None,
     ) -> _F: ...
 
-    @overload  # noqa: F811
-    def __call__(  # noqa: F811
+    @overload
+    def __call__(
         self,
         function: None = ...,
         firstresult: bool = ...,
@@ -109,7 +109,7 @@ class HookspecMarker:
         warn_on_impl_args: Mapping[str, Warning] | None = ...,
     ) -> Callable[[_F], _F]: ...
 
-    def __call__(  # noqa: F811
+    def __call__(
         self,
         function: _F | None = None,
         firstresult: bool = False,
@@ -188,8 +188,8 @@ class HookimplMarker:
         wrapper: bool = ...,
     ) -> _F: ...
 
-    @overload  # noqa: F811
-    def __call__(  # noqa: F811
+    @overload
+    def __call__(
         self,
         function: None = ...,
         hookwrapper: bool = ...,
@@ -200,7 +200,7 @@ class HookimplMarker:
         wrapper: bool = ...,
     ) -> Callable[[_F], _F]: ...
 
-    def __call__(  # noqa: F811
+    def __call__(
         self,
         function: _F | None = None,
         hookwrapper: bool = False,
@@ -366,9 +366,7 @@ def varnames(
     _tail = qualname.rsplit("<locals>.", maxsplit=1)[-1]
     _is_class_method = "." in _tail
     if args:
-        if is_bound:
-            args = args[1:]
-        elif _is_class_method and args[0] in _IMPLICIT_NAMES:
+        if is_bound or _is_class_method and args[0] in _IMPLICIT_NAMES:
             args = args[1:]
         elif _is_class_method and legacy_noself:
             if _tail not in _NOSELF_WARN_SUPPRESS:
@@ -412,11 +410,11 @@ class HookCaller:
     """A caller of all registered implementations of a hook specification."""
 
     __slots__ = (
-        "name",
-        "spec",
+        "_call_history",
         "_hookexec",
         "_hookimpls",
-        "_call_history",
+        "name",
+        "spec",
     )
 
     def __init__(
@@ -669,17 +667,17 @@ class HookImpl:
     """A hook implementation in a :class:`HookCaller`."""
 
     __slots__ = (
-        "function",
         "argnames",
-        "kwargnames",
-        "plugin",
-        "opts",
-        "plugin_name",
-        "wrapper",
+        "function",
         "hookwrapper",
+        "kwargnames",
         "optionalhook",
+        "opts",
+        "plugin",
+        "plugin_name",
         "tryfirst",
         "trylast",
+        "wrapper",
     )
 
     def __init__(
@@ -725,11 +723,11 @@ class HookImpl:
 @final
 class HookSpec:
     __slots__ = (
-        "namespace",
-        "function",
-        "name",
         "argnames",
+        "function",
         "kwargnames",
+        "name",
+        "namespace",
         "opts",
         "warn_on_impl",
         "warn_on_impl_args",

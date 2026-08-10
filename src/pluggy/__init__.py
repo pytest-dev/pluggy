@@ -1,18 +1,18 @@
 __all__ = [
-    "__version__",
-    "PluginManager",
-    "PluginValidationError",
-    "HookCaller",
     "HookCallError",
-    "HookspecOpts",
-    "HookimplOpts",
+    "HookCaller",
     "HookImpl",
     "HookRelay",
-    "HookspecMarker",
     "HookimplMarker",
-    "Result",
-    "PluggyWarning",
+    "HookimplOpts",
+    "HookspecMarker",
+    "HookspecOpts",
     "PluggyTeardownRaisedWarning",
+    "PluggyWarning",
+    "PluginManager",
+    "PluginValidationError",
+    "Result",
+    "__version__",
 ]
 from ._hooks import HookCaller
 from ._hooks import HookImpl
