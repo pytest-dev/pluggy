@@ -57,6 +57,15 @@ def test_readable_output_dictargs(rootlogger: TagTracer) -> None:
     assert out2 == "test [test]\n    a: 1\n"
 
 
+def test_surrogate_dict_value_is_safely_formatted(rootlogger: TagTracer) -> None:
+    out: list[bytes] = []
+    rootlogger.setwriter(lambda message: out.append(message.encode("utf-8")))
+
+    rootlogger.get("test")("call", {"value": "\ud800"})
+
+    assert out == [b"call [test]\n    value: '\\ud800'\n"]
+
+
 def test_setprocessor(rootlogger: TagTracer) -> None:
     log = rootlogger.get("1")
     log2 = log.get("2")
