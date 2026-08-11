@@ -1,0 +1,1 @@
+Discover hookimpls/hookspecs via :func:`inspect.getattr_static` so properties and other descriptors are not executed during plugin registration.
