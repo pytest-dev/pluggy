@@ -328,7 +328,9 @@ def varnames(
         is_bound = True
     elif not inspect.isroutine(func):  # callable object?
         try:
-            func = getattr(func, "__call__", func)
+            # Not a `callable()` check: the `__call__` attribute itself is
+            # wanted, so that its signature can be inspected below.
+            func = getattr(func, "__call__", func)  # noqa: B004
         except Exception:  # pragma: no cover - pypy special case
             return (), ()
 

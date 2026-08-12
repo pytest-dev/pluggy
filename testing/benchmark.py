@@ -26,7 +26,9 @@ def _varnames_legacy(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
             return (), ()
     elif not inspect.isroutine(func):
         try:
-            func = getattr(func, "__call__", func)
+            # Not a `callable()` check: the `__call__` attribute itself is
+            # wanted, so that its signature can be inspected below.
+            func = getattr(func, "__call__", func)  # noqa: B004
         except Exception:
             return (), ()
 
