@@ -236,7 +236,7 @@ def test_dunder_version() -> None:
 
 def test_dunder_getattr_missing_raises() -> None:
     with pytest.raises(AttributeError, match="module pluggy has no attribute 'nope'"):
-        pluggy.nope
+        _ = pluggy.nope
 
 
 def test_hookimpl_disallow_invalid_combination() -> None:
