@@ -201,8 +201,7 @@ def build_uv_install_argv(*, venv_home: Path, env: EnvironmentUv) -> list[str]:
         args.extend(["--group", g])
     for spec in env.editables:
         args.extend(["-e", spec])
-    for pkg in env.packages:
-        args.append(pkg)
+    args.extend(env.packages)
     return args
 
 
