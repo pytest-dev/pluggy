@@ -8,7 +8,7 @@ from collections.abc import Callable
 from collections.abc import Generator
 from collections.abc import Mapping
 from collections.abc import Sequence
-from collections.abc import Set
+from collections.abc import Set as AbstractSet
 import inspect
 import sys
 import types
@@ -635,7 +635,7 @@ class _SubsetHookCaller(HookCaller):
         "_remove_plugins",
     )
 
-    def __init__(self, orig: HookCaller, remove_plugins: Set[_Plugin]) -> None:
+    def __init__(self, orig: HookCaller, remove_plugins: AbstractSet[_Plugin]) -> None:
         self._orig = orig
         self._remove_plugins = remove_plugins
         self.name = orig.name  # type: ignore[misc]
