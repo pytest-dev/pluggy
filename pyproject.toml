@@ -52,7 +52,13 @@ extend-select = [
   "F","E", "W",
   "UP", "ANN",
 ]
-extend-ignore = ["ANN401"]
+extend-ignore = [
+  "ANN401",
+  # Catching whatever a plugin raised, BaseException included, and handing it
+  # to the hook wrappers is what pluggy is for. The same goes for reading
+  # attributes off arbitrary plugin objects, which may raise anything at all.
+  "BLE001",
+]
 
 [tool.ruff.lint.extend-per-file-ignores]
 "testing/*.py" = ["ANN001", "ANN002", "ANN003",  "ANN201", "ANN202","ANN204" ,]
