@@ -30,7 +30,7 @@ def test_teardown_raised_warning(pm: PluginManager) -> None:
         @hookimpl(hookwrapper=True)
         def my_hook(self):
             yield
-            1 / 0
+            raise ZeroDivisionError
 
     class Plugin3:
         @hookimpl(hookwrapper=True)

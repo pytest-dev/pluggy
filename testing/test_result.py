@@ -5,7 +5,7 @@ from pluggy import Result
 
 def test_exceptions_traceback_doesnt_get_longer_and_longer() -> None:
     def bad() -> None:
-        1 / 0
+        raise ZeroDivisionError
 
     result = Result.from_call(bad)
 

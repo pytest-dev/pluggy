@@ -144,7 +144,7 @@ def test_plugin_getattr_raises_errors() -> None:
     module = Module()
     module.x = DontTouchMe()
     with pytest.raises(Exception, match="touch me"):
-        module.x.broken
+        _ = module.x.broken
 
     pm = PluginManager(hookspec.project_name)
     # register() would raise an error

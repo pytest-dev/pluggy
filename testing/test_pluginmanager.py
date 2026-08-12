@@ -69,7 +69,7 @@ def test_register_dynamic_attr(he_pm: PluginManager) -> None:
             raise AttributeError(name)
 
     a = A()
-    a.test
+    _ = a.test
 
     he_pm.register(a)
     assert not he_pm.get_hookcallers(a)
@@ -435,7 +435,7 @@ def test_call_with_too_few_args(pm: PluginManager) -> None:
     class Plugin1:
         @hookimpl
         def he_method1(self, arg):
-            0 / 0
+            raise ZeroDivisionError
 
     pm.register(Plugin1())
     with pytest.raises(ZeroDivisionError):
