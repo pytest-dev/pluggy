@@ -26,7 +26,7 @@ class Result(Generic[ResultType]):
     """An object used to inspect and set the result in a :ref:`hook wrapper
     <hookwrappers>`."""
 
-    __slots__ = ("_result", "_exception", "_traceback")
+    __slots__ = ("_exception", "_result", "_traceback")
 
     def __init__(
         self,

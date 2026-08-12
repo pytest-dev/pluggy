@@ -16,9 +16,8 @@ def test_parse_hookimpl_override() -> None:
     class MyPluginManager(PluginManager):
         def parse_hookimpl_opts(self, module_or_class, name):
             opts = PluginManager.parse_hookimpl_opts(self, module_or_class, name)
-            if opts is None:
-                if name.startswith("x1"):
-                    opts = {}  # type: ignore[assignment]
+            if opts is None and name.startswith("x1"):
+                opts = {}  # type: ignore[assignment]
             return opts
 
     class Plugin:
@@ -144,7 +143,7 @@ def test_plugin_getattr_raises_errors() -> None:
     module = Module()
     module.x = DontTouchMe()
     with pytest.raises(Exception, match="touch me"):
-        module.x.broken
+        _ = module.x.broken
 
     pm = PluginManager(hookspec.project_name)
     # register() would raise an error
@@ -175,10 +174,10 @@ def test_not_all_arguments_are_provided_issues_a_warning(pm: PluginManager) -> N
         pm.hook.hello(arg2=2)
 
     with pytest.warns(UserWarning, match=r"'arg1', 'arg2'.*cannot be found.*$"):
-        pm.hook.hello.call_extra([], kwargs=dict())
+        pm.hook.hello.call_extra([], kwargs={})
 
     with pytest.warns(UserWarning, match=r"'arg1', 'arg2'.*cannot be found.*$"):
-        pm.hook.herstory.call_historic(kwargs=dict())
+        pm.hook.herstory.call_historic(kwargs={})
 
 
 def test_repr() -> None:
@@ -223,7 +222,8 @@ def test_dist_facade_identity_equality_and_hash() -> None:
     dist = distribution("pluggy")
     fc1 = DistFacade(dist)
     fc2 = DistFacade(dist)
-    assert fc1 == fc1
+    # Comparing fc1 with itself is the point: DistFacade equality is identity.
+    assert fc1 == fc1  # noqa: PLR0124
     assert fc1 is not fc2
     assert fc1 != fc2
     assert hash(fc1) == hash(fc1)

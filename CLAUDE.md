@@ -48,4 +48,4 @@ All commands use `uv run` for consistent environments.
 ## Configuration Files
 - `pyproject.toml` - Project metadata, build system, tool configuration (ruff, mypy, setuptools-scm)
 - `tox.ini` - Multi-environment testing configuration
-- `.pre-commit-config.yaml` - Code quality automation (ruff, mypy, flake8, etc.)
+- `.pre-commit-config.yaml` - Code quality automation (ruff, mypy, etc.)
