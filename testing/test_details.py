@@ -230,6 +230,15 @@ def test_dist_facade_identity_equality_and_hash() -> None:
     assert {fc1: "ok"}[fc1] == "ok"
 
 
+def test_dunder_version() -> None:
+    assert pluggy.__version__ == distribution("pluggy").version
+
+
+def test_dunder_getattr_missing_raises() -> None:
+    with pytest.raises(AttributeError, match="module pluggy has no attribute 'nope'"):
+        pluggy.nope
+
+
 def test_hookimpl_disallow_invalid_combination() -> None:
     decorator = hookspec(historic=True, firstresult=True)
     with pytest.raises(ValueError, match="cannot have a historic firstresult hook"):

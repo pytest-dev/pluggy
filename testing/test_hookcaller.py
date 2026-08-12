@@ -511,3 +511,25 @@ def test_call_extra_hook_order(hc: HookCaller, addmeth: AddMeth) -> None:
         "2",
         "3",
     ]
+
+
+def test_remove_plugin_not_found_raises(hc: HookCaller, pm: PluginManager) -> None:
+    """_remove_plugin() raises ValueError for a plugin that never registered
+    an implementation on this particular hook caller."""
+
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg):
+            pass  # pragma: no cover
+
+    plugin = Plugin()
+    pm.register(plugin)
+    assert len(hc.get_hookimpls()) == 1
+
+    other = Plugin()
+    with pytest.raises(ValueError, match=f"plugin {other!r} not found"):
+        hc._remove_plugin(other)
+
+    # the failed removal must not have touched the existing registration
+    assert len(hc.get_hookimpls()) == 1
+    pm.unregister(plugin)
