@@ -366,18 +366,17 @@ def varnames(
     _tail = qualname.rsplit("<locals>.", maxsplit=1)[-1]
     _is_class_method = "." in _tail
     if args:
-        if is_bound or _is_class_method and args[0] in _IMPLICIT_NAMES:
+        if is_bound or (_is_class_method and args[0] in _IMPLICIT_NAMES):
             args = args[1:]
-        elif _is_class_method and legacy_noself:
-            if _tail not in _NOSELF_WARN_SUPPRESS:
-                warnings.warn(
-                    f"{qualname} is a method but its first parameter"
-                    f" {args[0]!r} is not 'self'."
-                    f" Add 'self' as the first parameter or use @staticmethod."
-                    f" This will become an error in a future version of pluggy.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
+        elif _is_class_method and legacy_noself and _tail not in _NOSELF_WARN_SUPPRESS:
+            warnings.warn(
+                f"{qualname} is a method but its first parameter"
+                f" {args[0]!r} is not 'self'."
+                f" Add 'self' as the first parameter or use @staticmethod."
+                f" This will become an error in a future version of pluggy.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
     return args, kwargs
 
@@ -514,7 +513,7 @@ class HookCaller:
                         for argname in self.spec.argnames
                         # Avoid self.spec.argnames - kwargs.keys()
                         # it doesn't preserve order.
-                        if argname not in kwargs.keys()
+                        if argname not in kwargs
                     )
                     warnings.warn(
                         f"Argument(s) {notincall} which are declared in the hookspec "
