@@ -175,10 +175,10 @@ def test_not_all_arguments_are_provided_issues_a_warning(pm: PluginManager) -> N
         pm.hook.hello(arg2=2)
 
     with pytest.warns(UserWarning, match=r"'arg1', 'arg2'.*cannot be found.*$"):
-        pm.hook.hello.call_extra([], kwargs=dict())
+        pm.hook.hello.call_extra([], kwargs={})
 
     with pytest.warns(UserWarning, match=r"'arg1', 'arg2'.*cannot be found.*$"):
-        pm.hook.herstory.call_historic(kwargs=dict())
+        pm.hook.herstory.call_historic(kwargs={})
 
 
 def test_repr() -> None:
