@@ -141,17 +141,17 @@ class PluginManager:
         self._name2plugin[plugin_name] = plugin
 
         # register matching hook implementations of the plugin
-        for name in dir(plugin):
-            hookimpl_opts = self.parse_hookimpl_opts(plugin, name)
+        for attr_name in dir(plugin):
+            hookimpl_opts = self.parse_hookimpl_opts(plugin, attr_name)
             if hookimpl_opts is not None:
                 normalize_hookimpl_opts(hookimpl_opts)
-                method: _HookImplFunction[object] = getattr(plugin, name)
+                method: _HookImplFunction[object] = getattr(plugin, attr_name)
                 hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
-                name = hookimpl_opts.get("specname") or name
-                hook: HookCaller | None = getattr(self.hook, name, None)
+                hook_name = hookimpl_opts.get("specname") or attr_name
+                hook: HookCaller | None = getattr(self.hook, hook_name, None)
                 if hook is None:
-                    hook = HookCaller(name, self._hookexec)
-                    setattr(self.hook, name, hook)
+                    hook = HookCaller(hook_name, self._hookexec)
+                    setattr(self.hook, hook_name, hook)
                 elif hook.has_spec():
                     self._verify_hook(hook, hookimpl)
                     hook._maybe_apply_history(hookimpl)
