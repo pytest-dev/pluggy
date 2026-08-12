@@ -222,7 +222,8 @@ def test_dist_facade_identity_equality_and_hash() -> None:
     dist = distribution("pluggy")
     fc1 = DistFacade(dist)
     fc2 = DistFacade(dist)
-    assert fc1 == fc1
+    # Comparing fc1 with itself is the point: DistFacade equality is identity.
+    assert fc1 == fc1  # noqa: PLR0124
     assert fc1 is not fc2
     assert fc1 != fc2
     assert hash(fc1) == hash(fc1)
