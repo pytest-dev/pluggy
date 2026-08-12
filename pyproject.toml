@@ -61,7 +61,12 @@ extend-ignore = [
 ]
 
 [tool.ruff.lint.extend-per-file-ignores]
-"testing/*.py" = ["ANN001", "ANN002", "ANN003",  "ANN201", "ANN202","ANN204" ,]
+"testing/*.py" = [
+  "ANN001", "ANN002", "ANN003",  "ANN201", "ANN202","ANN204",
+  # Tests raise plain Exception on purpose, to check that pluggy propagates
+  # and chains exceptions it knows nothing about.
+  "TRY002",
+]
 "docs/*.py" = ["ANN001", "ANN002", "ANN003",  "ANN201", "ANN202","ANN204" ,]
 
 [tool.ruff.lint.isort]
