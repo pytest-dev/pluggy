@@ -1,6 +1,6 @@
 repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: "v0.16.2"
+  rev: "v0.16.3"
   hooks:
     - id: ruff-check
       args: ["--fix"]
@@ -14,7 +14,7 @@ repos:
         language: python
         files: \.py$
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.1.0
+    rev: v6.0.0
     hooks:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
@@ -41,7 +41,7 @@ repos:
         language: python
         additional_dependencies: [pygments, restructuredtext_lint]
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.3.0
+    rev: v2.3.1
     hooks:
     -   id: mypy
         files: ^(src/|testing/)
