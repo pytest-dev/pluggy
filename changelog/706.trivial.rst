@@ -1,0 +1,3 @@
+``HookSpec`` now stores its :class:`pluggy.HookspecConfiguration` as
+``config``; the old ``opts`` attribute remains as a deprecated alias
+property.
