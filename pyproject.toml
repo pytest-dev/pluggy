@@ -35,9 +35,13 @@ readme = {file = "README.rst", content-type = "text/x-rst"}
 requires-python = ">=3.10"
 
 dynamic = ["version"]
+
+[project.optional-dependencies]
+async = ["greenlet"]
+
 [dependency-groups]
 dev = ["pre-commit", "tox"]
-testing = ["pytest", "pytest-benchmark", "coverage"]
+testing = ["pytest", "pytest-benchmark", "coverage", "greenlet"]
 
 
 [tool.setuptools]
