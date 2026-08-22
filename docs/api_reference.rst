@@ -40,12 +40,10 @@ API Reference
 .. autoclass:: pluggy.HookImpl()
     :members:
 
-.. autoclass:: pluggy.HookspecOpts()
-    :show-inheritance:
+.. autoclass:: pluggy.HookspecConfiguration()
     :members:
 
-.. autoclass:: pluggy.HookimplOpts()
-    :show-inheritance:
+.. autoclass:: pluggy.HookimplConfiguration()
     :members:
 
 
