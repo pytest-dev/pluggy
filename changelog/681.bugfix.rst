@@ -1,0 +1,1 @@
+Fix tracing output to safely escape surrogate characters in hook arguments and return values.
