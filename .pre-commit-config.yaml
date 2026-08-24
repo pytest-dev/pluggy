@@ -1,12 +1,12 @@
 repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: "v0.16.3"
+  rev: "v0.16.4"
   hooks:
     - id: ruff-check
       args: ["--fix"]
     - id: ruff-format
 -   repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.3
+    rev: v2.4.0
     hooks:
     -   id: autoflake
         name: autoflake
