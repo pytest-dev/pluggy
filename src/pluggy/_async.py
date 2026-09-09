@@ -67,12 +67,22 @@ class Submitter:
             return coro
 
     def require_await(self, coro: Awaitable[_T]) -> _T:
-        """Await an awaitable, raising an error if not in async context."""
+        """Await an awaitable, raising an error if not in async context.
+
+        Ownership of ``coro`` is taken either way: when inactive it is closed
+        before raising, so callers never leak a coroutine that would later
+        warn about never having been awaited.
+        """
         active = self._active_submitter
         if active is not None:
             res: _T = active.switch(coro)
             return res
         else:
+            # Not going to await it, so dispose of it rather than let it be
+            # collected unawaited (a RuntimeWarning raised inside __del__).
+            close = getattr(coro, "close", None)
+            if close is not None:
+                close()
             raise RuntimeError("require_await called outside of async context")
 
     async def run(self, sync_func: Callable[[], _T]) -> _T:
