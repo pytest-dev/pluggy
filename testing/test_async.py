@@ -8,6 +8,7 @@ import asyncio
 from collections.abc import AsyncGenerator
 from collections.abc import Awaitable
 from collections.abc import Coroutine
+import inspect
 from typing import Any
 from typing import cast
 
@@ -179,7 +180,10 @@ def test_require_await_outside_context() -> None:
     awaitable = coro()
     with pytest.raises(RuntimeError, match="outside of async context"):
         submitter.require_await(awaitable)
-    awaitable.close()
+    # require_await takes ownership either way: an awaitable it declines to
+    # await is closed, not left to warn about never being awaited when
+    # collected.
+    assert inspect.getcoroutinestate(awaitable) == inspect.CORO_CLOSED
 
 
 def test_maybe_submit_outside_context_returns_awaitable() -> None:
