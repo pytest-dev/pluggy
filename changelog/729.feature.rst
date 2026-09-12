@@ -1,0 +1,5 @@
+Traced values now gain detail where ``str()`` is ambiguous: an empty string or a string
+carrying whitespace is quoted, an enum member shows its name, and a path shows its type,
+so that two arguments pointing at the same place are distinguishable. Values that read
+unambiguously as themselves are unchanged, and a value spanning several lines is drawn
+as a block attached to its key instead of running into the surrounding trace.
