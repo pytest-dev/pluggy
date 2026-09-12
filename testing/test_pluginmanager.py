@@ -497,6 +497,32 @@ def test_subset_hook_caller(pm: PluginManager) -> None:
     assert repr(hc) == "<_SubsetHookCaller 'he_method1'>"
 
 
+def test_subset_hook_caller_with_specname(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec
+        def he_method1(self, arg):
+            pass
+
+    pm.add_hookspecs(Hooks)
+
+    class Plugin1:
+        @hookimpl(specname="he_method1")
+        def alias(self, arg):
+            return arg
+
+    class Plugin2:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg * 10
+
+    plugin1, plugin2 = Plugin1(), Plugin2()
+    pm.register(plugin1)
+    pm.register(plugin2)
+
+    hc = pm.subset_hook_caller("he_method1", [plugin1])
+    assert hc(arg=2) == [20]
+
+
 def test_get_hookimpls(pm: PluginManager) -> None:
     class Hooks:
         @hookspec
