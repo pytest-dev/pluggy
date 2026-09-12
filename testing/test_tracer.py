@@ -222,3 +222,73 @@ def test_broken_str_label_does_not_raise(rootlogger: TagTracer) -> None:
     assert "RuntimeError('str is broken') raised in str()" in out
     assert "BrokenStr object at 0x" in out
     out.encode()
+
+
+def test_keyboard_interrupt_from_str_propagates(rootlogger: TagTracer) -> None:
+    """Ctrl-C during a traced call still interrupts, it is not swallowed."""
+
+    class Interrupting:
+        def __str__(self) -> str:
+            raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        rootlogger._format_message(["test"], ["test", {"arg": Interrupting()}])
+
+
+def test_broken_exception_repr_falls_back_to_type_name(rootlogger: TagTracer) -> None:
+    """The exception explaining the failure may itself be unpresentable."""
+
+    class BadError(Exception):
+        def __repr__(self) -> str:
+            raise RuntimeError("exception repr is broken")
+
+    class Broken:
+        def __str__(self) -> str:
+            raise BadError
+
+    out = rootlogger._format_message(["test"], ["test", {"arg": Broken()}])
+    assert "<[unpresentable BadError raised in str()] Broken object at 0x" in out
+
+
+def test_error_from_exception_repr_is_not_rendered(
+    rootlogger: TagTracer,
+) -> None:
+    """Rendering stops at the type name, so a chain of broken reprs cannot escape."""
+
+    class Unpresentable(Exception):
+        def __repr__(self) -> str:
+            raise ValueError("repr is broken")  # pragma: no cover
+
+        def __str__(self) -> str:
+            raise ValueError("str is broken")  # pragma: no cover
+
+    class BadError(Exception):
+        def __repr__(self) -> str:
+            raise Unpresentable
+
+        def __str__(self) -> str:
+            raise Unpresentable  # pragma: no cover
+
+    class Broken:
+        def __str__(self) -> str:
+            raise BadError
+
+    out = rootlogger._format_message(["test"], ["test", {"arg": Broken()}])
+    assert "<[unpresentable BadError raised in str()] Broken object at 0x" in out
+
+
+def test_keyboard_interrupt_from_exception_repr_propagates(
+    rootlogger: TagTracer,
+) -> None:
+    """Ctrl-C while rendering the failure explanation propagates as well."""
+
+    class InterruptingError(Exception):
+        def __repr__(self) -> str:
+            raise KeyboardInterrupt
+
+    class Broken:
+        def __str__(self) -> str:
+            raise InterruptingError
+
+    with pytest.raises(KeyboardInterrupt):
+        rootlogger._format_message(["test"], ["test", {"arg": Broken()}])
