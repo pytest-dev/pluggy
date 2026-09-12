@@ -991,7 +991,7 @@ def test_hook_tracing_escapes_surrogate_values(pm: PluginManager) -> None:
 
     assert result == "\ud800"
     assert out == [
-        "  he_method1 [hook]\n      arg: \\ud800\n",
+        "  he_method1 [hook]\n      arg: '\\ud800'\n",
         "  finish he_method1 --> \\ud800 [hook]\n",
     ]
 

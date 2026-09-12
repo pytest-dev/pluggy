@@ -1,3 +1,6 @@
+import enum
+import pathlib
+
 import pytest
 
 from pluggy import HookimplMarker
@@ -175,15 +178,53 @@ class SurrogateRepr:
         return "\ud800"
 
 
-def test_dictargs_keep_str_rendering(rootlogger: TagTracer) -> None:
-    """Values keep their ``str`` rendering, the trace is a log not a repr dump."""
+def test_plain_tokens_stay_bare(rootlogger: TagTracer) -> None:
+    """A value that reads unambiguously as itself is not dressed up."""
     out = rootlogger._format_message(["test"], ["call", {"name": "value", "n": 1}])
     assert out == "call [test]\n    name: value\n    n: 1\n"
 
 
+def test_whitespace_strings_are_quoted(rootlogger: TagTracer) -> None:
+    """Quotes show where a value starts and ends once it carries whitespace."""
+    out = rootlogger._format_message(["test"], ["call", {"val": " padded "}])
+    assert out == "call [test]\n    val: ' padded '\n"
+
+
+def test_empty_string_is_visible(rootlogger: TagTracer) -> None:
+    """An empty value is otherwise indistinguishable from no value at all."""
+    out = rootlogger._format_message(["test"], ["call", {"left": "", "right": "x"}])
+    assert out == "call [test]\n    left: ''\n    right: x\n"
+
+
+def test_enum_shows_member_name(rootlogger: TagTracer) -> None:
+    class Exit(enum.IntEnum):
+        FAILED = 1
+
+    out = rootlogger._format_message(["test"], ["call", {"status": Exit.FAILED}])
+    assert out == "call [test]\n    status: <Exit.FAILED: 1>\n"
+
+
+def test_pathlike_shows_its_type(rootlogger: TagTracer) -> None:
+    """Two arguments printing the same path may well be different types."""
+    out = rootlogger._format_message(
+        ["test"], ["call", {"p": pathlib.PurePosixPath("/x")}]
+    )
+    assert out == "call [test]\n    p: PurePosixPath('/x')\n"
+
+
+def test_multiline_value_is_boxed(rootlogger: TagTracer) -> None:
+    """A block stays attached to its key instead of escaping to column 0."""
+    out = rootlogger._format_message(
+        ["test"], ["call", {"expl": "first\nsecond\nthird"}]
+    )
+    assert out == (
+        "call [test]\n    expl:\n      | first\n      | second\n      \\ third\n"
+    )
+
+
 def test_dictargs_escape_surrogate_values(rootlogger: TagTracer) -> None:
     out = rootlogger._format_message(["test"], ["test", {"arg": "\ud800"}])
-    assert out == "test [test]\n    arg: \\ud800\n"
+    assert out == "test [test]\n    arg: '\\ud800'\n"
     out.encode()
 
 
