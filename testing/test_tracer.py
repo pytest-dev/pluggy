@@ -158,3 +158,73 @@ def test_dbl_plugin_tracing(pm: PluginManager) -> None:
         "  hello [hook]\n      arg: 3\n",
         "  finish hello --> [] [hook]\n",
     ]
+
+
+class BrokenRepr:
+    def __repr__(self) -> str:
+        raise RuntimeError("repr is broken")
+
+
+class BrokenStr:
+    def __repr__(self) -> str:
+        return "BrokenStr()"
+
+    def __str__(self) -> str:
+        raise RuntimeError("str is broken")
+
+
+class SurrogateRepr:
+    def __repr__(self) -> str:
+        return "\ud800"
+
+
+def test_dictargs_use_repr(rootlogger: TagTracer) -> None:
+    """Traced values are repred so their type is visible in the log."""
+    out = rootlogger._format_message(["test"], ["call", {"name": "value", "n": 1}])
+    assert out == "call [test]\n    name: 'value'\n    n: 1\n"
+
+
+def test_labels_are_not_repred(rootlogger: TagTracer) -> None:
+    """Structural labels stay unquoted, only values are repred."""
+    out = rootlogger._format_message(["test"], ["finish", "he_method1", "-->", "[]"])
+    assert out == "finish he_method1 --> [] [test]\n"
+
+
+def test_dictargs_escape_surrogate_values(rootlogger: TagTracer) -> None:
+    out = rootlogger._format_message(["test"], ["test", {"arg": "\ud800"}])
+    assert out == "test [test]\n    arg: '\\ud800'\n"
+    out.encode()
+
+
+def test_escape_surrogates_from_repr(rootlogger: TagTracer) -> None:
+    """A surrogate coming out of the object's own repr is escaped too."""
+    out = rootlogger._format_message(["test"], ["test", {"arg": SurrogateRepr()}])
+    assert out == "test [test]\n    arg: \\ud800\n"
+    out.encode()
+
+
+def test_escape_surrogates_in_labels(rootlogger: TagTracer) -> None:
+    out = rootlogger._format_message(["test"], ["\ud800"])
+    assert out == "\\ud800 [test]\n"
+    out.encode()
+
+
+def test_non_ascii_values_are_kept(rootlogger: TagTracer) -> None:
+    """Legible text is not mangled, only lone surrogates are escaped."""
+    out = rootlogger._format_message(["test"], ["héllo", {"arg": "wörld"}])
+    assert out == "héllo [test]\n    arg: 'wörld'\n"
+    out.encode()
+
+
+def test_broken_repr_value_does_not_raise(rootlogger: TagTracer) -> None:
+    out = rootlogger._format_message(["test"], ["test", {"arg": BrokenRepr()}])
+    assert "RuntimeError('repr is broken') raised in repr()" in out
+    assert "BrokenRepr object at 0x" in out
+    out.encode()
+
+
+def test_broken_str_label_does_not_raise(rootlogger: TagTracer) -> None:
+    out = rootlogger._format_message(["test"], [BrokenStr()])
+    assert "RuntimeError('str is broken') raised in str()" in out
+    assert "BrokenStr object at 0x" in out
+    out.encode()

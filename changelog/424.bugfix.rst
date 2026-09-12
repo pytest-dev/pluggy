@@ -1,0 +1,5 @@
+Tracing no longer breaks hook execution when a traced object has a broken ``__repr__``
+or ``__str__``. Such a value is now rendered as
+``<[RuntimeError(...) raised in repr()] Broken object at 0x...>``, in the same style
+pytest uses for unpresentable objects, instead of propagating the exception out of the
+hook call.

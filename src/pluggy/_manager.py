@@ -600,7 +600,12 @@ class PluginManager:
             kwargs: Mapping[str, object],
         ) -> None:
             if outcome.exception is None:
-                hooktrace("finish", hook_name, "-->", outcome.get_result())
+                hooktrace(
+                    "finish",
+                    hook_name,
+                    "-->",
+                    _tracing._safe_repr(outcome.get_result()),
+                )
             hooktrace.root.indent -= 1
 
         return self.add_hookcall_monitoring(before, after)
