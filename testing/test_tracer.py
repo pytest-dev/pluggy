@@ -57,6 +57,12 @@ def test_readable_output_dictargs(rootlogger: TagTracer) -> None:
     assert out2 == "test [test]\n    a: 1\n"
 
 
+def test_dictargs_escape_surrogate_values(rootlogger: TagTracer) -> None:
+    out = rootlogger._format_message(["test"], ["test", {"arg": "\ud800"}])
+    assert out == "test [test]\n    arg: '\\ud800'\n"
+    out.encode()
+
+
 def test_setprocessor(rootlogger: TagTracer) -> None:
     log = rootlogger.get("1")
     log2 = log.get("2")
