@@ -178,21 +178,15 @@ class SurrogateRepr:
         return "\ud800"
 
 
-def test_dictargs_use_repr(rootlogger: TagTracer) -> None:
-    """Traced values are repred so their type is visible in the log."""
+def test_dictargs_keep_str_rendering(rootlogger: TagTracer) -> None:
+    """Values keep their ``str`` rendering, the trace is a log not a repr dump."""
     out = rootlogger._format_message(["test"], ["call", {"name": "value", "n": 1}])
-    assert out == "call [test]\n    name: 'value'\n    n: 1\n"
-
-
-def test_labels_are_not_repred(rootlogger: TagTracer) -> None:
-    """Structural labels stay unquoted, only values are repred."""
-    out = rootlogger._format_message(["test"], ["finish", "he_method1", "-->", "[]"])
-    assert out == "finish he_method1 --> [] [test]\n"
+    assert out == "call [test]\n    name: value\n    n: 1\n"
 
 
 def test_dictargs_escape_surrogate_values(rootlogger: TagTracer) -> None:
     out = rootlogger._format_message(["test"], ["test", {"arg": "\ud800"}])
-    assert out == "test [test]\n    arg: '\\ud800'\n"
+    assert out == "test [test]\n    arg: \\ud800\n"
     out.encode()
 
 
@@ -212,13 +206,13 @@ def test_escape_surrogates_in_labels(rootlogger: TagTracer) -> None:
 def test_non_ascii_values_are_kept(rootlogger: TagTracer) -> None:
     """Legible text is not mangled, only lone surrogates are escaped."""
     out = rootlogger._format_message(["test"], ["héllo", {"arg": "wörld"}])
-    assert out == "héllo [test]\n    arg: 'wörld'\n"
+    assert out == "héllo [test]\n    arg: wörld\n"
     out.encode()
 
 
 def test_broken_repr_value_does_not_raise(rootlogger: TagTracer) -> None:
     out = rootlogger._format_message(["test"], ["test", {"arg": BrokenRepr()}])
-    assert "RuntimeError('repr is broken') raised in repr()" in out
+    assert "RuntimeError('repr is broken') raised in str()" in out
     assert "BrokenRepr object at 0x" in out
     out.encode()
 

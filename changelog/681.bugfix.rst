@@ -1,10 +1,3 @@
 Tracing no longer crashes with ``UnicodeEncodeError`` when a hook argument or return
 value contains lone surrogates; they are escaped with ``backslashreplace`` before the
-message reaches the writer.
-
-As part of this, traced *values* -- the hook keyword arguments and the hook return
-value -- are now formatted with ``repr()`` rather than ``str()``, so the trace output
-shows ``plugin_name: 'lfplugin'`` and ``start_path: PosixPath('/x')`` instead of
-``plugin_name: lfplugin`` and ``start_path: /x``. Structural labels such as the hook
-name and ``finish``/``-->`` markers are unchanged. Consumers that parse
-``--debug``-style trace output may need to adapt.
+message reaches the writer. Trace output is otherwise unchanged.

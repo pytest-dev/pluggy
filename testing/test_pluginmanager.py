@@ -991,8 +991,8 @@ def test_hook_tracing_escapes_surrogate_values(pm: PluginManager) -> None:
 
     assert result == "\ud800"
     assert out == [
-        "  he_method1 [hook]\n      arg: '\\ud800'\n",
-        "  finish he_method1 --> '\\ud800' [hook]\n",
+        "  he_method1 [hook]\n      arg: \\ud800\n",
+        "  finish he_method1 --> \\ud800 [hook]\n",
     ]
 
 
@@ -1024,7 +1024,7 @@ def test_hook_tracing_with_broken_repr(he_pm: PluginManager) -> None:
     assert result == [arg]
     assert len(out) == 2
     assert "he_method1" in out[0]
-    assert "RuntimeError('repr is broken') raised in repr()" in out[0]
+    assert "RuntimeError('repr is broken') raised in str()" in out[0]
     assert "BrokenRepr object at 0x" in out[0]
     assert "finish" in out[1]
 

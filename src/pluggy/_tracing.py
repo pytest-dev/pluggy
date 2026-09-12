@@ -13,21 +13,21 @@ _Writer = Callable[[str], object]
 _Processor = Callable[[tuple[str, ...], tuple[Any, ...]], object]
 
 
-def _describe_failure(exc: Exception, obj: object, func: str) -> str:
+def _describe_str_failure(exc: Exception, obj: object) -> str:
     try:
         exc_info = repr(exc)
     except Exception:
         exc_info = f"unpresentable {type(exc).__name__}"
     name = type(obj).__name__
-    return f"<[{exc_info} raised in {func}()] {name} object at 0x{id(obj):x}>"
+    return f"<[{exc_info} raised in str()] {name} object at 0x{id(obj):x}>"
 
 
 def _escape_surrogates(text: str) -> str:
     """Escape lone surrogates so the result survives any text writer.
 
-    ``repr()`` passes surrogates through unchanged when they originate in an
-    object's own ``__repr__``, and writing such a string to a utf-8 target
-    raises :exc:`UnicodeEncodeError` inside the trace call.
+    A lone surrogate reaching the writer raises :exc:`UnicodeEncodeError`
+    inside the trace call for any utf-8 target, such as the file behind
+    pytest's ``--debug``.
     """
     if text.isascii():
         return text
@@ -35,20 +35,14 @@ def _escape_surrogates(text: str) -> str:
 
 
 def _safe_str(obj: object) -> str:
-    """``str(obj)`` for structural trace labels, with a failure rendered."""
+    """``str(obj)`` for tracing, with a failing ``__str__`` rendered, not raised.
+
+    The result has lone surrogates escaped, so any text writer accepts it.
+    """
     try:
         text = str(obj)
     except Exception as exc:
-        text = _describe_failure(exc, obj, "str")
-    return _escape_surrogates(text)
-
-
-def _safe_repr(obj: object) -> str:
-    """``repr(obj)`` for traced values, with a failure rendered."""
-    try:
-        text = repr(obj)
-    except Exception as exc:
-        text = _describe_failure(exc, obj, "repr")
+        text = _describe_str_failure(exc, obj)
     return _escape_surrogates(text)
 
 
@@ -74,7 +68,7 @@ class TagTracer:
         lines = [f"{indent}{content} [{':'.join(tags)}]\n"]
 
         for name, value in extra.items():
-            lines.append(f"{indent}    {name}: {_safe_repr(value)}\n")
+            lines.append(f"{indent}    {name}: {_safe_str(value)}\n")
 
         return "".join(lines)
 
