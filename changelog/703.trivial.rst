@@ -1,0 +1,4 @@
+The internal ``pluggy._hooks`` module was split into role-specific modules
+(``_caller``, ``_config``, ``_decorators``, ``_execution`` and
+``_implementation``). ``pluggy._hooks`` remains as a re-export shim, and the
+public API is unchanged.
