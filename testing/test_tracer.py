@@ -166,9 +166,6 @@ class BrokenRepr:
 
 
 class BrokenStr:
-    def __repr__(self) -> str:
-        return "BrokenStr()"
-
     def __str__(self) -> str:
         raise RuntimeError("str is broken")
 
