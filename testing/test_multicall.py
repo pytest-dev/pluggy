@@ -7,8 +7,9 @@ import pytest
 from pluggy import HookCallError
 from pluggy import HookimplMarker
 from pluggy import HookspecMarker
+from pluggy import NormalImpl
+from pluggy import WrapperImpl
 from pluggy._callers import _multicall
-from pluggy._hooks import HookImpl
 
 
 hookspec = HookspecMarker("example")
@@ -20,12 +21,16 @@ def MC(
     kwargs: Mapping[str, object],
     firstresult: bool = False,
 ) -> object | list[object]:
-    caller = _multicall
-    hookfuncs = []
+    normal_impls: list[NormalImpl] = []
+    wrapper_impls: list[WrapperImpl] = []
     for method in methods:
-        f = HookImpl(None, "<temp>", method, method.example_impl)  # type: ignore[attr-defined]
-        hookfuncs.append(f)
-    return caller("foo", hookfuncs, kwargs, firstresult)
+        config = method.example_impl  # type: ignore[attr-defined]
+        f = config.create_hookimpl(None, "<temp>", method)
+        if isinstance(f, WrapperImpl):
+            wrapper_impls.append(f)
+        else:
+            normal_impls.append(f)
+    return _multicall("foo", normal_impls, wrapper_impls, kwargs, firstresult)
 
 
 def test_keyword_args() -> None:
