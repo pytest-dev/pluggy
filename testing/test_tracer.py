@@ -1,4 +1,5 @@
 import enum
+import os
 import pathlib
 
 import pytest
@@ -330,3 +331,34 @@ def test_keyboard_interrupt_from_exception_repr_propagates(
 
     with pytest.raises(KeyboardInterrupt):
         rootlogger._format_message(["test"], ["test", {"arg": Broken()}])
+
+
+class BrokenPath(os.PathLike[str]):
+    """A path-like whose repr is broken, as in #424 but for a traced path."""
+
+    def __fspath__(self) -> str:
+        raise NotImplementedError("the tracer must not resolve the path")
+
+    def __repr__(self) -> str:
+        raise RuntimeError("repr is broken")
+
+
+def test_broken_repr_on_pathlike_does_not_raise(rootlogger: TagTracer) -> None:
+    out = rootlogger._format_message(["test"], ["test", {"p": BrokenPath()}])
+    assert "RuntimeError('repr is broken') raised in repr()" in out
+    assert "BrokenPath object at 0x" in out
+    out.encode()
+
+
+def test_keyboard_interrupt_from_repr_propagates(rootlogger: TagTracer) -> None:
+    """Ctrl-C while rendering a value that goes through repr still interrupts."""
+
+    class Interrupting(os.PathLike[str]):
+        def __fspath__(self) -> str:
+            raise NotImplementedError("the tracer must not resolve the path")
+
+        def __repr__(self) -> str:
+            raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        rootlogger._format_message(["test"], ["test", {"p": Interrupting()}])
