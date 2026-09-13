@@ -1,0 +1,1 @@
+Fix the ``tox -e docs`` build, which failed under ``sphinx-build -W`` because nitpicky mode reported unresolved references to the private names ``_tracing.TagTracerSub``, ``DistFacade`` and ``_Plugin``.
