@@ -997,6 +997,20 @@ undo function to disable the behaviour.
     pm.trace.root.setwriter(print)
     undo = pm.enable_tracing()
 
+Each hook call is traced with its keyword arguments, followed by a ``finish``
+line carrying the result::
+
+    he_method1 [hook]
+        arg: value
+        path: /tmp
+    finish he_method1 --> ['value'] [hook]
+
+Values are rendered with :func:`str`, and the rendering is defensive: an object
+whose ``__str__`` raises is shown as
+``<[RuntimeError(...) raised in str()] Broken object at 0x...>``, and lone
+surrogates are backslash-escaped, so enabling tracing can never turn a working
+hook call into a failing one.
+
 
 Call monitoring
 ---------------

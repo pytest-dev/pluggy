@@ -13,6 +13,54 @@ _Writer = Callable[[str], object]
 _Processor = Callable[[tuple[str, ...], tuple[Any, ...]], object]
 
 
+def _try_repr_or_str(obj: object) -> str:
+    try:
+        return repr(obj)
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except BaseException:
+        return f'{type(obj).__name__}("{obj}")'
+
+
+def _format_str_exception(exc: BaseException, obj: object) -> str:
+    try:
+        exc_info = _try_repr_or_str(exc)
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except BaseException as inner:
+        exc_info = f"unpresentable exception ({_try_repr_or_str(inner)})"
+    name = type(obj).__name__
+    return f"<[{exc_info} raised in str()] {name} object at 0x{id(obj):x}>"
+
+
+def _escape_surrogates(text: str) -> str:
+    """Escape lone surrogates so the result survives any text writer.
+
+    A lone surrogate reaching the writer raises :exc:`UnicodeEncodeError`
+    inside the trace call for any utf-8 target, such as the file behind
+    pytest's ``--debug``.
+    """
+    if text.isascii():
+        return text
+    return text.encode("utf-8", "backslashreplace").decode("utf-8")
+
+
+def _safe_str(obj: object) -> str:
+    """``str(obj)`` for tracing, guaranteed not to raise and always writable.
+
+    Tracing is a debugging aid, so it must never be the reason a hook call
+    fails, and the rendering stays ``str``-based to keep the trace output
+    readable.
+    """
+    try:
+        text = str(obj)
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except BaseException as exc:
+        text = _format_str_exception(exc, obj)
+    return _escape_surrogates(text)
+
+
 class TagTracer:
     def __init__(self) -> None:
         self._tags2proc: dict[tuple[str, ...], _Processor] = {}
@@ -29,13 +77,13 @@ class TagTracer:
         else:
             extra = {}
 
-        content = " ".join(map(str, args))
+        content = " ".join(map(_safe_str, args))
         indent = "  " * self.indent
 
         lines = [f"{indent}{content} [{':'.join(tags)}]\n"]
 
         for name, value in extra.items():
-            lines.append(f"{indent}    {name}: {value}\n")
+            lines.append(f"{indent}    {name}: {_safe_str(value)}\n")
 
         return "".join(lines)
 
