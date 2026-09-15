@@ -912,6 +912,77 @@ def test_hook_tracing(he_pm: PluginManager) -> None:
         undo()
 
 
+def test_hook_tracing_escapes_surrogate_values(pm: PluginManager) -> None:
+    """Surrogates in traced arguments and results never reach the writer.
+
+    Regression test for #681 (pytest-dev/pytest#13750).
+    """
+
+    class Hooks:
+        @hookspec(firstresult=True)
+        def he_method1(self, arg: object) -> object:
+            raise NotImplementedError()
+
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg: object) -> object:
+            return arg
+
+    out: list[str] = []
+
+    def write(message: str) -> None:
+        message.encode()
+        out.append(message)
+
+    pm.add_hookspecs(Hooks)
+    pm.register(Plugin())
+    pm.trace.root.setwriter(write)
+    undo = pm.enable_tracing()
+    try:
+        result = pm.hook.he_method1(arg="\ud800")
+    finally:
+        undo()
+
+    assert result == "\ud800"
+    assert out == [
+        "  he_method1 [hook]\n      arg: '\\ud800'\n",
+        "  finish he_method1 --> \\ud800 [hook]\n",
+    ]
+
+
+def test_hook_tracing_with_broken_repr(he_pm: PluginManager) -> None:
+    """A broken ``__repr__`` does not break the hook call.
+
+    Regression test for #424 (kedro-org/kedro#2630).
+    """
+
+    class BrokenRepr:
+        def __repr__(self) -> str:
+            raise RuntimeError("repr is broken")
+
+    class api1:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg
+
+    he_pm.register(api1())
+    out: list[str] = []
+    he_pm.trace.root.setwriter(out.append)
+    undo = he_pm.enable_tracing()
+    arg = BrokenRepr()
+    try:
+        result = he_pm.hook.he_method1(arg=arg)
+    finally:
+        undo()
+
+    assert result == [arg]
+    assert len(out) == 2
+    assert "he_method1" in out[0]
+    assert "RuntimeError('repr is broken') raised in str()" in out[0]
+    assert "BrokenRepr object at 0x" in out[0]
+    assert "finish" in out[1]
+
+
 @pytest.mark.parametrize("historic", [False, True])
 def test_register_while_calling(
     pm: PluginManager,
