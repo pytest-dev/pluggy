@@ -505,6 +505,11 @@ class HookCaller:
     def __repr__(self) -> str:
         return f"<HookCaller {self.name!r}>"
 
+    def _apply_defaults(self, kwargs: Mapping[str, object]) -> Mapping[str, object]:
+        if self.spec is None or not self.spec.kwargdefaults:
+            return kwargs
+        return {**self.spec.kwargdefaults, **kwargs}
+
     def _verify_all_args_are_provided(self, kwargs: Mapping[str, object]) -> None:
         # This is written to avoid expensive operations when not needed.
         if self.spec:
@@ -539,10 +544,13 @@ class HookCaller:
         assert not self.is_historic(), (
             "Cannot directly call a historic hook - use call_historic instead."
         )
-        self._verify_all_args_are_provided(kwargs)
+        call_kwargs = self._apply_defaults(kwargs)
+        self._verify_all_args_are_provided(call_kwargs)
         firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
         # Copy because plugins may register other plugins during iteration (#438).
-        return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+        return self._hookexec(
+            self.name, self._hookimpls.copy(), call_kwargs, firstresult
+        )
 
     def call_historic(
         self,
@@ -559,6 +567,7 @@ class HookCaller:
         """
         assert self._call_history is not None
         kwargs = kwargs or {}
+        kwargs = self._apply_defaults(kwargs)
         self._verify_all_args_are_provided(kwargs)
         self._call_history.append((kwargs, result_callback))
         # Historizing hooks don't return results.
@@ -580,6 +589,7 @@ class HookCaller:
         assert not self.is_historic(), (
             "Cannot directly call a historic hook - use call_historic instead."
         )
+        kwargs = self._apply_defaults(kwargs)
         self._verify_all_args_are_provided(kwargs)
         opts: HookimplOpts = {
             "wrapper": False,
@@ -729,6 +739,7 @@ class HookSpec:
     __slots__ = (
         "argnames",
         "function",
+        "kwargdefaults",
         "kwargnames",
         "name",
         "namespace",
@@ -747,6 +758,8 @@ class HookSpec:
         self.argnames, self.kwargnames = varnames(
             self.function, legacy_noself=legacy_noself
         )
+        defaults = inspect.unwrap(self.function).__defaults__
+        self.kwargdefaults = dict(zip(self.kwargnames, defaults or ()))
         self.opts = opts
         self.warn_on_impl = opts.get("warn_on_impl")
         self.warn_on_impl_args = opts.get("warn_on_impl_args")

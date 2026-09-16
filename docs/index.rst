@@ -563,6 +563,8 @@ behavior you can run a check with the
 to enforce requisite *hookspecs* but with certain exceptions for some hooks
 then make sure to mark those hooks as :ref:`optional <optionalhook>`.
 
+.. _opt_in_arguments:
+
 Opt-in arguments
 ^^^^^^^^^^^^^^^^
 To allow for *hookspecs* to evolve over the lifetime of a project,
@@ -607,6 +609,37 @@ whereas this is not:
     The one exception to this rule (that a *hookspec* must have as least as
     many arguments as its *hookimpls*) is the conventional :ref:`self <python:tut-remarks>` arg; this
     is always ignored when *hookimpls* are defined as :ref:`methods <python:tut-methodobjects>`.
+
+
+.. _hookspec_arg_default:
+
+Hookspec argument defaults
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+A host program can specify hooks that are intended to be called by external
+plugins it has no control of, and not just by itself. This adds another
+dimension of backward compatibility to consider when evolving a hookspec.
+
+While :ref:`opt-in arguments <opt_in_arguments>` allows a hookspec to evolve
+while keeping existing *hookimpls* working, it doesn't help with existing *hook
+callers*. To handle this, pluggy allows a hookspec to declare a default value
+for an argument, using the usual ``def myhook(new_arg="default")`` Python syntax.
+
+If a caller omits this argument, pluggy will supply the default to the hookimpls.
+This allows the hookspec to add the new argument without breaking existing
+callers:
+
+.. code-block:: python
+
+    @hookspec
+    def myhook(config, args, new_arg=None):
+        pass
+
+
+    # Existing caller; hookimpls will get new_arg=None.
+    pm.hook.myhook(config=config, args=args)
+    # New caller; hookimpls will get new_arg="get this".
+    pm.hook.myhook(config=config, args=args, new_arg="get this")
+
 
 .. _firstresult:
 

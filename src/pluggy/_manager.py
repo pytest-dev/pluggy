@@ -414,7 +414,9 @@ class PluginManager:
             _warn_for_function(hook.spec.warn_on_impl, hookimpl.function)
 
         # positional arg checking
-        notinspec = set(hookimpl.argnames) - set(hook.spec.argnames)
+        notinspec = set(hookimpl.argnames) - (
+            set(hook.spec.argnames) | set(hook.spec.kwargnames)
+        )
         if notinspec:
             raise PluginValidationError(
                 hookimpl.plugin,
