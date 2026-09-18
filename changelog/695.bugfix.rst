@@ -1,0 +1,1 @@
+Fixed :func:`~pluggy.PluginManager.subset_hook_caller()` not excluding removed plugins which use :func:`@hookiml(specname="...") <pluggy.HookimplMarker>`.

@@ -603,14 +603,20 @@ class PluginManager:
     def subset_hook_caller(
         self, name: str, remove_plugins: Iterable[_Plugin]
     ) -> HookCaller:
-        """Return a proxy :class:`~pluggy.HookCaller` instance for the named
-        method which manages calls to all registered plugins except the ones
-        from remove_plugins."""
+        """Return a proxy :class:`~pluggy.HookCaller` for the named hook which
+        calls all registered plugins except the ones from remove_plugins."""
         orig: HookCaller = getattr(self.hook, name)
-        plugins_to_remove = {plug for plug in remove_plugins if hasattr(plug, name)}
-        if plugins_to_remove:
-            return _SubsetHookCaller(orig, plugins_to_remove)
-        return orig
+        plugins_to_remove = set(remove_plugins)
+        # Optimization: discard plugins to remove which don't actually implement
+        # the hook, to make checks faster.
+        plugins_to_remove.intersection_update(
+            hookimpl.plugin for hookimpl in orig._hookimpls
+        )
+        # Optimization: if none of the plugins to remove actually implement the
+        # hook, avoid the subset hook caller overhead.
+        if not plugins_to_remove:
+            return orig
+        return _SubsetHookCaller(orig, plugins_to_remove)
 
 
 def _formatdef(func: Callable[..., object]) -> str:
