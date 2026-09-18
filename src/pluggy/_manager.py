@@ -196,6 +196,9 @@ class PluginManager:
 
         If the plugin is already registered, raises a :exc:`ValueError`.
         """
+        if plugin is None:
+            raise TypeError("plugin must not be None")
+
         plugin_name = name or self.get_canonical_name(plugin)
 
         if plugin_name in self._name2plugin:
