@@ -1,0 +1,1 @@
+Plugin registration now rolls back all partial state when an implementation fails validation.

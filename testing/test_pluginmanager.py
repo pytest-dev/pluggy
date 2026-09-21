@@ -52,6 +52,36 @@ def test_pm(pm: PluginManager) -> None:
     assert out2 == [("hello", a2)]
 
 
+def test_register_cleans_up_after_validation_error(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec
+        def a_hook(self) -> None: ...
+
+        @hookspec
+        def b_hook(self) -> None: ...
+
+    pm.add_hookspecs(Hooks)
+
+    class Plugin:
+        def __bool__(self) -> bool:
+            return False
+
+        @hookimpl
+        def a_hook(self) -> None: ...
+
+        @hookimpl
+        def b_hook(self, unexpected: object) -> None: ...
+
+    plugin = Plugin()
+    with pytest.raises(PluginValidationError):
+        pm.register(plugin, name="broken")
+
+    assert not pm.is_registered(plugin)
+    assert pm.get_plugin("broken") is None
+    assert pm.hook.a_hook.get_hookimpls() == []
+    assert pm.hook.b_hook.get_hookimpls() == []
+
+
 def test_has_plugin(pm: PluginManager) -> None:
     class A:
         pass
