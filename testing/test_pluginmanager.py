@@ -73,6 +73,7 @@ def test_register_cleans_up_after_validation_error(pm: PluginManager) -> None:
         def b_hook(self, unexpected: object) -> None: ...
 
     plugin = Plugin()
+    assert not plugin
     with pytest.raises(PluginValidationError):
         pm.register(plugin, name="broken")
 
