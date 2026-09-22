@@ -25,15 +25,22 @@ Teardown: TypeAlias = Generator[None, object, object]
 
 
 def run_old_style_hookwrapper(
-    hook_impl: HookImpl, hook_name: str, args: Sequence[object]
+    hook_impl: HookImpl,
+    hook_name: str,
+    args: Sequence[object],
+    kwargs: Mapping[str, object] | None,
 ) -> Teardown:
     """
     backward compatibility wrapper to run a old style hookwrapper as a wrapper
     """
-    if TYPE_CHECKING:
-        teardown = cast(Teardown, hook_impl.function(*args))
+    if kwargs is None:
+        res = hook_impl.function(*args)
     else:
-        teardown = hook_impl.function(*args)
+        res = hook_impl.function(*args, **kwargs)
+    if TYPE_CHECKING:
+        teardown = cast(Teardown, res)
+    else:
+        teardown = res
     try:
         next(teardown)
     except StopIteration:
@@ -98,19 +105,32 @@ def _multicall(
         for hook_impl in reversed(hook_impls):
             try:
                 args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+                if hook_impl.kwargnames:
+                    kwargs = {
+                        argname: caller_kwargs[argname]
+                        for argname in hook_impl.kwargnames
+                        if argname in caller_kwargs
+                    } or None
+                else:
+                    kwargs = None
             except KeyError as e:
                 raise HookCallError(
                     f"hook call must provide argument {e.args[0]!r}"
                 ) from e
 
             if hook_impl.hookwrapper:
-                function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
+                function_gen = run_old_style_hookwrapper(
+                    hook_impl, hook_name, args, kwargs
+                )
 
                 next(function_gen)  # first yield
                 teardowns.append(function_gen)
 
             elif hook_impl.wrapper:
-                res = hook_impl.function(*args)
+                if kwargs is None:
+                    res = hook_impl.function(*args)
+                else:
+                    res = hook_impl.function(*args, **kwargs)
                 # If this cast is not valid, a type error is raised below,
                 # which is the desired response.
                 if TYPE_CHECKING:
@@ -123,7 +143,10 @@ def _multicall(
                     _raise_wrapfail(function_gen, "did not yield")
                 teardowns.append(function_gen)
             else:
-                res = hook_impl.function(*args)
+                if kwargs is None:
+                    res = hook_impl.function(*args)
+                else:
+                    res = hook_impl.function(*args, **kwargs)
                 if res is not None:
                     results.append(res)
                     if firstresult:  # halt further impl calls

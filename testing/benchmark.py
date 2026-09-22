@@ -91,6 +91,11 @@ def wrapper(arg1, arg2, arg3):
     return (yield)
 
 
+@hookimpl
+def hook_with_default_argument(arg1, arg2=2):
+    return arg1, arg2
+
+
 @pytest.fixture(params=[10, 100], ids="hooks={}".format)
 def hooks(request: Any) -> list[object]:
     return [hook for i in range(request.param)]
@@ -111,6 +116,31 @@ def test_hook_and_wrappers_speed(benchmark, hooks, wrappers) -> None:
         caller_kwargs = {"arg1": 1, "arg2": 2, "arg3": 3}
         firstresult = False
         return (hook_name, hook_impls, caller_kwargs, firstresult), {}
+
+    benchmark.pedantic(_multicall, setup=setup, rounds=100)
+
+
+@pytest.mark.parametrize("impl_count", [10, 100])
+@pytest.mark.parametrize(
+    "pass_arg", [False, True], ids=["impl-default", "caller-value"]
+)
+def test_hookimpl_with_default_speed(
+    benchmark, impl_count: int, pass_arg: bool
+) -> None:
+    def setup():
+        hook_impls = [
+            HookImpl(
+                None,
+                "<temp>",
+                hook_with_default_argument,
+                hook_with_default_argument.example_impl,  # type: ignore[attr-defined]
+            )
+            for _ in range(impl_count)
+        ]
+        caller_kwargs = {"arg1": 1}
+        if pass_arg:
+            caller_kwargs["arg2"] = 2
+        return ("foo", hook_impls, caller_kwargs, False), {}
 
     benchmark.pedantic(_multicall, setup=setup, rounds=100)
 
