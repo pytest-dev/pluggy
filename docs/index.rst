@@ -640,6 +640,8 @@ callers:
     # New caller; hookimpls will get new_arg="get this".
     pm.hook.myhook(config=config, args=args, new_arg="get this")
 
+.. versionadded:: 1.7
+    Hookspec argument defaults.
 
 .. _firstresult:
 
