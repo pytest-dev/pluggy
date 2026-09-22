@@ -1,0 +1,3 @@
+Hookspecs can now delcare default values for arguments, using the usual ``def myhook(myarg="default")`` syntax.
+This is mainly a backward compatibility feature, to allow a hookspec to add new parameters to an existing hook without breaking existing *callers*.
+See :ref:`hookspec_arg_default` for details.

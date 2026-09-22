@@ -367,3 +367,193 @@ def test_wrappers_yield_never_fails(pm: PluginManager, kind: Any) -> None:
     pm.register(Plugin())
     with pytest.raises(RuntimeError, match="wrap_controller at 'wrap'.* did not yield"):
         pm.hook.wrap()
+
+
+class TestHookspecDefaultArgumentValue:
+    """Tests for the hookspec functionality of providing a default value for args."""
+
+    def test_basic(self, pm: PluginManager) -> None:
+        """Basic scenario with old and new impls."""
+        default = object()
+
+        class Api:
+            @hookspec
+            def hello(self, arg, new_arg=default):
+                pass
+
+        class NewPlugin:
+            @hookimpl
+            def hello(self, arg, new_arg):
+                return "new", arg, new_arg
+
+        class OldPlugin:
+            @hookimpl
+            def hello(self, arg):
+                return "old", arg
+
+        pm.add_hookspecs(Api)
+        pm.register(NewPlugin())
+        pm.register(OldPlugin())
+
+        assert pm.hook.hello(arg=1) == [("old", 1), ("new", 1, default)]
+
+        assert pm.hook.hello(arg=1, new_arg="call") == [("old", 1), ("new", 1, "call")]
+
+    def test_added_after_registration(self, pm: PluginManager) -> None:
+        """If spec is registered after plugin, the default still works."""
+
+        class Plugin:
+            @hookimpl
+            def hello(self, arg, new_arg):
+                return arg, new_arg
+
+        pm.register(Plugin())
+
+        class Api:
+            @hookspec
+            def hello(self, arg, new_arg="default"):
+                pass
+
+        pm.add_hookspecs(Api)
+
+        assert pm.hook.hello(arg=1) == [(1, "default")]
+
+    def test_old_spec_new_impl(self, pm: PluginManager) -> None:
+        """Test what happens when old spec version is used with new impl version.
+
+        The impl must provide its *own* default if it wants to keep supporting
+        old spec versions.
+        """
+
+        class Api:
+            @hookspec
+            def hello(self, arg):
+                pass
+
+        pm.add_hookspecs(Api)
+
+        class PluginWithoutImplDefault:
+            @hookimpl
+            def hello(self, arg, new_arg):
+                return arg, new_arg  # pragma: no cover
+
+        class PluginWithImplDefault:
+            @hookimpl
+            def hello(self, arg, new_arg="impl-default"):
+                return arg, new_arg
+
+        with pytest.raises(PluginValidationError):
+            pm.register(PluginWithoutImplDefault())
+        pm.register(PluginWithImplDefault())
+
+        assert pm.hook.hello(arg=1) == [(1, "impl-default")]
+
+    def test_does_not_override_hookimpl_default(self, pm: PluginManager) -> None:
+        """If an impl provides its own default, it takes precedence over both
+        the spec default and call value.
+
+        NOTE: This is verifying existing behavior, but it's not necessarily what
+        we want (#442).
+        """
+
+        class Api:
+            @hookspec
+            def hello(self, arg, new_arg="spec-default"):
+                pass
+
+        class Plugin:
+            @hookimpl
+            def hello(self, arg, new_arg="impl-default"):
+                return new_arg
+
+        pm.add_hookspecs(Api)
+        pm.register(Plugin())
+
+        assert pm.hook.hello(arg=1) == ["impl-default"]
+        assert pm.hook.hello(arg=1, new_arg="call") == ["impl-default"]
+
+    def test_new_call_argument_is_not_delivered_by_old_spec(
+        self, pm: PluginManager
+    ) -> None:
+        """If call uses new spec, but both spec and plugin are old, the new arg
+        is just ignored."""
+
+        class Api:
+            @hookspec
+            def hello(self, arg):
+                pass
+
+        class Plugin:
+            @hookimpl
+            def hello(self, arg):
+                return arg
+
+        pm.add_hookspecs(Api)
+        pm.register(Plugin())
+
+        assert pm.hook.hello(arg=1, extra=2) == [1]
+
+    @pytest.mark.parametrize("value", [None, False, 0, ""])
+    def test_falsy_values_allowed_as_default(
+        self, pm: PluginManager, value: object
+    ) -> None:
+        """Make sure falsy values like None are allowed as default (e.g. not
+        used as special sentinels by the implementation)."""
+
+        class Api:
+            @hookspec
+            def hello(self, arg=value):
+                pass
+
+        class Plugin:
+            @hookimpl
+            def hello(self, arg):
+                return (arg,)
+
+        pm.add_hookspecs(Api)
+        pm.register(Plugin())
+
+        assert pm.hook.hello() == [(value,)]
+        assert pm.hook.hello(arg=value) == [(value,)]
+
+    def test_historic_replay(self, pm: PluginManager) -> None:
+        """Test historic calls respect defaults."""
+
+        class Api:
+            @hookspec(historic=True)
+            def hello(self, arg, new_arg="spec"):
+                pass
+
+        pm.add_hookspecs(Api)
+
+        pm.hook.hello.call_historic(kwargs={"arg": 1})
+        pm.hook.hello.call_historic(kwargs={"arg": 2, "new_arg": "call"})
+
+        seen = []
+
+        class Plugin:
+            @hookimpl
+            def hello(self, arg, new_arg):
+                seen.append((arg, new_arg))
+
+        pm.register(Plugin())
+
+        assert seen == [(1, "spec"), (2, "call")]
+
+    def test_call_extra(self, pm: PluginManager) -> None:
+        """Test calls with extras respect defaults."""
+
+        class Api:
+            @hookspec
+            def hello(self, arg, new_arg="spec"):
+                pass
+
+        pm.add_hookspecs(Api)
+
+        def hello(arg, new_arg):
+            return arg, new_arg
+
+        assert pm.hook.hello.call_extra([hello], {"arg": 1}) == [(1, "spec")]
+        assert pm.hook.hello.call_extra([hello], {"arg": 2, "new_arg": "call"}) == [
+            (2, "call")
+        ]
