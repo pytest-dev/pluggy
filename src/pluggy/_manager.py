@@ -548,11 +548,11 @@ class PluginManager:
         Returns an undo function which, when called, removes the added tracers.
 
         ``before(hook_name, hook_impls, kwargs)`` will be called ahead
-        of all hook calls and receive a hookcaller instance, a list
-        of HookImpl instances and the keyword arguments for the hook call.
+        of all hook calls and receive the hook name, a list of :class:`HookImpl`
+        instances and the keyword arguments for the hook call.
 
         ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
-        same arguments as ``before`` but also a :class:`~pluggy.Result` object
+        same arguments as ``before`` but also a :class:`Result` object
         which represents the result of the overall hook call.
         """
         oldcall = self._inner_hookexec
