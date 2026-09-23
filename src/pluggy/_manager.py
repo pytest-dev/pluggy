@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING
 from typing import TypeAlias
 import warnings
 
-from . import _tracing
 from ._callers import _multicall
 from ._hooks import _HookImplFunction
 from ._hooks import _Namespace
@@ -26,6 +25,8 @@ from ._hooks import HookRelay
 from ._hooks import HookspecOpts
 from ._hooks import normalize_hookimpl_opts
 from ._result import Result
+from ._tracing import TagTracer
+from ._tracing import TagTracerSub
 
 
 if TYPE_CHECKING:
@@ -167,9 +168,7 @@ class PluginManager:
         #: See :ref:`calling`.
         self.hook: Final = HookRelay()
         #: The tracing entry point. See :ref:`tracing`.
-        self.trace: Final[_tracing.TagTracerSub] = _tracing.TagTracer().get(
-            "pluginmanage"
-        )
+        self.trace: Final[TagTracerSub] = TagTracer().get("pluginmanage")
         self._inner_hookexec = _multicall
 
     def _hookexec(
@@ -179,8 +178,8 @@ class PluginManager:
         kwargs: Mapping[str, object],
         firstresult: bool,
     ) -> object | list[object]:
-        # called from all hookcaller instances.
-        # enable_tracing will set its own wrapping function at self._inner_hookexec
+        # Called from all hookcaller instances. add_hookcall_monitoring will set
+        # its own wrapping function at self._inner_hookexec.
         return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
 
     def register(self, plugin: _Plugin, name: str | None = None) -> str | None:
