@@ -358,6 +358,42 @@ def test_register_mismatch_method(he_pm: PluginManager) -> None:
     assert excinfo.value.plugin is plugin
 
 
+def test_register_validation_failure_leaves_manager_unchanged(
+    he_pm: PluginManager,
+) -> None:
+    """A later invalid hook must not keep earlier impls or the plugin (#733)."""
+
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg
+
+        @hookimpl(specname="he_method1")
+        def he_method1_bad(self, arg, extra):
+            return arg  # pragma: no cover
+
+        @hookimpl
+        def brand_new_hook(self, arg):
+            return arg  # pragma: no cover
+
+    plugin = Plugin()
+    with pytest.raises(PluginValidationError):
+        he_pm.register(plugin)
+
+    assert not he_pm.is_registered(plugin)
+    assert he_pm.get_plugin("Plugin") is None
+    assert he_pm.hook.he_method1.get_hookimpls() == []
+    assert not hasattr(he_pm.hook, "brand_new_hook")
+
+    class Fixed:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg + 1
+
+    he_pm.register(Fixed())
+    assert he_pm.hook.he_method1(arg=1) == [2]
+
+
 def test_register_mismatch_arg(he_pm: PluginManager) -> None:
     class hello:
         @hookimpl

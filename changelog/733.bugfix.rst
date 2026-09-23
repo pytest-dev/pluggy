@@ -1,0 +1,1 @@
+``PluginManager.register()`` no longer leaves a plugin or its hook implementations installed when registration fails validation, so the call can be retried after the plugin is fixed.

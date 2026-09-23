@@ -215,14 +215,23 @@ class PluginManager:
                 f"{plugin_name}={plugin}\n{self._name2plugin}"
             )
 
-        # XXX if an error happens we should make sure no state has been
-        # changed at point of return
-        self._name2plugin[plugin_name] = plugin
+        # Validate every implementation before the plugin is visible.
+        # A later failure must not leave this plugin registered or any of
+        # its hook implementations installed (#733).
+        prepared: list[tuple[HookCaller, HookImpl]] = []
+        new_hook_names: list[str] = []
 
-        # register matching hook implementations of the plugin
-        for attr_name in dir(plugin):
-            hookimpl_opts = self.parse_hookimpl_opts(plugin, attr_name)
-            if hookimpl_opts is not None:
+        def discard_empty_new_hooks() -> None:
+            for created_name in new_hook_names:
+                created = getattr(self.hook, created_name, None)
+                if created is not None and not created.get_hookimpls():
+                    delattr(self.hook, created_name)
+
+        try:
+            for attr_name in dir(plugin):
+                hookimpl_opts = self.parse_hookimpl_opts(plugin, attr_name)
+                if hookimpl_opts is None:
+                    continue
                 normalize_hookimpl_opts(hookimpl_opts)
                 found = _static_hook_attr(plugin, attr_name)
                 # Only reachable when a subclass overrode parse_hookimpl_opts
@@ -237,10 +246,24 @@ class PluginManager:
                 if hook is None:
                     hook = HookCaller(hook_name, self._hookexec)
                     setattr(self.hook, hook_name, hook)
+                    new_hook_names.append(hook_name)
                 elif hook.has_spec():
                     self._verify_hook(hook, hookimpl)
+                prepared.append((hook, hookimpl))
+        except BaseException:
+            discard_empty_new_hooks()
+            raise
+
+        self._name2plugin[plugin_name] = plugin
+        try:
+            for hook, hookimpl in prepared:
+                if hook.has_spec():
                     hook._maybe_apply_history(hookimpl)
                 hook._add_hookimpl(hookimpl)
+        except BaseException:
+            self.unregister(plugin=plugin, name=plugin_name)
+            discard_empty_new_hooks()
+            raise
         return plugin_name
 
     def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
