@@ -398,6 +398,36 @@ def test_register_validation_failure_leaves_no_state(he_pm: PluginManager) -> No
     assert not hasattr(he_pm.hook, "a_new_hook")
 
 
+def test_register_verifies_spec_added_by_historic_replay(pm: PluginManager) -> None:
+    """A spec added while replaying one impl's historic call must still be
+    checked for the impls registered after it."""
+
+    class Specs:
+        @hookspec(historic=True)
+        def configure(self):
+            pass  # pragma: no cover
+
+    class LateSpecs:
+        @hookspec
+        def late(self, arg):
+            pass  # pragma: no cover
+
+    pm.add_hookspecs(Specs)
+    pm.hook.configure.call_historic()
+
+    class hello:
+        @hookimpl
+        def configure(self):
+            pm.add_hookspecs(LateSpecs)
+
+        @hookimpl
+        def late(self, qlwkje):
+            pass  # pragma: no cover
+
+    with pytest.raises(PluginValidationError, match="qlwkje"):
+        pm.register(hello())
+
+
 def test_register_hookwrapper_not_a_generator_function(he_pm: PluginManager) -> None:
     class hello:
         @hookimpl(hookwrapper=True)

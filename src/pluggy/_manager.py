@@ -217,7 +217,7 @@ class PluginManager:
 
         # Validate every hookimpl before changing any state, so a plugin that
         # fails validation leaves the manager untouched.
-        hookimpls: list[tuple[str, HookImpl]] = []
+        hookimpls: list[tuple[str, HookImpl, bool]] = []
         for attr_name in dir(plugin):
             hookimpl_opts = self.parse_hookimpl_opts(plugin, attr_name)
             if hookimpl_opts is not None:
@@ -232,16 +232,23 @@ class PluginManager:
                 hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
                 hook_name = hookimpl_opts.get("specname") or attr_name
                 hook: HookCaller | None = getattr(self.hook, hook_name, None)
+                verified = False
                 if hook is not None and hook.has_spec():
                     self._verify_hook(hook, hookimpl)
-                hookimpls.append((hook_name, hookimpl))
+                    verified = True
+                hookimpls.append((hook_name, hookimpl, verified))
 
         self._name2plugin[plugin_name] = plugin
-        for hook_name, hookimpl in hookimpls:
+        for hook_name, hookimpl, verified in hookimpls:
             hook = getattr(self.hook, hook_name, None)
             if hook is None:
                 hook = HookCaller(hook_name, self._hookexec)
                 setattr(self.hook, hook_name, hook)
+            elif not verified and hook.has_spec():
+                # An earlier impl's historic replay added this spec after the
+                # first pass. Failing here leaves the plugin partially
+                # registered, but only user code during replay can get here.
+                self._verify_hook(hook, hookimpl)
             hook._maybe_apply_history(hookimpl)
             hook._add_hookimpl(hookimpl)
         return plugin_name
