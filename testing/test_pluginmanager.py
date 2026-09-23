@@ -371,6 +371,33 @@ def test_register_mismatch_arg(he_pm: PluginManager) -> None:
     assert excinfo.value.plugin is plugin
 
 
+def test_register_validation_failure_leaves_no_state(he_pm: PluginManager) -> None:
+    """The invalid impl sorts last in dir(), after a valid impl and an impl
+    for an unknown hook; a failed register must install none of them (#733)."""
+
+    class hello:
+        @hookimpl
+        def a_new_hook(self):
+            pass  # pragma: no cover
+
+        @hookimpl
+        def he_method1(self, arg):
+            pass  # pragma: no cover
+
+        @hookimpl(specname="he_method1")
+        def he_method1_invalid(self, qlwkje):
+            pass  # pragma: no cover
+
+    plugin = hello()
+
+    with pytest.raises(PluginValidationError) as excinfo:
+        he_pm.register(plugin)
+    assert excinfo.value.plugin is plugin
+    assert not he_pm.is_registered(plugin)
+    assert he_pm.hook.he_method1.get_hookimpls() == []
+    assert not hasattr(he_pm.hook, "a_new_hook")
+
+
 def test_register_hookwrapper_not_a_generator_function(he_pm: PluginManager) -> None:
     class hello:
         @hookimpl(hookwrapper=True)
