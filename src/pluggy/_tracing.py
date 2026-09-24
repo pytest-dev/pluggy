@@ -13,6 +13,39 @@ _Writer = Callable[[str], object]
 _Processor = Callable[[tuple[str, ...], tuple[Any, ...]], object]
 
 
+def _describe_str_failure(exc: Exception, obj: object) -> str:
+    try:
+        exc_info = repr(exc)
+    except Exception:
+        exc_info = f"unpresentable {type(exc).__name__}"
+    name = type(obj).__name__
+    return f"<[{exc_info} raised in str()] {name} object at 0x{id(obj):x}>"
+
+
+def _escape_surrogates(text: str) -> str:
+    """Escape lone surrogates so the result survives any text writer.
+
+    A lone surrogate reaching the writer raises :exc:`UnicodeEncodeError`
+    inside the trace call for any utf-8 target, such as the file behind
+    pytest's ``--debug``.
+    """
+    if text.isascii():
+        return text
+    return text.encode("utf-8", "backslashreplace").decode("utf-8")
+
+
+def _safe_str(obj: object) -> str:
+    """``str(obj)`` for tracing, with a failing ``__str__`` rendered, not raised.
+
+    The result has lone surrogates escaped, so any text writer accepts it.
+    """
+    try:
+        text = str(obj)
+    except Exception as exc:
+        text = _describe_str_failure(exc, obj)
+    return _escape_surrogates(text)
+
+
 class TagTracer:
     def __init__(self) -> None:
         self._tags2proc: dict[tuple[str, ...], _Processor] = {}
@@ -29,13 +62,13 @@ class TagTracer:
         else:
             extra = {}
 
-        content = " ".join(map(str, args))
+        content = " ".join(map(_safe_str, args))
         indent = "  " * self.indent
 
         lines = [f"{indent}{content} [{':'.join(tags)}]\n"]
 
         for name, value in extra.items():
-            lines.append(f"{indent}    {name}: {value}\n")
+            lines.append(f"{indent}    {name}: {_safe_str(value)}\n")
 
         return "".join(lines)
 
