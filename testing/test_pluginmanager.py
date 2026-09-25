@@ -29,6 +29,14 @@ def test_plugin_double_register(pm: PluginManager) -> None:
         pm.register(42, name="def")
 
 
+def test_register_rejects_none(pm: PluginManager) -> None:
+    """``None`` collides with the blocked-name sentinel and must be rejected."""
+    with pytest.raises(TypeError, match="plugin must not be None"):
+        pm.register(None)
+    assert pm.get_plugins() == set()
+    assert not pm.is_registered(None)
+
+
 def test_pm(pm: PluginManager) -> None:
     """Basic registration with objects"""
 
@@ -361,6 +369,63 @@ def test_register_mismatch_arg(he_pm: PluginManager) -> None:
     with pytest.raises(PluginValidationError) as excinfo:
         he_pm.register(plugin)
     assert excinfo.value.plugin is plugin
+
+
+def test_register_validation_failure_leaves_no_state(he_pm: PluginManager) -> None:
+    """The invalid impl sorts last in dir(), after a valid impl and an impl
+    for an unknown hook; a failed register must install none of them (#733)."""
+
+    class hello:
+        @hookimpl
+        def a_new_hook(self):
+            pass  # pragma: no cover
+
+        @hookimpl
+        def he_method1(self, arg):
+            pass  # pragma: no cover
+
+        @hookimpl(specname="he_method1")
+        def he_method1_invalid(self, qlwkje):
+            pass  # pragma: no cover
+
+    plugin = hello()
+
+    with pytest.raises(PluginValidationError) as excinfo:
+        he_pm.register(plugin)
+    assert excinfo.value.plugin is plugin
+    assert not he_pm.is_registered(plugin)
+    assert he_pm.hook.he_method1.get_hookimpls() == []
+    assert not hasattr(he_pm.hook, "a_new_hook")
+
+
+def test_register_verifies_spec_added_by_historic_replay(pm: PluginManager) -> None:
+    """A spec added while replaying one impl's historic call must still be
+    checked for the impls registered after it."""
+
+    class Specs:
+        @hookspec(historic=True)
+        def configure(self):
+            pass  # pragma: no cover
+
+    class LateSpecs:
+        @hookspec
+        def late(self, arg):
+            pass  # pragma: no cover
+
+    pm.add_hookspecs(Specs)
+    pm.hook.configure.call_historic()
+
+    class hello:
+        @hookimpl
+        def configure(self):
+            pm.add_hookspecs(LateSpecs)
+
+        @hookimpl
+        def late(self, qlwkje):
+            pass  # pragma: no cover
+
+    with pytest.raises(PluginValidationError, match="qlwkje"):
+        pm.register(hello())
 
 
 def test_register_hookwrapper_not_a_generator_function(he_pm: PluginManager) -> None:
@@ -948,6 +1013,77 @@ def test_hook_tracing(he_pm: PluginManager) -> None:
         assert saveindent[0] > indent
     finally:
         undo()
+
+
+def test_hook_tracing_escapes_surrogate_values(pm: PluginManager) -> None:
+    """Surrogates in traced arguments and results never reach the writer.
+
+    Regression test for #681 (pytest-dev/pytest#13750).
+    """
+
+    class Hooks:
+        @hookspec(firstresult=True)
+        def he_method1(self, arg: object) -> object:
+            raise NotImplementedError()
+
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg: object) -> object:
+            return arg
+
+    out: list[str] = []
+
+    def write(message: str) -> None:
+        message.encode()
+        out.append(message)
+
+    pm.add_hookspecs(Hooks)
+    pm.register(Plugin())
+    pm.trace.root.setwriter(write)
+    undo = pm.enable_tracing()
+    try:
+        result = pm.hook.he_method1(arg="\ud800")
+    finally:
+        undo()
+
+    assert result == "\ud800"
+    assert out == [
+        "  he_method1 [hook]\n      arg: \\ud800\n",
+        "  finish he_method1 --> \\ud800 [hook]\n",
+    ]
+
+
+def test_hook_tracing_with_broken_repr(he_pm: PluginManager) -> None:
+    """A broken ``__repr__`` does not break the hook call.
+
+    Regression test for #424 (kedro-org/kedro#2630).
+    """
+
+    class BrokenRepr:
+        def __repr__(self) -> str:
+            raise RuntimeError("repr is broken")
+
+    class api1:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg
+
+    he_pm.register(api1())
+    out: list[str] = []
+    he_pm.trace.root.setwriter(out.append)
+    undo = he_pm.enable_tracing()
+    arg = BrokenRepr()
+    try:
+        result = he_pm.hook.he_method1(arg=arg)
+    finally:
+        undo()
+
+    assert result == [arg]
+    assert len(out) == 2
+    assert "he_method1" in out[0]
+    assert "RuntimeError('repr is broken') raised in str()" in out[0]
+    assert "BrokenRepr object at 0x" in out[0]
+    assert "finish" in out[1]
 
 
 @pytest.mark.parametrize("historic", [False, True])
