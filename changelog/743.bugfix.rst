@@ -1,0 +1,1 @@
+Fixed ``warn_on_impl_args`` to warn when a hook implementation requests a deprecated argument with a default.
