@@ -1,0 +1,4 @@
+With the addition of default values for hookspec arguments, we also changed the precedence of default values for *hookimpl* arguments.
+Previously, if a hookimpl function declared a default for an argument, it was always used, even if the *hook call* passed an explicit value.
+Now the precedence is changed to: hook call passed value > hookspec default value > hookimpl default value.
+See :ref:`hookimpl_arg_defaults`.

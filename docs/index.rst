@@ -502,6 +502,29 @@ method.
     :py:meth:`~pluggy.Result.force_exception` to adjust the
     exception.
 
+.. _hookimpl_arg_defaults:
+
+Hookimpl argument defaults
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+A hookimpl can declare default values for its arguments, as in ``version=1`` in
+this example plugin::
+
+    class CompatiblePlugin:
+        @hookimpl
+        def setup_project(self, config, args, version=1):
+            ...
+
+This can be helpful if the host application evolved the hookspec to add a new
+argument, but the plugin still wants to support an old version of the host
+application which didn't pass this argument.
+
+If the hook caller passes a value for the parameter, it is used. Otherwise the
+default declared by the hookimpl is used.
+
+.. versionchanged:: 1.7
+    Previous versions had a different, unhelpful, behavior of *always* using the
+    hookimpl-declared default.
+
 .. _specs:
 
 Specifications
@@ -640,6 +663,8 @@ callers:
     # New caller; hookimpls will get new_arg="get this".
     pm.hook.myhook(config=config, args=args, new_arg="get this")
 
+.. versionadded:: 1.7
+    Hookspec argument defaults.
 
 .. _firstresult:
 
