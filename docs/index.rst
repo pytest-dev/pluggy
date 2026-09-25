@@ -1044,16 +1044,46 @@ debugging needs.
 
 Call tracing
 ------------
-To enable tracing use the
-:py:meth:`pluggy.PluginManager.enable_tracing()` method which returns an
-undo function to disable the behaviour.
+
+Call tracing is based on a hierarchical list of "tags", for example
+"myproject:config". You start with the trace root :data:`pm.trace.root
+<pluggy.TagTracerSub.root>` and then get sub-tracers using :func:`root.get("tag")
+<pluggy.TagTracerSub.get>`.
+
+To enable tracing, use the :py:meth:`pluggy.PluginManager.enable_tracing()`
+method. It returns an undo function to disable the behaviour. Pluggy itself
+emits start/finish traces for every hook call, with the ``"pluginmanage:hook"``
+tags, using indendation for hook depth.
+
+To emit a trace message yourself, call a sub-tracer with any number of arguments.
 
 .. code-block:: python
 
     pm = PluginManager("myproject")
-    # magic line to set a writer function
+    trace = pm.trace.root.get("myproject").get("config")
+    # Emit a message.
+    trace("starting configuration")
+
+:meth:`Set a writer <pluggy.TagTracer.setwriter>` on the root tracer to receive
+formatted trace messages.
+
+.. code-block:: python
+
+    # Magic line to set a writer function.
     pm.trace.root.setwriter(print)
     undo = pm.enable_tracing()
+
+You can also register processors for specific tags with
+:meth:`~pluggy.TagTracer.setprocessor`.
+
+.. code-block:: python
+
+    def process_hook_trace(tags, args):
+        print(tags, args)
+
+
+    # Process messages with exactly the given tag hierarchy.
+    pm.trace.root.setprocessor("pluginmanage:hook", process_hook_trace)
 
 
 Call monitoring

@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING
 from typing import TypeAlias
 import warnings
 
-from . import _tracing
 from ._callers import _multicall
 from ._hooks import _HookImplFunction
 from ._hooks import _Namespace
@@ -26,6 +25,8 @@ from ._hooks import HookRelay
 from ._hooks import HookspecOpts
 from ._hooks import normalize_hookimpl_opts
 from ._result import Result
+from ._tracing import TagTracer
+from ._tracing import TagTracerSub
 
 
 if TYPE_CHECKING:
@@ -167,9 +168,7 @@ class PluginManager:
         #: See :ref:`calling`.
         self.hook: Final = HookRelay()
         #: The tracing entry point. See :ref:`tracing`.
-        self.trace: Final[_tracing.TagTracerSub] = _tracing.TagTracer().get(
-            "pluginmanage"
-        )
+        self.trace: Final[TagTracerSub] = TagTracer().get("pluginmanage")
         self._inner_hookexec = _multicall
 
     def _hookexec(
@@ -179,8 +178,8 @@ class PluginManager:
         kwargs: Mapping[str, object],
         firstresult: bool,
     ) -> object | list[object]:
-        # called from all hookcaller instances.
-        # enable_tracing will set its own wrapping function at self._inner_hookexec
+        # Called from all hookcaller instances. add_hookcall_monitoring will set
+        # its own wrapping function at self._inner_hookexec.
         return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
 
     def register(self, plugin: _Plugin, name: str | None = None) -> str | None:
@@ -561,11 +560,11 @@ class PluginManager:
         Returns an undo function which, when called, removes the added tracers.
 
         ``before(hook_name, hook_impls, kwargs)`` will be called ahead
-        of all hook calls and receive a hookcaller instance, a list
-        of HookImpl instances and the keyword arguments for the hook call.
+        of all hook calls and receive the hook name, a list of :class:`HookImpl`
+        instances and the keyword arguments for the hook call.
 
         ``after(outcome, hook_name, hook_impls, kwargs)`` receives the
-        same arguments as ``before`` but also a :class:`~pluggy.Result` object
+        same arguments as ``before`` but also a :class:`Result` object
         which represents the result of the overall hook call.
         """
         oldcall = self._inner_hookexec

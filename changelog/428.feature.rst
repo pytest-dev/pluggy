@@ -1,0 +1,3 @@
+The types involved in :ref:`tracing <tracing>` functionality are now publicly exported for typing purposes: :class:`pluggy.TagTracer` and :class:`pluggy.TagTracerSub`.
+
+The tracing documentation now described call tracing in more detail.

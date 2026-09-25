@@ -68,9 +68,6 @@ nitpicky = True
 # evaluate them and falls back to the annotation as written in the source.
 # That means private names show up both fully qualified and as written.
 nitpick_ignore = {
-    # Don't want to expose this yet (see #428).
-    ("py:class", "pluggy._tracing.TagTracerSub"),
-    ("py:class", "_tracing.TagTracerSub"),
     # Compat hack, don't want to expose it.
     ("py:class", "pluggy._compat.DistFacade"),
     ("py:class", "DistFacade"),

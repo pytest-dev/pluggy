@@ -48,6 +48,17 @@ API Reference
     :show-inheritance:
     :members:
 
+Tracing
+-------
+
+Types involved with the :ref:`tracing <tracing>` functionality.
+
+.. autoclass:: pluggy.TagTracer()
+    :members:
+
+.. autoclass:: pluggy.TagTracerSub()
+    :members:
+    :special-members: __call__
 
 Warnings
 --------

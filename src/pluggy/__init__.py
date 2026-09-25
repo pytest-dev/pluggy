@@ -12,6 +12,8 @@ __all__ = [
     "PluginManager",
     "PluginValidationError",
     "Result",
+    "TagTracer",
+    "TagTracerSub",
     "__version__",
 ]
 from ._hooks import HookCaller
@@ -25,6 +27,8 @@ from ._manager import PluginManager
 from ._manager import PluginValidationError
 from ._result import HookCallError
 from ._result import Result
+from ._tracing import TagTracer
+from ._tracing import TagTracerSub
 from ._warnings import PluggyTeardownRaisedWarning
 from ._warnings import PluggyWarning
 
