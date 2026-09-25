@@ -440,7 +440,7 @@ class PluginManager:
             )
 
         if hook.spec.warn_on_impl_args:
-            for hookimpl_argname in hookimpl.argnames:
+            for hookimpl_argname in hookimpl.argnames + hookimpl.kwargnames:
                 argname_warning = hook.spec.warn_on_impl_args.get(hookimpl_argname)
                 if argname_warning is not None:
                     _warn_for_function(argname_warning, hookimpl.function)
