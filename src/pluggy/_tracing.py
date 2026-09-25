@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from collections.abc import Sequence
+import enum
+import os
 from typing import Any
 
 
@@ -13,13 +15,13 @@ _Writer = Callable[[str], object]
 _Processor = Callable[[tuple[str, ...], tuple[Any, ...]], object]
 
 
-def _describe_str_failure(exc: Exception, obj: object) -> str:
+def _describe_failure(exc: Exception, obj: object, func: str) -> str:
     try:
         exc_info = repr(exc)
     except Exception:
         exc_info = f"unpresentable {type(exc).__name__}"
     name = type(obj).__name__
-    return f"<[{exc_info} raised in str()] {name} object at 0x{id(obj):x}>"
+    return f"<[{exc_info} raised in {func}()] {name} object at 0x{id(obj):x}>"
 
 
 def _escape_surrogates(text: str) -> str:
@@ -42,7 +44,55 @@ def _safe_str(obj: object) -> str:
     try:
         text = str(obj)
     except Exception as exc:
-        text = _describe_str_failure(exc, obj)
+        text = _describe_failure(exc, obj, "str")
+    return _escape_surrogates(text)
+
+
+def _is_plain_token(text: str) -> bool:
+    """Whether ``text`` can be shown bare, without quotes around it."""
+    return bool(text) and text.isprintable() and " " not in text
+
+
+def _format_block(indent: str, text: str) -> list[str]:
+    """Draw a multi line value as a box, so it reads as one value.
+
+    The left edge marks every line as continuation, and the final ``\\``
+    closes it, which keeps a block distinguishable from the trace lines
+    around it.
+    """
+    body = text.split("\n")
+    edges = ["|"] * (len(body) - 1) + ["\\"]
+    return [f"{indent}      {edge} {line}\n" for edge, line in zip(edges, body)]
+
+
+def _render_value(obj: object) -> str:
+    """Render a traced value, adding detail only where ``str`` is ambiguous.
+
+    Most values keep their plain ``str`` rendering, which is what makes a trace
+    readable. ``repr`` is used only where ``str`` hides something the reader
+    needs: the type of a path, the name of an enum member, or the boundaries of
+    a string that is empty or carries whitespace.
+    """
+    if isinstance(obj, str):
+        if "\n" in obj or "\r" in obj:
+            return _safe_str(obj)
+        if _is_plain_token(obj):
+            return _safe_str(obj)
+        return _safe_repr(obj)
+    if isinstance(obj, (enum.Enum, os.PathLike)):
+        return _safe_repr(obj)
+    return _safe_str(obj)
+
+
+def _safe_repr(obj: object) -> str:
+    """``repr(obj)`` for tracing, with a failing ``__repr__`` rendered, not raised.
+
+    The result has lone surrogates escaped, so any text writer accepts it.
+    """
+    try:
+        text = repr(obj)
+    except Exception as exc:
+        text = _describe_failure(exc, obj, "repr")
     return _escape_surrogates(text)
 
 
@@ -68,7 +118,12 @@ class TagTracer:
         lines = [f"{indent}{content} [{':'.join(tags)}]\n"]
 
         for name, value in extra.items():
-            lines.append(f"{indent}    {name}: {_safe_str(value)}\n")
+            rendered = _render_value(value)
+            if "\n" in rendered:
+                lines.append(f"{indent}    {name}:\n")
+                lines.extend(_format_block(indent, rendered))
+            else:
+                lines.append(f"{indent}    {name}: {rendered}\n")
 
         return "".join(lines)
 
