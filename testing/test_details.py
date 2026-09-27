@@ -128,6 +128,30 @@ def test_warn_when_deprecated_args_specified(recwarn) -> None:
     assert record2.lineno == Plugin.foo.__code__.co_firstlineno
 
 
+def test_warn_when_deprecated_args_with_defaults_specified() -> None:
+    warning = DeprecationWarning("old is deprecated")
+
+    class Spec:
+        @hookspec(warn_on_impl_args={"old": warning})
+        def foo(self, old=None, new=None):
+            raise NotImplementedError()
+
+    class Plugin:
+        @hookimpl
+        def foo(self, old=None, new=None):
+            raise NotImplementedError()
+
+    pm = PluginManager(hookspec.project_name)
+    pm.add_hookspecs(Spec)
+
+    with pytest.warns(DeprecationWarning) as records:
+        pm.register(Plugin())
+    (record,) = records
+    assert record.message is warning
+    assert record.filename == Plugin.foo.__code__.co_filename
+    assert record.lineno == Plugin.foo.__code__.co_firstlineno
+
+
 def test_plugin_getattr_raises_errors() -> None:
     """Pluggy must be able to handle plugins which raise weird exceptions
     when getattr() gets called (#11).
