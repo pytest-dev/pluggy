@@ -496,8 +496,7 @@ def test_unregister_plugin_and_name_must_agree(pm: PluginManager) -> None:
 
     class Hooks:
         @hookspec
-        def he_method1(self, arg):
-            return arg + 1
+        def he_method1(self, arg): ...
 
     class Plugin:
         @hookimpl
