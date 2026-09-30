@@ -290,6 +290,16 @@ class PluginManager:
             assert plugin is not None, "one of name or plugin needs to be specified"
             name = self.get_name(plugin)
             assert name is not None, "plugin is not registered"
+        elif plugin is not None:
+            # Both given: the hookcallers are looked up by plugin but the
+            # registry entry is deleted by name, so a mismatch would strip
+            # one plugin's impls while dropping an unrelated registry entry.
+            registered_name = self.get_name(plugin)
+            if registered_name is not None and registered_name != name:
+                raise ValueError(
+                    f"Plugin {plugin!r} is registered under name "
+                    f"{registered_name!r}, not {name!r}"
+                )
 
         if plugin is None:
             plugin = self.get_plugin(name)

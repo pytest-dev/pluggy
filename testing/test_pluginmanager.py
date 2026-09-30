@@ -490,6 +490,39 @@ def test_unregister_blocked(pm: PluginManager) -> None:
     pm.unregister(p, "error")
 
 
+def test_unregister_plugin_and_name_must_agree(pm: PluginManager) -> None:
+    """Passing both ``plugin`` and ``name`` which do not refer to the same
+    registration is rejected instead of unregistering a mixture of the two."""
+
+    class Hooks:
+        @hookspec
+        def he_method1(self, arg): ...
+
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg + 1
+
+    pm.add_hookspecs(Hooks)
+    first, second = Plugin(), Plugin()
+    pm.register(first, name="first")
+    pm.register(second, name="second")
+
+    with pytest.raises(ValueError, match="registered under name 'first'"):
+        pm.unregister(plugin=first, name="second")
+
+    # The rejected call must not have changed any state: both plugins stay
+    # registered and both implementations stay on the hook caller.
+    assert pm.get_name(first) == "first"
+    assert pm.get_name(second) == "second"
+    assert pm.hook.he_method1(arg=1) == [2, 2]
+
+    # Agreeing arguments still unregister, whichever form is used.
+    assert pm.unregister(plugin=first, name="first") is first
+    assert pm.get_name(first) is None
+    assert pm.hook.he_method1(arg=1) == [2]
+
+
 def test_register_unknown_hooks(pm: PluginManager) -> None:
     class Plugin1:
         @hookimpl
