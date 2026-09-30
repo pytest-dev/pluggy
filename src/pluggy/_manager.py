@@ -15,6 +15,7 @@ import warnings
 
 from . import _tracing
 from ._callers import _multicall
+from ._compat import DistFacade
 from ._hooks import _HookImplFunction
 from ._hooks import _Namespace
 from ._hooks import _Plugin
@@ -30,8 +31,6 @@ from ._result import Result
 
 if TYPE_CHECKING:
     import importlib.metadata
-
-    from ._compat import DistFacade
 
 
 _BeforeTrace: TypeAlias = Callable[[str, Sequence[HookImpl], Mapping[str, Any]], None]

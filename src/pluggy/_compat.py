@@ -1,14 +1,13 @@
-"""
-Compatibility layer for legacy setuptools/pkg_resources API.
-
-This module provides backward compatibility wrappers around modern
-importlib.metadata, allowing gradual migration away from setuptools.
-"""
+"""Compatibility helpers."""
 
 from __future__ import annotations
 
-import importlib.metadata
 from typing import Any
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    import importlib.metadata
 
 
 class DistFacade:
