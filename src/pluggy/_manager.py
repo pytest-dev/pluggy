@@ -499,7 +499,7 @@ class PluginManager:
                     ep.group != group
                     or (name is not None and ep.name != name)
                     # already registered
-                    or self.get_plugin(ep.name)
+                    or self.has_plugin(ep.name)
                     or self.is_blocked(ep.name)
                 ):
                     continue

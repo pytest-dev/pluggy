@@ -897,17 +897,30 @@ def test_add_hookspecs_nohooks(pm: PluginManager) -> None:
         pm.add_hookspecs(NoHooks)
 
 
+@pytest.mark.parametrize(
+    "plugin_truth", [True, False, None], ids=["truthy", "falsey", "bool-raises"]
+)
 def test_load_setuptools_instantiation(
-    monkeypatch: pytest.MonkeyPatch, pm: PluginManager
+    monkeypatch: pytest.MonkeyPatch, pm: PluginManager, plugin_truth: bool | None
 ) -> None:
+    load_calls = 0
+
     class EntryPoint:
         name = "myname"
         group = "hello"
         value = "myname:foo"
 
         def load(self):
+            nonlocal load_calls
+            load_calls += 1
+
             class PseudoPlugin:
                 x = 42
+
+                def __bool__(self) -> bool:
+                    if plugin_truth is None:
+                        raise AssertionError("Plugin truthiness must not be evaluated")
+                    return plugin_truth
 
             return PseudoPlugin()
 
@@ -934,6 +947,7 @@ def test_load_setuptools_instantiation(
     assert ret[0][1]._dist == dist
     num = pm.load_setuptools_entrypoints("hello")
     assert num == 0  # no plugin loaded by this call
+    assert load_calls == 1
 
     ret_distributions = pm.list_plugin_distributions()
     assert ret_distributions == [(plugin, dist)]
