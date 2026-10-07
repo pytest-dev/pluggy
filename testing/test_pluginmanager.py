@@ -939,6 +939,13 @@ def test_load_setuptools_instantiation(
     plugin = pm.get_plugin("myname")
     assert plugin is not None
     assert plugin.x == 42
+    if plugin_truth is None:
+        with pytest.raises(
+            AssertionError, match="Plugin truthiness must not be evaluated"
+        ):
+            bool(plugin)
+    else:
+        assert bool(plugin) is plugin_truth
     ret = pm.list_plugin_distinfo()
     # poor man's `assert ret == [(plugin, mock.ANY)]`
     assert len(ret) == 1
