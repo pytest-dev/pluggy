@@ -1304,7 +1304,7 @@ def test_unregister_plugin_and_name_must_agree(pm: PluginManager) -> None:
     # Rejected calls leave everything untouched.
     assert pm.get_plugin("a") is a
     assert pm.get_plugin("b") is b
-    assert len(pm.hook.he_method1.get_hookimpls()) == 2
+    assert pm.hook.he_method1(arg=1) == [1, 1]
     # Agreeing arguments still work.
     assert pm.unregister(a, "a") is a
     assert not pm.is_registered(a)
