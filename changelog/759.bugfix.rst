@@ -1,0 +1,1 @@
+:meth:`PluginManager.unregister() <pluggy.PluginManager.unregister>` now raises :exc:`ValueError` when both ``plugin`` and ``name`` are given but refer to different plugins, instead of removing one plugin's hook implementations and another plugin's registry entry.
