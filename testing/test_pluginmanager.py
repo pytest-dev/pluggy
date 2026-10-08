@@ -1320,6 +1320,7 @@ def test_unregister_falsy_plugin(pm: PluginManager) -> None:
             return arg
 
     plugin = FalsyPlugin()
+    assert not plugin
     pm.register(plugin, "falsy")
     assert pm.hook.he_method1(arg=1) == [1]
     assert pm.unregister(plugin) is plugin
