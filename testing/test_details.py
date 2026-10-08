@@ -333,3 +333,10 @@ def test_wrapper_runtimeerror_passtrough(pm: PluginManager) -> None:
     pm.register(Fail())
     with pytest.raises(RuntimeError, match="this is personal"):
         pm.hook.fail_late()
+
+
+def test_package_metadata_links_to_repository() -> None:
+    """The source repository is discoverable from the package metadata (#757)."""
+    urls = distribution("pluggy").metadata.get_all("Project-URL") or []
+    labels = dict(url.split(", ", 1) for url in urls)
+    assert labels["Repository"] == "https://github.com/pytest-dev/pluggy"
