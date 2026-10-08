@@ -1,0 +1,1 @@
+Source archives created by ``git archive`` (including GitHub's "Source code" downloads) now carry version information, so building pluggy from them no longer fails with a missing version.
