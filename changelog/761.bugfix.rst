@@ -1,0 +1,2 @@
+Failed hook specification validation no longer left partially installed specifications.
+Existing hook callers and implementations were preserved, allowing registration to be retried after removing an incompatible plugin.

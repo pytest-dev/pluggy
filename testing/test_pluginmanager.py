@@ -889,6 +889,65 @@ def test_get_hookcallers(pm: PluginManager) -> None:
     assert pm.get_hookcallers(object()) is None
 
 
+@pytest.mark.parametrize("historic", [False, True])
+def test_add_hookspecs_validation_leaves_no_partial_state(
+    pm: PluginManager, historic: bool
+) -> None:
+    class Specs:
+        @hookspec
+        def a_new(self): ...
+
+        @hookspec(historic=historic)
+        def z_existing(self, arg): ...
+
+    class BadPlugin:
+        @hookimpl
+        def z_existing(self, unexpected): ...
+
+    plugin = BadPlugin()
+    pm.register(plugin)
+    caller = pm.hook.z_existing
+    implementations = caller.get_hookimpls()
+
+    with pytest.raises(PluginValidationError, match="unexpected"):
+        pm.add_hookspecs(Specs)
+
+    assert not hasattr(pm.hook, "a_new")
+    assert pm.hook.z_existing is caller
+    assert not caller.has_spec()
+    assert not caller.is_historic()
+    assert caller.get_hookimpls() == implementations
+
+    pm.unregister(plugin)
+    pm.add_hookspecs(Specs)
+    assert pm.hook.z_existing is caller
+    assert caller.has_spec()
+    assert caller.is_historic() is historic
+    assert pm.hook.a_new.has_spec()
+
+
+def test_add_hookspecs_duplicate_leaves_no_partial_state(pm: PluginManager) -> None:
+    class Existing:
+        @hookspec
+        def z_existing(self): ...
+
+    class More:
+        @hookspec
+        def a_new(self): ...
+
+        @hookspec
+        def z_existing(self): ...
+
+    pm.add_hookspecs(Existing)
+    caller = pm.hook.z_existing
+    original_spec = caller.spec
+    with pytest.raises(ValueError, match="already registered"):
+        pm.add_hookspecs(More)
+    assert not hasattr(pm.hook, "a_new")
+    assert pm.hook.z_existing is caller
+    assert caller.spec is original_spec
+
+
 def test_add_hookspecs_nohooks(pm: PluginManager) -> None:
     class NoHooks:
         pass

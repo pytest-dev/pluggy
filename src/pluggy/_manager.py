@@ -332,25 +332,31 @@ class PluginManager:
         Functions are recognized as hook specifications if they have been
         decorated with a matching :class:`HookspecMarker`.
         """
-        names = []
+        pending: list[tuple[HookCaller | None, HookCaller]] = []
         for name in dir(module_or_class):
             spec_opts = self.parse_hookspec_opts(module_or_class, name)
             if spec_opts is not None:
                 hc: HookCaller | None = getattr(self.hook, name, None)
-                if hc is None:
-                    hc = HookCaller(name, self._hookexec, module_or_class, spec_opts)
-                    setattr(self.hook, name, hc)
-                else:
-                    # Plugins registered this hook without knowing the spec.
+                if hc is not None and hc.has_spec():
                     hc.set_specification(module_or_class, spec_opts)
+                candidate = HookCaller(name, self._hookexec, module_or_class, spec_opts)
+                if hc is not None:
                     for hookfunction in hc.get_hookimpls():
-                        self._verify_hook(hc, hookfunction)
-                names.append(name)
+                        self._verify_hook(candidate, hookfunction)
+                pending.append((hc, candidate))
 
-        if not names:
+        if not pending:
             raise ValueError(
                 f"did not find any {self.project_name!r} hooks in {module_or_class!r}"
             )
+
+        # Install only after every specification and implementation is valid.
+        for hc, candidate in pending:
+            if hc is None:
+                setattr(self.hook, candidate.name, candidate)
+            else:
+                hc.spec = candidate.spec
+                hc._call_history = candidate._call_history
 
     def parse_hookspec_opts(
         self, module_or_class: _Namespace, name: str
