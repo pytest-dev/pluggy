@@ -1,0 +1,3 @@
+Remove distribution metadata for unregistered entry-point plugins, so
+``list_plugin_distinfo()`` and ``list_plugin_distributions()`` only include
+registered plugins and reloading a plugin does not duplicate its metadata.

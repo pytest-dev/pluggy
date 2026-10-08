@@ -303,7 +303,12 @@ class PluginManager:
         # if self._name2plugin[name] == None registration was blocked: ignore
         if self._name2plugin.get(name):
             assert name is not None
-            del self._name2plugin[name]
+            registered_plugin = self._name2plugin.pop(name)
+            self._plugin_distinfo[:] = [
+                (registered, dist)
+                for registered, dist in self._plugin_distinfo
+                if registered is not registered_plugin
+            ]
 
         return plugin
 

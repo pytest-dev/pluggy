@@ -3,6 +3,7 @@
 """
 
 import importlib.metadata
+from pathlib import Path
 import types
 from typing import Any
 from typing import cast
@@ -937,6 +938,70 @@ def test_load_setuptools_instantiation(
 
     ret_distributions = pm.list_plugin_distributions()
     assert ret_distributions == [(plugin, dist)]
+
+
+@pytest.mark.parametrize(
+    "method", ["plugin", "name", "both", "equal_plugin", "blocked"]
+)
+def test_unregister_entrypoint_distribution(
+    monkeypatch: pytest.MonkeyPatch, pm: PluginManager, tmp_path: Path, method: str
+) -> None:
+    module = f"unregister_entrypoint_{method}"
+    (tmp_path / f"{module}.py").write_text("first = (1,)\nsecond = (2,)\n")
+    dist_info = tmp_path / "unregister_example-1.0.dist-info"
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: unregister-example\nVersion: 1.0\n"
+    )
+    (dist_info / "entry_points.txt").write_text(
+        f"[pluggy_test_unregister]\nfirst = {module}:first\nsecond = {module}:second\n"
+    )
+    monkeypatch.syspath_prepend(tmp_path)
+
+    assert pm.load_setuptools_entrypoints("pluggy_test_unregister") == 2
+    first = pm.get_plugin("first")
+    second = pm.get_plugin("second")
+    assert first is not None
+    assert second is not None
+    original = pm.list_plugin_distributions()
+    assert len(original) == 2
+    second_info = next(info for info in original if info[0] is second)
+    assert original[0][1] is original[1][1]
+
+    assert pm.unregister(name="missing") is None
+    assert pm.list_plugin_distributions() == original
+    if method == "plugin":
+        assert pm.unregister(first) is first
+    elif method == "name":
+        assert pm.unregister(name="first") is first
+    elif method == "both":
+        assert pm.unregister(first, "first") is first
+    elif method == "equal_plugin":
+        equal_plugin = tuple(iter(first))
+        assert equal_plugin is not first
+        assert pm.unregister(equal_plugin) is equal_plugin
+    else:
+        pm.set_blocked("first")
+        assert pm.is_blocked("first")
+
+    assert not pm.has_plugin("first")
+    assert pm.get_plugin("second") is second
+    assert pm.list_plugin_distributions() == [second_info]
+    legacy_info = pm.list_plugin_distinfo()
+    assert len(legacy_info) == 1
+    assert legacy_info[0][0] is second
+    assert legacy_info[0][1]._dist is second_info[1]
+    assert len(original) == 2
+
+    if method == "blocked":
+        assert pm.unregister(name="first") is None
+        assert pm.load_setuptools_entrypoints("pluggy_test_unregister") == 0
+        assert pm.list_plugin_distributions() == [second_info]
+        assert pm.unblock("first")
+    assert pm.load_setuptools_entrypoints("pluggy_test_unregister") == 1
+    assert pm.get_plugin("first") is first
+    assert len(pm.list_plugin_distributions()) == 2
+    assert len(pm.list_plugin_distinfo()) == 2
 
 
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
