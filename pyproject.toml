@@ -35,6 +35,15 @@ readme = {file = "README.rst", content-type = "text/x-rst"}
 requires-python = ">=3.10"
 
 dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/pytest-dev/pluggy"
+Documentation = "https://pluggy.readthedocs.io/"
+Changelog = "https://pluggy.readthedocs.io/en/latest/changelog.html"
+Repository = "https://github.com/pytest-dev/pluggy"
+Issues = "https://github.com/pytest-dev/pluggy/issues"
+Funding = "https://tidelift.com/subscription/pkg/pypi-pluggy"
+
 [dependency-groups]
 dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark", "coverage"]

@@ -1,0 +1,2 @@
+Restore the project URLs in the package metadata, which were lost in pluggy 1.6.0 when the packaging configuration moved to ``pyproject.toml``.
+PyPI and tools that map a distribution back to its source repository can find it again; links to the documentation, changelog, issue tracker and funding page were added as well.
