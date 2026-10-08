@@ -1308,3 +1308,23 @@ def test_unregister_plugin_and_name_must_agree(pm: PluginManager) -> None:
     # Agreeing arguments still work.
     assert pm.unregister(a, "a") is a
     assert not pm.is_registered(a)
+
+
+def test_unregister_falsy_plugin(pm: PluginManager) -> None:
+    class FalsyPlugin:
+        def __len__(self) -> int:
+            return 0
+
+        @hookimpl
+        def he_method1(self, arg):
+            return arg
+
+    plugin = FalsyPlugin()
+    pm.register(plugin, "falsy")
+    assert pm.hook.he_method1(arg=1) == [1]
+    assert pm.unregister(plugin) is plugin
+    assert not pm.is_registered(plugin)
+    assert pm.get_plugin("falsy") is None
+    # The name is free again.
+    pm.register(plugin, "falsy")
+    assert pm.is_registered(plugin)
