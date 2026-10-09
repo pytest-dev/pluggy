@@ -305,6 +305,10 @@ class PluginManager:
             assert name is not None
             del self._name2plugin[name]
 
+        self._plugin_distinfo[:] = [
+            entry for entry in self._plugin_distinfo if entry[0] is not plugin
+        ]
+
         return plugin
 
     def set_blocked(self, name: str) -> None:

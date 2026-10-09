@@ -1,0 +1,1 @@
+Remove distribution metadata when an entry-point plugin is unregistered, so unloaded plugins no longer appear in plugin distribution listings.

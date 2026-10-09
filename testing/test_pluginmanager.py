@@ -938,6 +938,20 @@ def test_load_setuptools_instantiation(
     ret_distributions = pm.list_plugin_distributions()
     assert ret_distributions == [(plugin, dist)]
 
+    assert pm.unregister(plugin) is plugin
+    assert pm.list_plugin_distinfo() == []
+    assert pm.list_plugin_distributions() == []
+
+    assert pm.load_setuptools_entrypoints("hello") == 1
+    reloaded_plugin = pm.get_plugin("myname")
+    assert reloaded_plugin is not None
+    assert reloaded_plugin is not plugin
+    assert pm.list_plugin_distributions() == [(reloaded_plugin, dist)]
+
+    pm.set_blocked("myname")
+    assert pm.list_plugin_distinfo() == []
+    assert pm.list_plugin_distributions() == []
+
 
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
     out: list[Any] = []
