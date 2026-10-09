@@ -208,7 +208,7 @@ class PluginManager:
                 f"{plugin_name}={plugin}\n{self._name2plugin}"
             )
 
-        if plugin in self._name2plugin.values():
+        if any(plugin is val for val in self._name2plugin.values()):
             raise ValueError(
                 "Plugin already registered under a different name: "
                 f"{plugin_name}={plugin}\n{self._name2plugin}"
@@ -384,7 +384,7 @@ class PluginManager:
 
     def is_registered(self, plugin: _Plugin) -> bool:
         """Return whether the plugin is already registered."""
-        return any(plugin == val for val in self._name2plugin.values())
+        return any(plugin is val for val in self._name2plugin.values())
 
     def get_canonical_name(self, plugin: _Plugin) -> str:
         """Return a canonical name for a plugin object.
@@ -409,7 +409,7 @@ class PluginManager:
         """Return the name the plugin is registered under, or ``None`` if
         is isn't."""
         for name, val in self._name2plugin.items():
-            if plugin == val:
+            if plugin is val:
                 return name
         return None
 
@@ -620,12 +620,15 @@ class PluginManager:
         """Return a proxy :class:`~pluggy.HookCaller` for the named hook which
         calls all registered plugins except the ones from remove_plugins."""
         orig: HookCaller = getattr(self.hook, name)
-        plugins_to_remove = set(remove_plugins)
+        # Retain the objects so their ids cannot be reused after unregistering.
+        plugins_to_remove = {id(plugin): plugin for plugin in remove_plugins}
         # Optimization: discard plugins to remove which don't actually implement
         # the hook, to make checks faster.
-        plugins_to_remove.intersection_update(
-            hookimpl.plugin for hookimpl in orig._hookimpls
-        )
+        plugins_to_remove = {
+            id(hookimpl.plugin): hookimpl.plugin
+            for hookimpl in orig._hookimpls
+            if id(hookimpl.plugin) in plugins_to_remove
+        }
         # Optimization: if none of the plugins to remove actually implement the
         # hook, avoid the subset hook caller overhead.
         if not plugins_to_remove:

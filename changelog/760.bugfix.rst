@@ -1,0 +1,2 @@
+Register and look up plugins by object identity rather than equality, allowing distinct plugins that compare equal to be registered independently.
+Unregistering a plugin and filtering a subset hook caller now also affect only that exact object.
