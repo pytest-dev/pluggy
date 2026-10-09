@@ -60,13 +60,14 @@ def _format_block(indent: str, text: str) -> list[str]:
 
 def _render_value(obj: object) -> str:
     """Render a traced value, adding detail only where ``str`` is ambiguous."""
+    # Before the str check: a StrEnum member is a str whose str() drops the name.
+    if isinstance(obj, (enum.Enum, os.PathLike)):
+        return _safe_repr(obj)
     if isinstance(obj, str):
         if "\n" in obj or "\r" in obj:
             return _safe_str(obj)
         if _is_plain_token(obj):
             return _safe_str(obj)
-        return _safe_repr(obj)
-    if isinstance(obj, (enum.Enum, os.PathLike)):
         return _safe_repr(obj)
     return _safe_str(obj)
 

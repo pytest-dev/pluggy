@@ -205,6 +205,17 @@ def test_enum_shows_member_name(rootlogger: TagTracer) -> None:
     assert out == "call [test]\n    status: <Exit.FAILED: 1>\n"
 
 
+def test_str_enum_shows_member_name(rootlogger: TagTracer) -> None:
+    """A StrEnum member is a str, and its str() is the bare value."""
+
+    class Mode(str, enum.Enum):  # the shape of enum.StrEnum, which 3.10 lacks
+        __str__ = str.__str__
+        PLAIN = "plain"
+
+    out = rootlogger._format_message(["test"], ["call", {"mode": Mode.PLAIN}])
+    assert out == "call [test]\n    mode: <Mode.PLAIN: 'plain'>\n"
+
+
 def test_pathlike_shows_its_type(rootlogger: TagTracer) -> None:
     """Two arguments printing the same path may well be different types."""
     out = rootlogger._format_message(
