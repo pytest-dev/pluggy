@@ -1,0 +1,4 @@
+``PluginManager.unregister()`` now raises ``TypeError`` when neither a plugin nor a
+name is given, and ``ValueError`` when an unregistered plugin is given without a
+name, including under ``python -O``. Code catching ``AssertionError`` for these
+cases must catch the new exception types instead.

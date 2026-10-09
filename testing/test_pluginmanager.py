@@ -3,6 +3,9 @@
 """
 
 import importlib.metadata
+import subprocess
+import sys
+import textwrap
 import types
 from typing import Any
 from typing import cast
@@ -474,8 +477,56 @@ def test_register(pm: PluginManager) -> None:
     assert not pm.is_registered(my)
     assert pm.get_plugins() == {my2}
 
-    with pytest.raises(AssertionError, match=r"not registered"):
+    with pytest.raises(ValueError, match=r"not registered"):
         pm.unregister(my)
+
+
+@pytest.mark.parametrize(
+    "kwargs", [{}, {"plugin": None}, {"name": None}, {"plugin": None, "name": None}]
+)
+def test_unregister_requires_argument(
+    pm: PluginManager, kwargs: dict[str, Any]
+) -> None:
+    with pytest.raises(TypeError, match="one of name or plugin needs to be specified"):
+        pm.unregister(**kwargs)
+    assert pm.list_name_plugin() == []
+
+
+@pytest.mark.parametrize("optimization", [0, 1, 2])
+def test_unregister_validation_with_optimization(optimization: int) -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            *["-O"] * optimization,
+            "-c",
+            textwrap.dedent(
+                """\
+                from pluggy import PluginManager
+
+                pm = PluginManager("example")
+                for kwargs in ({}, {"plugin": object()}):
+                    try:
+                        pm.unregister(**kwargs)
+                    except (TypeError, ValueError) as exc:
+                        print(f"{type(exc).__name__}: {exc}")
+                """
+            ),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert result.stdout.splitlines() == [
+        "TypeError: one of name or plugin needs to be specified",
+        "ValueError: plugin is not registered",
+    ]
+
+
+def test_unregister_unknown_name(pm: PluginManager) -> None:
+    assert pm.unregister(name="unknown") is None
+    plugin = object()
+    assert pm.unregister(plugin, name="unknown") is plugin
+    assert pm.list_name_plugin() == []
 
 
 def test_unregister_blocked(pm: PluginManager) -> None:
@@ -485,9 +536,11 @@ def test_unregister_blocked(pm: PluginManager) -> None:
     p = Plugin()
     pm.set_blocked("error")
     pm.register(p, "error")
-    # bloked plugins can be unregistred many times atm
-    pm.unregister(p, "error")
-    pm.unregister(p, "error")
+    # Blocked plugins can be unregistered many times.
+    assert pm.unregister(p, "error") is p
+    assert pm.unregister(p, "error") is p
+    assert pm.unregister(name="error") is None
+    assert pm.is_blocked("error")
 
 
 def test_register_unknown_hooks(pm: PluginManager) -> None:
