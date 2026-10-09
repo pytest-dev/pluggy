@@ -284,11 +284,18 @@ class PluginManager:
         name. If both are specified, they must agree.
 
         Returns the unregistered plugin, or ``None`` if not found.
+
+        :raises TypeError:
+            If neither ``plugin`` nor ``name`` is given.
+        :raises ValueError:
+            If ``plugin`` is given but is not registered.
         """
         if name is None:
-            assert plugin is not None, "one of name or plugin needs to be specified"
+            if plugin is None:
+                raise TypeError("one of name or plugin needs to be specified")
             name = self.get_name(plugin)
-            assert name is not None, "plugin is not registered"
+            if name is None:
+                raise ValueError("plugin is not registered")
 
         if plugin is None:
             plugin = self.get_plugin(name)
