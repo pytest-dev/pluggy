@@ -294,6 +294,19 @@ class PluginManager:
             plugin = self.get_plugin(name)
             if plugin is None:
                 return None
+        else:
+            # Both given: hook callers are looked up by plugin but the registry
+            # entry is removed by name, so they must refer to the same plugin.
+            registered_plugin = self._name2plugin.get(name)
+            registered_name = self.get_name(plugin)
+            if (registered_plugin is not None and registered_plugin is not plugin) or (
+                registered_name is not None and registered_name != name
+            ):
+                raise ValueError(
+                    f"Plugin name {name!r} and plugin {plugin!r} do not agree"
+                    f" (name is registered to {registered_plugin!r},"
+                    f" plugin is registered as {registered_name!r})"
+                )
 
         hookcallers = self.get_hookcallers(plugin)
         if hookcallers:
@@ -301,8 +314,7 @@ class PluginManager:
                 hookcaller._remove_plugin(plugin)
 
         # if self._name2plugin[name] == None registration was blocked: ignore
-        if self._name2plugin.get(name):
-            assert name is not None
+        if self._name2plugin.get(name) is not None:
             del self._name2plugin[name]
 
         return plugin
@@ -499,7 +511,7 @@ class PluginManager:
                     ep.group != group
                     or (name is not None and ep.name != name)
                     # already registered
-                    or self.get_plugin(ep.name)
+                    or self.has_plugin(ep.name)
                     or self.is_blocked(ep.name)
                 ):
                     continue

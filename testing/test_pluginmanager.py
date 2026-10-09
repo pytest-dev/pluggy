@@ -1281,3 +1281,51 @@ def test_get_hookcallers_no_duplicates(pm: PluginManager) -> None:
     # Both hello impls are still wired up, and each caller works.
     assert pm.hook.hello(arg=1) == [101, 2]
     assert pm.hook.goodbye(arg=1) == [201]
+
+
+def test_unregister_plugin_and_name_must_agree(pm: PluginManager) -> None:
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg
+
+    a, b, c = Plugin(), Plugin(), Plugin()
+    pm.register(a, "a")
+    pm.register(b, "b")
+    # Both registered, but under different names.
+    with pytest.raises(ValueError, match="do not agree"):
+        pm.unregister(a, "b")
+    # Plugin not registered, name belongs to another plugin.
+    with pytest.raises(ValueError, match="do not agree"):
+        pm.unregister(c, "b")
+    # Plugin registered, name unknown.
+    with pytest.raises(ValueError, match="do not agree"):
+        pm.unregister(a, "unknown")
+    # Rejected calls leave everything untouched.
+    assert pm.get_plugin("a") is a
+    assert pm.get_plugin("b") is b
+    assert pm.hook.he_method1(arg=1) == [1, 1]
+    # Agreeing arguments still work.
+    assert pm.unregister(a, "a") is a
+    assert not pm.is_registered(a)
+
+
+def test_unregister_falsy_plugin(pm: PluginManager) -> None:
+    class FalsyPlugin:
+        def __len__(self) -> int:
+            return 0
+
+        @hookimpl
+        def he_method1(self, arg):
+            return arg
+
+    plugin = FalsyPlugin()
+    assert not plugin
+    pm.register(plugin, "falsy")
+    assert pm.hook.he_method1(arg=1) == [1]
+    assert pm.unregister(plugin) is plugin
+    assert not pm.is_registered(plugin)
+    assert pm.get_plugin("falsy") is None
+    # The name is free again.
+    pm.register(plugin, "falsy")
+    assert pm.is_registered(plugin)
