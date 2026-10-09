@@ -53,9 +53,9 @@ def _is_plain_token(text: str) -> bool:
     return bool(text) and text.isprintable() and " " not in text
 
 
-def _format_block(indent: str, text: str) -> list[str]:
+def _format_block(indent: str, lines: list[str]) -> list[str]:
     """Indent a multi line value under its key, so it reads as one value."""
-    return [f"{indent}      {line}\n" for line in text.split("\n")]
+    return [f"{indent}      {line}\n" for line in lines]
 
 
 def _render_value(obj: object) -> str:
@@ -64,7 +64,7 @@ def _render_value(obj: object) -> str:
     if isinstance(obj, (enum.Enum, os.PathLike)):
         return _safe_repr(obj)
     if isinstance(obj, str):
-        if "\n" in obj or "\r" in obj:
+        if len(obj.splitlines()) > 1:
             return _safe_str(obj)
         if _is_plain_token(obj):
             return _safe_str(obj)
@@ -107,11 +107,14 @@ class TagTracer:
 
         for name, value in extra.items():
             rendered = _render_value(value)
-            if "\n" in rendered:
-                lines.append(f"{indent}    {name}:\n")
-                lines.extend(_format_block(indent, rendered))
-            else:
+            # A bare \r is a line break too: inline, the terminal would
+            # return to column 0 and overwrite the key.
+            body = rendered.splitlines()
+            if body in ([], [rendered]):
                 lines.append(f"{indent}    {name}: {rendered}\n")
+            else:
+                lines.append(f"{indent}    {name}:\n")
+                lines.extend(_format_block(indent, body))
 
         return "".join(lines)
 

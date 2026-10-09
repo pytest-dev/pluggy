@@ -232,6 +232,27 @@ def test_multiline_value_is_indented_under_its_key(rootlogger: TagTracer) -> Non
     assert out == "call [test]\n    expl:\n      first\n      second\n      third\n"
 
 
+@pytest.mark.parametrize("value", ["first\rsecond", "first\r\nsecond"])
+def test_carriage_return_breaks_the_block(rootlogger: TagTracer, value: str) -> None:
+    """Inline, a bare CR returns the cursor and the value overwrites its key."""
+    out = rootlogger._format_message(["test"], ["call", {"expl": value}])
+    assert out == "call [test]\n    expl:\n      first\n      second\n"
+
+
+def test_trailing_newline_string_is_quoted(rootlogger: TagTracer) -> None:
+    out = rootlogger._format_message(["test"], ["call", {"val": "line\n"}])
+    assert out == "call [test]\n    val: 'line\\n'\n"
+
+
+def test_non_str_with_line_breaks_is_indented(rootlogger: TagTracer) -> None:
+    class Report:
+        def __str__(self) -> str:
+            return "first\rsecond\n"
+
+    out = rootlogger._format_message(["test"], ["call", {"report": Report()}])
+    assert out == "call [test]\n    report:\n      first\n      second\n"
+
+
 def test_dictargs_escape_surrogate_values(rootlogger: TagTracer) -> None:
     out = rootlogger._format_message(["test"], ["test", {"arg": "\ud800"}])
     assert out == "test [test]\n    arg: '\\ud800'\n"
