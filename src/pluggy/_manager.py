@@ -311,9 +311,8 @@ class PluginManager:
             for hookcaller in hookcallers:
                 hookcaller._remove_plugin(plugin)
 
-        # if self._name2plugin[name] == None registration was blocked: ignore
-        if self._name2plugin.get(name) is not None:
-            del self._name2plugin[name]
+        if not self.is_blocked(name):
+            self._name2plugin.pop(name, None)
         self._name2dist.pop(name, None)
 
         return plugin
