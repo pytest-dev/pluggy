@@ -1,0 +1,3 @@
+Compare plugins by identity when registering, looking up, and unregistering them,
+allowing distinct plugins that compare equal to be managed independently without
+invoking their equality methods.

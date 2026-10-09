@@ -208,7 +208,7 @@ class PluginManager:
                 f"{plugin_name}={plugin}\n{self._name2plugin}"
             )
 
-        if plugin in self._name2plugin.values():
+        if any(plugin is val for val in self._name2plugin.values()):
             raise ValueError(
                 "Plugin already registered under a different name: "
                 f"{plugin_name}={plugin}\n{self._name2plugin}"
@@ -396,7 +396,7 @@ class PluginManager:
 
     def is_registered(self, plugin: _Plugin) -> bool:
         """Return whether the plugin is already registered."""
-        return any(plugin == val for val in self._name2plugin.values())
+        return any(plugin is val for val in self._name2plugin.values())
 
     def get_canonical_name(self, plugin: _Plugin) -> str:
         """Return a canonical name for a plugin object.
@@ -421,7 +421,7 @@ class PluginManager:
         """Return the name the plugin is registered under, or ``None`` if
         is isn't."""
         for name, val in self._name2plugin.items():
-            if plugin == val:
+            if plugin is val:
                 return name
         return None
 

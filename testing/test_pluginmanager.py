@@ -2,6 +2,7 @@
 ``PluginManager`` unit and public API testing.
 """
 
+from dataclasses import dataclass
 import importlib.metadata
 import types
 from typing import Any
@@ -27,6 +28,77 @@ def test_plugin_double_register(pm: PluginManager) -> None:
         pm.register(42, name="abc")
     with pytest.raises(ValueError):
         pm.register(42, name="def")
+
+
+@pytest.mark.parametrize("by_name", [False, True])
+def test_equal_plugins_are_distinct(he_pm: PluginManager, by_name: bool) -> None:
+    @dataclass
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg: int) -> int:
+            return id(self)
+
+    first, second = Plugin(), Plugin()
+    assert first == second
+    assert first is not second
+
+    he_pm.register(first, "first")
+    assert not he_pm.is_registered(second)
+    assert he_pm.get_name(second) is None
+    assert he_pm.get_hookcallers(second) is None
+
+    he_pm.register(second, "second")
+    assert he_pm.is_registered(first)
+    assert he_pm.is_registered(second)
+    assert he_pm.get_name(first) == "first"
+    assert he_pm.get_name(second) == "second"
+    assert he_pm.get_plugin("first") is first
+    assert he_pm.get_plugin("second") is second
+    assert he_pm.hook.he_method1(arg=0) == [id(second), id(first)]
+
+    with pytest.raises(ValueError, match="already registered under a different name"):
+        he_pm.register(second, "again")
+
+    if by_name:
+        assert he_pm.unregister(name="second") is second
+    else:
+        assert he_pm.unregister(second) is second
+    assert not he_pm.is_registered(second)
+    assert he_pm.get_name(second) is None
+    assert he_pm.get_hookcallers(second) is None
+    assert he_pm.is_registered(first)
+    assert he_pm.get_name(first) == "first"
+    assert he_pm.hook.he_method1(arg=0) == [id(first)]
+
+    assert he_pm.unregister(first) is first
+    assert he_pm.hook.he_method1(arg=0) == []
+
+
+def test_plugin_registry_does_not_compare_plugins(he_pm: PluginManager) -> None:
+    class Plugin:
+        def __eq__(self, other: object) -> bool:
+            raise AssertionError("plugins must not be compared")
+
+        @hookimpl
+        def he_method1(self, arg: int) -> int:
+            return id(self)
+
+    first, second = Plugin(), Plugin()
+    he_pm.set_blocked("blocked")
+    he_pm.register(first, "first")
+    assert he_pm.is_registered(first)
+    assert not he_pm.is_registered(second)
+    assert he_pm.get_name(first) == "first"
+    assert he_pm.get_name(second) is None
+    he_pm.register(second, "second")
+    assert he_pm.hook.he_method1(arg=0) == [id(second), id(first)]
+    with pytest.raises(ValueError, match="already registered under a different name"):
+        he_pm.register(second, "again")
+    assert he_pm.unregister(second) is second
+    assert he_pm.hook.he_method1(arg=0) == [id(first)]
+    assert he_pm.unregister(first) is first
+    assert he_pm.hook.he_method1(arg=0) == []
+    assert he_pm.is_blocked("blocked")
 
 
 def test_register_rejects_none(pm: PluginManager) -> None:
