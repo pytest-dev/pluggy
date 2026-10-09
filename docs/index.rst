@@ -1039,15 +1039,9 @@ line carrying the result::
         reason: 'needs a network connection'
         status: <ExitCode.TESTS_FAILED: 1>
         explanation:
-          | first line
-          \ second line
+          first line
+          second line
     finish he_method1 --> ['value'] [hook]
-
-Values are rendered with :func:`str` wherever that reads unambiguously, and with
-:func:`repr` where it does not: an empty string, a string carrying whitespace,
-an enum member, or a path, whose type is otherwise easy to lose. A value
-spanning several lines is drawn as a block so that it stays attached to its key
-instead of running into the surrounding trace.
 
 
 Call monitoring

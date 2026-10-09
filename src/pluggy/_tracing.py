@@ -54,25 +54,12 @@ def _is_plain_token(text: str) -> bool:
 
 
 def _format_block(indent: str, text: str) -> list[str]:
-    """Draw a multi line value as a box, so it reads as one value.
-
-    The left edge marks every line as continuation, and the final ``\\``
-    closes it, which keeps a block distinguishable from the trace lines
-    around it.
-    """
-    body = text.split("\n")
-    edges = ["|"] * (len(body) - 1) + ["\\"]
-    return [f"{indent}      {edge} {line}\n" for edge, line in zip(edges, body)]
+    """Indent a multi line value under its key, so it reads as one value."""
+    return [f"{indent}      {line}\n" for line in text.split("\n")]
 
 
 def _render_value(obj: object) -> str:
-    """Render a traced value, adding detail only where ``str`` is ambiguous.
-
-    Most values keep their plain ``str`` rendering, which is what makes a trace
-    readable. ``repr`` is used only where ``str`` hides something the reader
-    needs: the type of a path, the name of an enum member, or the boundaries of
-    a string that is empty or carries whitespace.
-    """
+    """Render a traced value, adding detail only where ``str`` is ambiguous."""
     if isinstance(obj, str):
         if "\n" in obj or "\r" in obj:
             return _safe_str(obj)

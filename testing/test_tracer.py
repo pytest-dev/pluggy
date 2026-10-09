@@ -213,14 +213,12 @@ def test_pathlike_shows_its_type(rootlogger: TagTracer) -> None:
     assert out == "call [test]\n    p: PurePosixPath('/x')\n"
 
 
-def test_multiline_value_is_boxed(rootlogger: TagTracer) -> None:
+def test_multiline_value_is_indented_under_its_key(rootlogger: TagTracer) -> None:
     """A block stays attached to its key instead of escaping to column 0."""
     out = rootlogger._format_message(
         ["test"], ["call", {"expl": "first\nsecond\nthird"}]
     )
-    assert out == (
-        "call [test]\n    expl:\n      | first\n      | second\n      \\ third\n"
-    )
+    assert out == "call [test]\n    expl:\n      first\n      second\n      third\n"
 
 
 def test_dictargs_escape_surrogate_values(rootlogger: TagTracer) -> None:
