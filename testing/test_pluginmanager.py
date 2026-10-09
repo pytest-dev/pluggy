@@ -939,6 +939,39 @@ def test_load_setuptools_instantiation(
     assert ret_distributions == [(plugin, dist)]
 
 
+def test_unregister_drops_plugin_distribution(
+    monkeypatch: pytest.MonkeyPatch, pm: PluginManager
+) -> None:
+    class EntryPoint:
+        group = "hello"
+
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def load(self) -> object:
+            return type(self.name, (), {})()
+
+    class Distribution:
+        entry_points = (EntryPoint("a"), EntryPoint("b"))
+
+    dist = cast(importlib.metadata.Distribution, Distribution())
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda: (dist,))
+
+    assert pm.load_setuptools_entrypoints("hello") == 2
+    b = pm.get_plugin("b")
+    pm.unregister(name="a")
+    assert pm.list_plugin_distributions() == [(b, dist)]
+    assert [p for p, _ in pm.list_plugin_distinfo()] == [b]
+
+    # reloading must not duplicate the remaining entry
+    assert pm.load_setuptools_entrypoints("hello") == 1
+    a = pm.get_plugin("a")
+    assert pm.list_plugin_distributions() == [(b, dist), (a, dist)]
+
+    pm.set_blocked("b")
+    assert pm.list_plugin_distributions() == [(a, dist)]
+
+
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
     out: list[Any] = []
 

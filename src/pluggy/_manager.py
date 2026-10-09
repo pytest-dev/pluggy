@@ -159,9 +159,7 @@ class PluginManager:
         #: The project name.
         self.project_name: Final = project_name
         self._name2plugin: Final[dict[str, _Plugin]] = {}
-        self._plugin_distinfo: Final[
-            list[tuple[_Plugin, importlib.metadata.Distribution]]
-        ] = []
+        self._name2dist: Final[dict[str, importlib.metadata.Distribution]] = {}
         #: The "hook relay", used to call a hook on all registered plugins.
         #: See :ref:`calling`.
         self.hook: Final = HookRelay()
@@ -316,6 +314,7 @@ class PluginManager:
         # if self._name2plugin[name] == None registration was blocked: ignore
         if self._name2plugin.get(name) is not None:
             del self._name2plugin[name]
+        self._name2dist.pop(name, None)
 
         return plugin
 
@@ -517,7 +516,7 @@ class PluginManager:
                     continue
                 plugin = ep.load()
                 self.register(plugin, name=ep.name)
-                self._plugin_distinfo.append((plugin, dist))
+                self._name2dist[ep.name] = dist
                 count += 1
         return count
 
@@ -533,7 +532,10 @@ class PluginManager:
         """
         from ._compat import DistFacade
 
-        return [(plugin, DistFacade(dist)) for plugin, dist in self._plugin_distinfo]
+        return [
+            (plugin, DistFacade(dist))
+            for plugin, dist in self.list_plugin_distributions()
+        ]
 
     def list_plugin_distributions(
         self,
@@ -543,7 +545,9 @@ class PluginManager:
 
         .. versionadded:: 1.7
         """
-        return list(self._plugin_distinfo)
+        return [
+            (self._name2plugin[name], dist) for name, dist in self._name2dist.items()
+        ]
 
     def list_name_plugin(self) -> list[tuple[str, _Plugin]]:
         """Return a list of (name, plugin) pairs for all registered plugins."""
