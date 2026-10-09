@@ -1055,6 +1055,19 @@ undo function to disable the behaviour.
     pm.trace.root.setwriter(print)
     undo = pm.enable_tracing()
 
+Each hook call is traced with its keyword arguments, followed by a ``finish``
+line carrying the result::
+
+    he_method1 [hook]
+        plugin_name: example
+        path: PosixPath('/tmp')
+        reason: 'needs a network connection'
+        status: <ExitCode.TESTS_FAILED: 1>
+        explanation:
+          first line
+          second line
+    finish he_method1 --> ['value'] [hook]
+
 
 Call monitoring
 ---------------

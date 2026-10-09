@@ -1,0 +1,5 @@
+Tracing now adds detail where ``str()`` is ambiguous: empty strings and strings containing
+whitespace are quoted, and enums and paths show their ``repr()``.
+
+A value spanning several lines is now displayed as a block instead of running into the
+surrounding trace.
