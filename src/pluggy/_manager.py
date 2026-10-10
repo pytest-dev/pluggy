@@ -196,7 +196,10 @@ class PluginManager:
         If the plugin is already registered, raises a :exc:`ValueError`.
         """
         if plugin is None:
-            raise TypeError("plugin must not be None")
+            # Registering a `None` plugin causes problems (#731). However, some
+            # users are doing it, so can't error out (#749). Just ignore
+            # instead.
+            return None
 
         plugin_name = name or self.get_canonical_name(plugin)
 
