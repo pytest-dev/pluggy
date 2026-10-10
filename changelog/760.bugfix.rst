@@ -1,0 +1,3 @@
+Use object identity for plugin registration, name lookup, registration checks
+and hook removal. Unregistering one of two equal plugins no longer removes the
+other plugin's hook implementations.

@@ -2,6 +2,7 @@
 ``PluginManager`` unit and public API testing.
 """
 
+from dataclasses import dataclass
 import importlib.metadata
 import types
 from typing import Any
@@ -27,6 +28,51 @@ def test_plugin_double_register(pm: PluginManager) -> None:
         pm.register(42, name="abc")
     with pytest.raises(ValueError):
         pm.register(42, name="def")
+
+
+@pytest.mark.parametrize(
+    "method, expected",
+    [("get_name", None), ("is_registered", False), ("get_hookcallers", None)],
+)
+def test_plugin_lookup_uses_identity(pm: PluginManager, method, expected) -> None:
+    @dataclass
+    class Plugin:
+        pass
+
+    registered, other = Plugin(), Plugin()
+    assert registered == other
+    assert registered is not other
+    pm.register(registered, "one")
+    assert getattr(pm, method)(other) is expected
+
+
+def test_equal_plugins_register_and_unregister_independently(
+    he_pm: PluginManager,
+) -> None:
+    @dataclass
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg: int) -> int:
+            return id(self)
+
+    first, second = Plugin(), Plugin()
+    assert first == second
+    assert first is not second
+    assert he_pm.register(first, "one") == "one"
+    assert he_pm.register(second, "two") == "two"
+    assert he_pm.get_name(second) == "two"
+    assert he_pm.is_registered(first)
+    assert he_pm.is_registered(second)
+    assert he_pm.hook.he_method1(arg=1) == [id(second), id(first)]
+    with pytest.raises(ValueError, match="already registered"):
+        he_pm.register(first, "three")
+
+    assert he_pm.unregister(first) is first
+    assert he_pm.get_name(first) is None
+    assert not he_pm.is_registered(first)
+    assert he_pm.get_name(second) == "two"
+    assert he_pm.is_registered(second)
+    assert he_pm.hook.he_method1(arg=1) == [id(second)]
 
 
 def test_register_rejects_none(pm: PluginManager) -> None:
