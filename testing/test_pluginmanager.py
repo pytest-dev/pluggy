@@ -488,6 +488,7 @@ def test_unregister_blocked(pm: PluginManager) -> None:
     # bloked plugins can be unregistred many times atm
     pm.unregister(p, "error")
     pm.unregister(p, "error")
+    assert pm.is_blocked("error")
 
 
 def test_register_unknown_hooks(pm: PluginManager) -> None:
@@ -958,6 +959,39 @@ def test_load_setuptools_instantiation(
 
     ret_distributions = pm.list_plugin_distributions()
     assert ret_distributions == [(plugin, dist)]
+
+
+def test_unregister_drops_plugin_distribution(
+    monkeypatch: pytest.MonkeyPatch, pm: PluginManager
+) -> None:
+    class EntryPoint:
+        group = "hello"
+
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def load(self) -> object:
+            return type(self.name, (), {})()
+
+    class Distribution:
+        entry_points = (EntryPoint("a"), EntryPoint("b"))
+
+    dist = cast(importlib.metadata.Distribution, Distribution())
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda: (dist,))
+
+    assert pm.load_setuptools_entrypoints("hello") == 2
+    b = pm.get_plugin("b")
+    pm.unregister(name="a")
+    assert pm.list_plugin_distributions() == [(b, dist)]
+    assert [p for p, _ in pm.list_plugin_distinfo()] == [b]
+
+    # reloading must not duplicate the remaining entry
+    assert pm.load_setuptools_entrypoints("hello") == 1
+    a = pm.get_plugin("a")
+    assert pm.list_plugin_distributions() == [(b, dist), (a, dist)]
+
+    pm.set_blocked("b")
+    assert pm.list_plugin_distributions() == [(a, dist)]
 
 
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
