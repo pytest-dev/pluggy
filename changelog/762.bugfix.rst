@@ -1,0 +1,2 @@
+:meth:`PluginManager.unregister() <pluggy.PluginManager.unregister>` now raises :exc:`TypeError` when neither ``plugin`` nor ``name`` is given, and :exc:`ValueError` when the given plugin object is not registered.
+These checks used ``assert`` and were skipped under ``python -O``.

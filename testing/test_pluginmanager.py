@@ -474,8 +474,10 @@ def test_register(pm: PluginManager) -> None:
     assert not pm.is_registered(my)
     assert pm.get_plugins() == {my2}
 
-    with pytest.raises(AssertionError, match=r"not registered"):
+    with pytest.raises(ValueError, match=r"not registered"):
         pm.unregister(my)
+    with pytest.raises(TypeError, match=r"one of name or plugin"):
+        pm.unregister()
 
 
 def test_unregister_blocked(pm: PluginManager) -> None:
