@@ -495,6 +495,47 @@ def test_register_rolls_back_failed_historic_replay(
     assert pm.hook.c_regular() == ["last"]
 
 
+def test_register_keeps_replacement_after_historic_replay_failure(
+    pm: PluginManager,
+) -> None:
+    class Hooks:
+        @hookspec
+        def a_regular(self): ...
+
+        @hookspec(historic=True)
+        def b_historic(self): ...
+
+    class Replacement:
+        @hookimpl
+        def a_regular(self):
+            return "replacement"
+
+    replacement = Replacement()
+    error = RuntimeError("historic replay failed")
+
+    class Plugin:
+        @hookimpl
+        def a_regular(self):
+            return "failed"  # pragma: no cover
+
+        @hookimpl
+        def b_historic(self):
+            pm.unregister(name="plugin")
+            pm.register(replacement, name="plugin")
+            raise error
+
+    pm.add_hookspecs(Hooks)
+    pm.hook.b_historic.call_historic()
+
+    with pytest.raises(RuntimeError) as excinfo:
+        pm.register(Plugin(), name="plugin")
+
+    assert excinfo.value is error
+    assert pm.get_plugin("plugin") is replacement
+    assert pm.hook.a_regular() == ["replacement"]
+    assert pm.hook.b_historic.get_hookimpls() == []
+
+
 def test_register_hookwrapper_not_a_generator_function(he_pm: PluginManager) -> None:
     class hello:
         @hookimpl(hookwrapper=True)
