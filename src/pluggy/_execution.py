@@ -106,10 +106,22 @@ def _multicall(
             try:
                 args = [caller_kwargs[argname] for argname in hook_impl.argnames]
                 if hook_impl.kwargnames:
+                    if hook_impl._posonlydefaults:
+                        last_supplied = None
+                        for argname in hook_impl._posonlydefaults:
+                            if argname in caller_kwargs:
+                                last_supplied = argname
+                        if last_supplied is not None:
+                            # Fill gaps, but leave trailing defaults implicit.
+                            for argname, default in hook_impl._posonlydefaults.items():
+                                args.append(caller_kwargs.get(argname, default))
+                                if argname == last_supplied:
+                                    break
                     kwargs = {
                         argname: caller_kwargs[argname]
                         for argname in hook_impl.kwargnames
                         if argname in caller_kwargs
+                        and argname not in hook_impl._posonlydefaults
                     } or None
                 else:
                     kwargs = None
