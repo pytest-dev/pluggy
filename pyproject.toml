@@ -45,7 +45,7 @@ Issues = "https://github.com/pytest-dev/pluggy/issues"
 Funding = "https://tidelift.com/subscription/pkg/pypi-pluggy"
 
 [dependency-groups]
-dev = ["pre-commit", "tox>=4"]
+dev = ["pre-commit"]
 testing = ["pytest>=8", "pytest-benchmark", "coverage"]
 
 
@@ -87,10 +87,10 @@ known-local-folder = ["pluggy"]
 lines-after-imports = 2
 
 [tool.setuptools_scm]
-# Dependabot relocks uv.lock without git and pretends this version (else 0.0.0).
-# It must satisfy the pluggy floor of current pytest and tox, or the lock
-# silently falls back to releases that predate it (pytest 3.2.5, tox 1.9.2).
-# The local label marks it as fake and keeps it off PyPI.
+# Crutch for dependabot, not a real version. Dependabot relocks uv.lock from
+# files fetched without git and pretends fallback_version, or 0.0.0 without one.
+# pytest depends on pluggy>=1.5, so at 0.0.0 the lock silently fell back to
+# pytest 3.2.5. The local label marks this as fake and keeps it off PyPI.
 fallback_version = "1.6.0+fallback"
 
 [tool.uv]
