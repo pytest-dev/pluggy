@@ -51,7 +51,7 @@ def test_defaulted_positional_only_delivery(style, supplied):
         assert result == (["fallback"] if style == "plain" else "fallback")
 
 
-@pytest.mark.parametrize("kind", ["method", "callable", "decorated"])
+@pytest.mark.parametrize("kind", ["method", "callable", "decorated", "class"])
 @pytest.mark.parametrize(
     "kwargs, expected",
     [
@@ -87,11 +87,20 @@ def test_positional_only_default_gaps(kind, kwargs, expected):
         def __call__(self, first=1, second=2, /, tail=3):
             return first, second, tail
 
+    class ClassPlugin:
+        def __init__(self, first=1, second=2, /, tail=3):
+            self.values = first, second, tail
+
     manager = PluginManager("posonly")
     manager.add_hookspecs(Spec)
     if kind == "method":
         manager.register(Plugin())
         result = manager.hook.hello(**kwargs)
+    elif kind == "class":
+        result = manager.hook.hello.call_extra([ClassPlugin], kwargs)
+        assert isinstance(result, list)
+        assert isinstance(result[0], ClassPlugin)
+        result = [result[0].values]
     else:
         function = CallablePlugin() if kind == "callable" else decorate(Plugin().hello)
         result = manager.hook.hello.call_extra([function], kwargs)
