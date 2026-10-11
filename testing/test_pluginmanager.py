@@ -56,6 +56,7 @@ def test_register_distinct_equal_plugins(pm: PluginManager) -> None:
 
     pm.add_hookspecs(Spec)
     first, second, unknown = Plugin("one"), Plugin("two"), Plugin("unknown")
+    assert first == second
     pm.register(first, "one")
     assert not pm.is_registered(second)
     assert pm.get_name(second) is None
@@ -83,6 +84,8 @@ def test_plugin_registry_does_not_call_equality(pm: PluginManager) -> None:
             raise AssertionError("plugin equality must not be called")
 
     first, second = Plugin(), Plugin()
+    with pytest.raises(AssertionError, match="plugin equality must not be called"):
+        assert first == second
     pm.register(first, "one")
     pm.register(second, "two")
     assert pm.is_registered(first)
