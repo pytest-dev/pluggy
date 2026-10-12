@@ -960,6 +960,58 @@ def test_load_setuptools_instantiation(
     assert ret_distributions == [(plugin, dist)]
 
 
+def test_unregister_removes_entrypoint_distinfo(
+    monkeypatch: pytest.MonkeyPatch, pm: PluginManager
+) -> None:
+    """Unregistering an entry-point plugin drops its distinfo entries.
+
+    ``list_plugin_distinfo()`` and ``list_plugin_distributions()`` must stop
+    reporting the plugin, and a later entry-point load must not create a
+    duplicate entry.
+    """
+
+    class EntryPoint:
+        name = "myname"
+        group = "hello"
+        value = "myname:foo"
+
+        def load(self):
+            class PseudoPlugin:
+                x = 42
+
+            return PseudoPlugin()
+
+    class Distribution:
+        entry_points = (EntryPoint(),)
+
+    dist = cast(importlib.metadata.Distribution, Distribution())
+
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda: (dist,))
+
+    assert pm.load_setuptools_entrypoints("hello") == 1
+    plugin = pm.get_plugin("myname")
+    assert plugin is not None
+    ret = pm.list_plugin_distinfo()
+    assert len(ret) == 1
+    assert ret[0][0] == plugin
+    assert pm.list_plugin_distributions() == [(plugin, dist)]
+
+    assert pm.unregister(name="myname") is plugin
+
+    # The stale entry is gone from both listings.
+    assert pm.list_plugin_distinfo() == []
+    assert pm.list_plugin_distributions() == []
+
+    # Re-registering through entry points must not create a duplicate.
+    assert pm.load_setuptools_entrypoints("hello") == 1
+    reloaded = pm.get_plugin("myname")
+    assert reloaded is not None
+    ret = pm.list_plugin_distinfo()
+    assert len(ret) == 1
+    assert ret[0][0] == reloaded
+    assert pm.list_plugin_distributions() == [(reloaded, dist)]
+
+
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
     out: list[Any] = []
 
