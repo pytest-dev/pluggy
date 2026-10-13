@@ -1,0 +1,1 @@
+Building ``pluggy`` without git metadata now yields the placeholder version ``1.6.0+fallback`` instead of failing, so Dependabot relocks no longer resolve ``pluggy`` as ``0.0.0`` and silently downgrade pytest and tox in ``uv.lock``. ``tox`` was dropped from the ``dev`` dependency group; run it as a tool with ``uvx tox``.
