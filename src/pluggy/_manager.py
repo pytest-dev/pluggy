@@ -343,26 +343,38 @@ class PluginManager:
 
         Functions are recognized as hook specifications if they have been
         decorated with a matching :class:`HookspecMarker`.
+
+        All specifications are validated before any are installed.
         """
-        names = []
+        pending: list[tuple[str, HookCaller | None, HookCaller]] = []
         for name in dir(module_or_class):
             spec_opts = self.parse_hookspec_opts(module_or_class, name)
             if spec_opts is not None:
                 hc: HookCaller | None = getattr(self.hook, name, None)
-                if hc is None:
-                    hc = HookCaller(name, self._hookexec, module_or_class, spec_opts)
-                    setattr(self.hook, name, hc)
-                else:
-                    # Plugins registered this hook without knowing the spec.
-                    hc.set_specification(module_or_class, spec_opts)
+                if hc is not None and hc.spec is not None:
+                    raise ValueError(
+                        f"Hook {hc.spec.name!r} is already registered "
+                        f"within namespace {hc.spec.namespace}"
+                    )
+                candidate = HookCaller(name, self._hookexec, module_or_class, spec_opts)
+                if hc is not None:
+                    # Validate without installing the spec on the live caller.
                     for hookfunction in hc.get_hookimpls():
-                        self._verify_hook(hc, hookfunction)
-                names.append(name)
+                        self._verify_hook(candidate, hookfunction)
+                pending.append((name, hc, candidate))
 
-        if not names:
+        if not pending:
             raise ValueError(
                 f"did not find any {self.project_name!r} hooks in {module_or_class!r}"
             )
+
+        for name, hc, candidate in pending:
+            if hc is None:
+                setattr(self.hook, name, candidate)
+            else:
+                # Preserve references held by plugins and subset hook callers.
+                hc.spec = candidate.spec
+                hc._call_history = candidate._call_history
 
     def parse_hookspec_opts(
         self, module_or_class: _Namespace, name: str

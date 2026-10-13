@@ -1,0 +1,1 @@
+:meth:`PluginManager.add_hookspecs() <pluggy.PluginManager.add_hookspecs>` now validates all specifications before installing any of them, so failed validation no longer leaves partially installed specifications that prevent a retry. Existing hook caller references and registered implementations are preserved.
