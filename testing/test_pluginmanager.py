@@ -960,6 +960,49 @@ def test_load_setuptools_instantiation(
     assert ret_distributions == [(plugin, dist)]
 
 
+def test_unregister_removes_plugin_distinfo(
+    monkeypatch: pytest.MonkeyPatch, pm: PluginManager
+) -> None:
+    """Unregistering drops entry-point bookkeeping (#763).
+
+    ``list_plugin_distinfo()`` / ``list_plugin_distributions()`` must not
+    report a plugin after it has been unregistered, and re-registering
+    through entry points must not leave a duplicate entry behind.
+    """
+
+    class EntryPoint:
+        name = "myname"
+        group = "hello"
+        value = "myname:foo"
+
+        def load(self):
+            class PseudoPlugin:
+                x = 42
+
+            return PseudoPlugin()
+
+    class Distribution:
+        entry_points = (EntryPoint(),)
+
+    dist = cast(importlib.metadata.Distribution, Distribution())
+
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda: (dist,))
+
+    assert pm.load_setuptools_entrypoints("hello") == 1
+    assert len(pm.list_plugin_distinfo()) == 1
+    assert pm.list_plugin_distributions() == [(pm.get_plugin("myname"), dist)]
+
+    pm.unregister(name="myname")
+
+    assert pm.list_plugin_distinfo() == []
+    assert pm.list_plugin_distributions() == []
+
+    # Re-registering through entry points starts from a clean slate: exactly
+    # one entry, not a stale leftover plus a new one.
+    assert pm.load_setuptools_entrypoints("hello") == 1
+    assert len(pm.list_plugin_distributions()) == 1
+
+
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
     out: list[Any] = []
 
