@@ -1,0 +1,1 @@
+Published pluggy versions now receive a GitHub Release after successful PyPI deployment, allowing GitHub Release subscribers to receive notifications about new versions.
