@@ -1,1 +1,9 @@
-:meth:`PluginManager.add_hookspecs() <pluggy.PluginManager.add_hookspecs>` now validates all specifications before installing any of them, so failed validation no longer leaves partially installed specifications that prevent a retry. Existing hook caller references and registered implementations are preserved.
+:meth:`PluginManager.add_hookspecs() <pluggy.PluginManager.add_hookspecs>` now
+validates all specifications before installing any of them, so failed validation
+no longer leaves partially installed specifications that prevent a retry.
+Existing hook caller references and registered implementations are preserved.
+
+Failed historic replay during :meth:`PluginManager.register()
+<pluggy.PluginManager.register>` now removes the failed registration and its
+implementations, including unused hook callers created by that registration,
+while preserving existing state and successful changes made by replay callbacks.
