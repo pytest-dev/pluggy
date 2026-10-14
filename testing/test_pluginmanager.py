@@ -959,6 +959,50 @@ def test_load_setuptools_instantiation(
     assert ret_distributions == [(plugin, dist)]
 
 
+def test_unregister_removes_plugin_distinfo(
+    monkeypatch: pytest.MonkeyPatch, pm: PluginManager
+) -> None:
+    """Unregistering a setuptools-loaded plugin clears its distinfo entries.
+
+    See https://github.com/pytest-dev/pluggy/issues/763.
+    """
+
+    class EntryPoint:
+        name = "myname"
+        group = "hello"
+        value = "myname:foo"
+
+        def load(self):
+            class PseudoPlugin:
+                pass
+
+            return PseudoPlugin()
+
+    class Distribution:
+        entry_points = (EntryPoint(),)
+
+    dist = cast(importlib.metadata.Distribution, Distribution())
+
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda: (dist,))
+
+    assert pm.load_setuptools_entrypoints("hello") == 1
+    plugin = pm.get_plugin("myname")
+    assert plugin is not None
+    assert len(pm.list_plugin_distinfo()) == 1
+    assert len(pm.list_plugin_distributions()) == 1
+
+    # Unregistering must drop both distinfo views.
+    pm.unregister(name="myname")
+    assert pm.get_plugin("myname") is None
+    assert pm.list_plugin_distinfo() == []
+    assert pm.list_plugin_distributions() == []
+
+    # Re-registration must not leave duplicate distinfo entries behind.
+    assert pm.load_setuptools_entrypoints("hello") == 1
+    assert len(pm.list_plugin_distinfo()) == 1
+    assert len(pm.list_plugin_distributions()) == 1
+
+
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
     out: list[Any] = []
 

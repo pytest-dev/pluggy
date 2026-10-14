@@ -1,0 +1,5 @@
+``PluginManager.unregister()`` now removes the plugin from
+``list_plugin_distinfo()`` and ``list_plugin_distributions()``. Previously
+these kept reporting an unregistered plugin loaded via
+``load_setuptools_entrypoints()``, and re-registering it added a duplicate
+entry.

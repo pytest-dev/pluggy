@@ -320,6 +320,13 @@ class PluginManager:
         if self._name2plugin.get(name) is not None:
             del self._name2plugin[name]
 
+        # Drop any setuptools distribution bookkeeping for this plugin so it
+        # no longer shows up in list_plugin_distinfo()/list_plugin_distributions()
+        # and a later re-registration does not create duplicate entries.
+        self._plugin_distinfo[:] = [
+            (p, dist) for (p, dist) in self._plugin_distinfo if p is not plugin
+        ]
+
         return plugin
 
     def set_blocked(self, name: str) -> None:
