@@ -1,0 +1,2 @@
+Added a runnable example showing how a host can discover and register plugin
+modules from a directory, with separate hook specifications and implementations.

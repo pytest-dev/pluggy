@@ -154,6 +154,68 @@ we get::
     Some condiments? We have pickled walnuts, mushy peas, mint sauce, spam sauce
     Now this is what I call a condiments tray!
 
+Discovering plugins in a directory
+----------------------------------
+If your host ships with several plugin modules in one directory, it can discover
+them using Python's import tools and register each module with pluggy. This is
+useful when adding a plugin should not require editing a list of imports in the
+host.
+
+Here is a small host that collects greetings from plugins in a ``plugins``
+package. The hook specification belongs to the host, while each plugin module
+contains its own implementation::
+
+    docs/examples/directory_plugins/
+        host.py
+        hookspecs.py
+        plugins/
+            __init__.py
+            english.py
+            french.py
+
+``plugins/__init__.py`` is empty; it makes the directory a regular Python
+package. The host's specification defines the hook name and arguments:
+
+.. literalinclude:: examples/directory_plugins/hookspecs.py
+
+Each plugin uses the same project name, ``greetings``, for its hook marker:
+
+.. literalinclude:: examples/directory_plugins/plugins/english.py
+
+.. literalinclude:: examples/directory_plugins/plugins/french.py
+
+The host discovers the package's modules with :func:`pkgutil.iter_modules`,
+imports them with :func:`importlib.import_module`, and explicitly registers each
+module with :meth:`~pluggy.PluginManager.register`:
+
+.. literalinclude:: examples/directory_plugins/host.py
+
+Run the host from the repository root, with pluggy installed in your Python
+environment::
+
+    $ python docs/examples/directory_plugins/host.py
+    Bonjour Ada!
+    Hello Ada!
+
+The script's directory is on Python's import path, so ``hookspecs`` and
+``plugins`` are importable without changing the working directory. The example
+visits only direct modules in ``plugins``; it skips subpackages and does not
+search them recursively. Adding another plugin module to that directory makes
+it available on the next run without changing ``host.py``.
+
+Sorting the module names makes registration deterministic: ``english`` is
+registered before ``french``. These ordinary hook implementations have no
+ordering options, so pluggy calls them in reverse registration order, yielding
+the French greeting first. See :ref:`callorder` for other ordering options.
+After registration, :meth:`~pluggy.PluginManager.check_pending` checks that
+plugins have not implemented unknown, non-optional hooks.
+
+Discovery is the host's responsibility; pluggy handles registration and hook
+calls. Importing a module executes its code, so choose a plugin directory whose
+contents you trust. For plugins distributed as separately installed packages,
+see :meth:`~pluggy.PluginManager.load_setuptools_entrypoints` and the complete
+example above.
+
 More real world examples
 ------------------------
 To see how ``pluggy`` is used in the real world, have a look at these projects
