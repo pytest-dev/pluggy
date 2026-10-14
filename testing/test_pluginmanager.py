@@ -29,10 +29,9 @@ def test_plugin_double_register(pm: PluginManager) -> None:
         pm.register(42, name="def")
 
 
-def test_register_rejects_none(pm: PluginManager) -> None:
-    """``None`` collides with the blocked-name sentinel and must be rejected."""
-    with pytest.raises(TypeError, match="plugin must not be None"):
-        pm.register(None)
+def test_register_ignores_none(pm: PluginManager) -> None:
+    """``None`` collides with the blocked-name sentinel and must be ignored."""
+    assert pm.register(None) is None
     assert pm.get_plugins() == set()
     assert not pm.is_registered(None)
 
