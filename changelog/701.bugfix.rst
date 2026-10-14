@@ -1,9 +1,0 @@
-Hookimpls and hookspecs are now discovered via :func:`inspect.getattr_static`, so
-properties, ``cached_property`` and other descriptors are no longer executed while
-scanning a plugin. Hooks declared through such a descriptor are not supported.
-
-As a side effect, ``@hookimpl``/``@hookspec`` applied *above* ``@classmethod`` or
-``@staticmethod`` is now picked up; previously the marker sat on the wrapper where
-``getattr()`` never saw it. Callables stored directly on a plugin instance -- in its
-``__dict__`` or in a ``__slots__`` slot -- keep being called exactly as ``getattr()``
-returned them, i.e. without an implicit ``self``.
