@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from collections.abc import Iterable
+from collections.abc import Iterator
 from collections.abc import Mapping
 from collections.abc import Sequence
+from contextlib import contextmanager
 import inspect
 import types
 from typing import Any
@@ -251,6 +253,36 @@ class PluginManager:
             hook._maybe_apply_history(hookimpl)
             hook._add_hookimpl(hookimpl)
         return plugin_name
+
+    @contextmanager
+    def register_all(self, plugins: Iterable[_Plugin]) -> Iterator[PluginManager]:
+        """Temporarily register plugins for the duration of a ``with`` block.
+
+        :param plugins:
+            Plugins to register, in order, using :meth:`register`.
+        :returns:
+            This plugin manager while the context is active.
+
+        For example::
+
+            with pm.register_all([plugin1, plugin2]) as active_pm:
+                assert active_pm is pm
+
+        Only plugins successfully registered by this context are unregistered,
+        in reverse order, even if registration or the block raises an exception.
+        Blocked plugin names remain blocked. Historic hook calls are replayed
+        upon registration; unregistering cannot undo those effects.
+        """
+        registered: list[tuple[_Plugin, str]] = []
+        try:
+            for plugin in plugins:
+                name = self.register(plugin)
+                if name is not None:
+                    registered.append((plugin, name))
+            yield self
+        finally:
+            for plugin, name in reversed(registered):
+                self.unregister(plugin=plugin, name=name)
 
     def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
         """Try to obtain a hook implementation from an item with the given name

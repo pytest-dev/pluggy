@@ -1,0 +1,4 @@
+Add ``PluginManager.register_all``, a context manager for registering multiple
+plugins temporarily. Plugins registered by the context are unregistered in
+reverse order on exit, including when the block or registration raises an
+exception.

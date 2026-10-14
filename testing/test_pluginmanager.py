@@ -103,6 +103,172 @@ def test_pm_name(pm: PluginManager) -> None:
     assert not pm.get_plugins()
 
 
+def test_register_all_temporarily_adds_hook_implementations(
+    he_pm: PluginManager,
+) -> None:
+    class Plugin:
+        def __init__(self, increment: int) -> None:
+            self.increment = increment
+
+        @hookimpl
+        def he_method1(self, arg: int) -> int:
+            return arg + self.increment
+
+    existing, first, second = Plugin(0), Plugin(1), Plugin(2)
+    assert he_pm.register(existing, name="existing") == "existing"
+
+    with he_pm.register_all([first, second]) as active_pm:
+        assert active_pm is he_pm
+        assert he_pm.get_plugins() == {existing, first, second}
+        assert he_pm.get_name(first) is not None
+        assert he_pm.get_name(second) is not None
+        assert he_pm.hook.he_method1(arg=10) == [12, 11, 10]
+
+    assert he_pm.get_plugins() == {existing}
+    assert he_pm.get_name(first) is None
+    assert he_pm.get_name(second) is None
+    assert he_pm.get_plugin("existing") is existing
+    assert he_pm.hook.he_method1(arg=10) == [10]
+
+
+def test_register_all_single_and_empty_iterable(pm: PluginManager) -> None:
+    plugin = object()
+    with pm.register_all(iter(())) as active_pm:
+        assert active_pm is pm
+        assert pm.get_plugins() == set()
+
+    with pm.register_all(iter((plugin,))) as active_pm:
+        assert active_pm is pm
+        assert pm.get_plugins() == {plugin}
+    assert pm.get_plugins() == set()
+
+
+def test_register_all_unregisters_in_reverse_order(
+    pm: PluginManager, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plugins = [object(), object(), object()]
+    removed: list[object | None] = []
+    original_unregister = pm.unregister
+
+    def recording_unregister(
+        plugin: object | None = None, name: str | None = None
+    ) -> object | None:
+        removed.append(plugin)
+        return original_unregister(plugin=plugin, name=name)
+
+    monkeypatch.setattr(pm, "unregister", recording_unregister)
+    with pm.register_all(plugins):
+        assert pm.get_plugins() == set(plugins)
+    assert removed == list(reversed(plugins))
+
+
+def test_register_all_cleans_up_after_body_exception(pm: PluginManager) -> None:
+    plugin = object()
+    with (
+        pytest.raises(RuntimeError, match="body failed"),
+        pm.register_all([plugin]),
+    ):
+        assert pm.is_registered(plugin)
+        raise RuntimeError("body failed")
+    assert not pm.is_registered(plugin)
+    assert pm.get_plugins() == set()
+
+
+def test_register_all_rolls_back_duplicate_plugin(pm: PluginManager) -> None:
+    existing, temporary = object(), object()
+    assert pm.register(existing) is not None
+
+    with (
+        pytest.raises(ValueError, match="already registered"),
+        pm.register_all([temporary, existing]),
+    ):
+        pytest.fail("registration should fail before entering the block")
+
+    assert pm.get_plugins() == {existing}
+    assert pm.get_name(temporary) is None
+
+
+def test_register_all_rolls_back_validation_failure(he_pm: PluginManager) -> None:
+    class Valid:
+        @hookimpl
+        def he_method1(self, arg: int) -> int:
+            return arg + 1
+
+    class Invalid:
+        @hookimpl
+        def he_method1(self, unexpected: int) -> int:
+            return unexpected
+
+    temporary = Valid()
+    with (
+        pytest.raises(PluginValidationError),
+        he_pm.register_all([temporary, Invalid()]),
+    ):
+        pytest.fail("registration should fail before entering the block")
+
+    assert he_pm.get_plugins() == set()
+    assert he_pm.get_name(temporary) is None
+    assert he_pm.hook.he_method1(arg=1) == []
+
+
+def test_register_all_preserves_blocked_names(pm: PluginManager) -> None:
+    blocked, temporary = object(), object()
+    blocked_name = pm.get_canonical_name(blocked)
+    pm.set_blocked(blocked_name)
+
+    with pm.register_all([blocked, temporary]):
+        assert pm.is_blocked(blocked_name)
+        assert pm.get_plugins() == {temporary}
+
+    assert pm.is_blocked(blocked_name)
+    assert pm.get_plugins() == set()
+    assert pm.register(blocked) is None
+
+
+def test_register_all_nested_contexts(he_pm: PluginManager) -> None:
+    class Plugin:
+        def __init__(self, result: int) -> None:
+            self.result = result
+
+        @hookimpl
+        def he_method1(self, arg: int) -> int:
+            return self.result
+
+    outer, inner = Plugin(1), Plugin(2)
+    with he_pm.register_all([outer]):
+        assert he_pm.hook.he_method1(arg=0) == [1]
+        with he_pm.register_all([inner]):
+            assert he_pm.hook.he_method1(arg=0) == [2, 1]
+        assert he_pm.get_plugins() == {outer}
+        assert he_pm.hook.he_method1(arg=0) == [1]
+    assert he_pm.get_plugins() == set()
+    assert he_pm.hook.he_method1(arg=0) == []
+
+
+def test_register_all_replays_historic_hooks_on_entry(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec(historic=True)
+        def he_method1(self, arg: int) -> None: ...
+
+    pm.add_hookspecs(Hooks)
+    pm.hook.he_method1.call_historic(kwargs={"arg": 4})
+    seen: list[int] = []
+
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg: int) -> None:
+            seen.append(arg)
+
+    plugin = Plugin()
+    with pm.register_all([plugin]):
+        assert seen == [4]
+        assert pm.is_registered(plugin)
+
+    pm.hook.he_method1.call_historic(kwargs={"arg": 9})
+    assert seen == [4]
+    assert pm.get_plugins() == set()
+
+
 def test_set_blocked(pm: PluginManager) -> None:
     class A:
         pass
