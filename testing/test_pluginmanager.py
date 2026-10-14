@@ -424,8 +424,30 @@ def test_register_verifies_spec_added_by_historic_replay(pm: PluginManager) -> N
         def late(self, qlwkje):
             pass  # pragma: no cover
 
-    with pytest.raises(PluginValidationError, match="qlwkje"):
-        pm.register(hello())
+    plugin = hello()
+    caller = pm.hook.configure
+    spec = caller.spec
+    history = caller._call_history
+    with pytest.raises(PluginValidationError, match="qlwkje") as excinfo:
+        pm.register(plugin)
+
+    assert excinfo.value.plugin is plugin
+    assert pm.list_name_plugin() == []
+    assert pm.hook.configure is caller
+    assert caller.spec is spec
+    assert caller._call_history is history
+    assert caller.get_hookimpls() == []
+    assert pm.hook.late.spec is not None
+    assert pm.hook.late.spec.namespace is LateSpecs
+    assert pm.hook.late.get_hookimpls() == []
+
+    class Valid:
+        @hookimpl
+        def late(self, arg):
+            return arg
+
+    pm.register(Valid())
+    assert pm.hook.late(arg=7) == [7]
 
 
 def test_register_hookwrapper_not_a_generator_function(he_pm: PluginManager) -> None:
