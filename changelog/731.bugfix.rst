@@ -1,1 +1,1 @@
-:func:`PluginManager.register(None) <pluggy.PluginManager.register>` is now rejected early with a ``TypeError`` instead of having some weird behaviors.
+:func:`PluginManager.register(None) <pluggy.PluginManager.register>` is now ignored instead of having some weird behaviors.

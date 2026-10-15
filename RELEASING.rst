@@ -8,7 +8,7 @@ Release Procedure
 
 #. From a clean work tree, execute::
 
-    tox -e release -- VERSION
+    uvx tox -e release -- VERSION
 
    This will create the branch ready to be pushed.
 

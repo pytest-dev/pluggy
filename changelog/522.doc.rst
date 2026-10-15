@@ -1,1 +1,0 @@
-Document that hook implementation arguments with default values are not passed by pluggy.
