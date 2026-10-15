@@ -159,6 +159,7 @@ class PluginManager:
         #: The project name.
         self.project_name: Final = project_name
         self._name2plugin: Final[dict[str, _Plugin]] = {}
+        self._pending_registrations: Final[dict[str, object]] = {}
         self._plugin_distinfo: Final[
             list[tuple[_Plugin, importlib.metadata.Distribution]]
         ] = []
@@ -240,19 +241,50 @@ class PluginManager:
                     verified = True
                 hookimpls.append((hook_name, hookimpl, verified))
 
+        registration = object()
+        self._pending_registrations[plugin_name] = registration
         self._name2plugin[plugin_name] = plugin
-        for hook_name, hookimpl, verified in hookimpls:
-            hook = getattr(self.hook, hook_name, None)
-            if hook is None:
-                hook = HookCaller(hook_name, self._hookexec)
-                setattr(self.hook, hook_name, hook)
-            elif not verified and hook.has_spec():
-                # An earlier impl's historic replay added this spec after the
-                # first pass. Failing here leaves the plugin partially
-                # registered, but only user code during replay can get here.
-                self._verify_hook(hook, hookimpl)
-            hook._maybe_apply_history(hookimpl)
-            hook._add_hookimpl(hookimpl)
+        added: list[tuple[HookCaller, HookImpl]] = []
+        created: dict[str, HookCaller] = {}
+        try:
+            for hook_name, hookimpl, verified in hookimpls:
+                hook = getattr(self.hook, hook_name, None)
+                if hook is None:
+                    hook = HookCaller(hook_name, self._hookexec)
+                    created[hook_name] = hook
+                    setattr(self.hook, hook_name, hook)
+                elif not verified and hook.has_spec():
+                    # An earlier impl's historic replay added this spec after
+                    # the first pass, so validate against it now.
+                    self._verify_hook(hook, hookimpl)
+                hook._maybe_apply_history(hookimpl)
+                added.append((hook, hookimpl))
+                hook._add_hookimpl(hookimpl)
+        except BaseException:
+            # Replay runs user code. Remove only this registration's impls,
+            # without calling plugin equality or undoing nested registrations.
+            for hook, hookimpl in added:
+                hook._hookimpls[:] = [
+                    impl for impl in hook._hookimpls if impl is not hookimpl
+                ]
+            for hook_name, created_hook in created.items():
+                if (
+                    getattr(self.hook, hook_name, None) is created_hook
+                    and not created_hook.has_spec()
+                    and not created_hook.get_hookimpls()
+                ):
+                    delattr(self.hook, hook_name)
+            # A callback may have unregistered and re-registered even the same
+            # object under the same name. Only remove our own registry entry.
+            if (
+                self._pending_registrations.get(plugin_name) is registration
+                and self._name2plugin.get(plugin_name) is plugin
+            ):
+                del self._name2plugin[plugin_name]
+            raise
+        finally:
+            if self._pending_registrations.get(plugin_name) is registration:
+                del self._pending_registrations[plugin_name]
         return plugin_name
 
     def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
@@ -319,6 +351,7 @@ class PluginManager:
         # if self._name2plugin[name] == None registration was blocked: ignore
         if self._name2plugin.get(name) is not None:
             del self._name2plugin[name]
+            self._pending_registrations.pop(name, None)
 
         return plugin
 
@@ -346,26 +379,38 @@ class PluginManager:
 
         Functions are recognized as hook specifications if they have been
         decorated with a matching :class:`HookspecMarker`.
+
+        All specifications are validated before any are installed.
         """
-        names = []
+        pending: list[tuple[str, HookCaller | None, HookCaller]] = []
         for name in dir(module_or_class):
             spec_opts = self.parse_hookspec_opts(module_or_class, name)
             if spec_opts is not None:
                 hc: HookCaller | None = getattr(self.hook, name, None)
-                if hc is None:
-                    hc = HookCaller(name, self._hookexec, module_or_class, spec_opts)
-                    setattr(self.hook, name, hc)
-                else:
-                    # Plugins registered this hook without knowing the spec.
-                    hc.set_specification(module_or_class, spec_opts)
+                if hc is not None and hc.spec is not None:
+                    raise ValueError(
+                        f"Hook {hc.spec.name!r} is already registered "
+                        f"within namespace {hc.spec.namespace}"
+                    )
+                candidate = HookCaller(name, self._hookexec, module_or_class, spec_opts)
+                if hc is not None:
+                    # Validate without installing the spec on the live caller.
                     for hookfunction in hc.get_hookimpls():
-                        self._verify_hook(hc, hookfunction)
-                names.append(name)
+                        self._verify_hook(candidate, hookfunction)
+                pending.append((name, hc, candidate))
 
-        if not names:
+        if not pending:
             raise ValueError(
                 f"did not find any {self.project_name!r} hooks in {module_or_class!r}"
             )
+
+        for name, hc, candidate in pending:
+            if hc is None:
+                setattr(self.hook, name, candidate)
+            else:
+                # Preserve references held by plugins and subset hook callers.
+                hc.spec = candidate.spec
+                hc._call_history = candidate._call_history
 
     def parse_hookspec_opts(
         self, module_or_class: _Namespace, name: str
