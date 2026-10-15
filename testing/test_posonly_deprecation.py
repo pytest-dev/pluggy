@@ -95,13 +95,13 @@ def test_positional_only_callable_shapes(kind):
     class ClassPlugin:
         @classmethod
         @hookimpl
-        def hello(cls, value, /):
+        def hello(cls, value, /) -> object:
             return value
 
     class StaticPlugin:
         @staticmethod
         @hookimpl
-        def hello(value, /):
+        def hello(value, /) -> object:
             return value
 
     class CallablePlugin:
@@ -121,21 +121,22 @@ def test_positional_only_callable_shapes(kind):
 
     manager = PluginManager("posonly")
     manager.add_hookspecs(Spec)
-    with pytest.warns(DeprecationWarning, match="Positional-only") as recorded:
-        if kind in ("method", "classmethod", "staticmethod"):
-            plugin = {
-                "method": Plugin,
-                "classmethod": ClassPlugin,
-                "staticmethod": StaticPlugin,
-            }[kind]()
+    if kind in ("method", "classmethod", "staticmethod"):
+        plugin = {
+            "method": Plugin,
+            "classmethod": ClassPlugin,
+            "staticmethod": StaticPlugin,
+        }[kind]()
+        with pytest.warns(DeprecationWarning, match="Positional-only") as recorded:
             manager.register(plugin)
-            result = manager.hook.hello(value="caller")
-        else:
-            extras: dict[str, Callable[..., object]] = {
-                "decorated": decorate(Plugin().hello),
-                "callable": CallablePlugin(),
-                "class": ExtraClass,
-            }
+        result = manager.hook.hello(value="caller")
+    else:
+        extras: dict[str, Callable[..., object]] = {
+            "decorated": decorate(Plugin().hello),
+            "callable": CallablePlugin(),
+            "class": ExtraClass,
+        }
+        with pytest.warns(DeprecationWarning, match="Positional-only") as recorded:
             result = manager.hook.hello.call_extra([extras[kind]], {"value": "caller"})
     assert len(recorded) == 1
     assert "'self'" not in str(recorded[0].message)
