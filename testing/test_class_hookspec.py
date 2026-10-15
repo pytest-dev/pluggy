@@ -23,11 +23,11 @@ def test_class_valued_hookspec(namespace_kind: str, constructor: str) -> None:
 
     class Required:
         def __init__(self, value: object) -> None:
-            raise AssertionError("hookspec constructors must not execute")
+            raise AssertionError("hookspec constructors must not execute")  # pragma: no cover
 
     class Default:
         def __init__(self, value: object = "fallback") -> None:
-            raise AssertionError("hookspec constructors must not execute")
+            raise AssertionError("hookspec constructors must not execute")  # pragma: no cover
 
     class Inherited(Default):
         pass
@@ -35,7 +35,7 @@ def test_class_valued_hookspec(namespace_kind: str, constructor: str) -> None:
     class Wrapped:
         @wraps(Default.__init__)  # type: ignore[misc]
         def __init__(self, *args: object, **kwargs: object) -> None:
-            raise AssertionError("hookspec constructors must not execute")
+            raise AssertionError("hookspec constructors must not execute")  # pragma: no cover
 
     specification = hookspec(
         {
@@ -49,7 +49,7 @@ def test_class_valued_hookspec(namespace_kind: str, constructor: str) -> None:
     namespace: Any
     if namespace_kind == "module":
         namespace = types.ModuleType("specification")
-        setattr(namespace, "hook", specification)
+        namespace.hook = specification
     else:
         namespace_class = type("Specification", (), {"hook": specification})
         namespace = namespace_class if namespace_kind == "class" else namespace_class()
@@ -66,21 +66,23 @@ def test_class_valued_hookspec(namespace_kind: str, constructor: str) -> None:
         {} if constructor in ("implicit", "required") else {"value": "fallback"}
     )
 
-    plugin = types.ModuleType("implementation")
+    plugin: Any = types.ModuleType("implementation")
     if constructor == "implicit":
+
         @hookimpl
         def empty_hook() -> str:
             return "control"
 
-        setattr(plugin, "hook", empty_hook)
+        plugin.hook = empty_hook
         pm.register(plugin)
         assert pm.hook.hook() == ["control"]
     else:
+
         @hookimpl
         def value_hook(value: object) -> object:
             return value
 
-        setattr(plugin, "hook", value_hook)
+        plugin.hook = value_hook
         pm.register(plugin)
         assert pm.hook.hook(value="caller") == ["caller"]
         if constructor != "required":
@@ -88,13 +90,13 @@ def test_class_valued_hookspec(namespace_kind: str, constructor: str) -> None:
 
 
 def test_class_valued_hookimpl_is_still_ignored() -> None:
-    plugin = types.ModuleType("implementation")
+    plugin: Any = types.ModuleType("implementation")
 
     @hookimpl
     class Implementation:
         pass
 
-    setattr(plugin, "hook", Implementation)
+    plugin.hook = Implementation
     pm = PluginManager("example")
     assert pm.parse_hookimpl_opts(plugin, "hook") is None
     pm.register(plugin)
