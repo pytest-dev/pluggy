@@ -1,0 +1,1 @@
+Fix hook tracing raising ``TypeError`` for specced mocks passed as hook arguments or returned from first-result hooks.
