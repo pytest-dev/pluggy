@@ -63,7 +63,7 @@ def _render_value(obj: object) -> str:
     # Before the str check: a StrEnum member is a str whose str() drops the name.
     if isinstance(obj, (enum.Enum, os.PathLike)):
         return _safe_repr(obj)
-    if isinstance(obj, str):
+    if type(obj) is str:
         if len(obj.splitlines()) > 1:
             return _safe_str(obj)
         if _is_plain_token(obj):
@@ -94,7 +94,7 @@ class TagTracer:
         return TagTracerSub(self, (name,))
 
     def _format_message(self, tags: Sequence[str], args: Sequence[object]) -> str:
-        if isinstance(args[-1], dict):
+        if type(args[-1]) is dict:
             extra = args[-1]
             args = args[:-1]
         else:

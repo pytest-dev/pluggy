@@ -1,0 +1,5 @@
+Fixed a crash in hook tracing when a specced ``unittest.mock.Mock``
+(``Mock(spec=str)`` or ``Mock(spec=dict)``) was passed as a hook argument
+or returned as a first-result value: the tracer's ``isinstance`` checks
+routed the mock through the string/dict special-casing and raised
+``TypeError`` instead of rendering it.

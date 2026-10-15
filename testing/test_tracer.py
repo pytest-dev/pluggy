@@ -1,6 +1,7 @@
 import enum
 import os
 import pathlib
+from unittest.mock import Mock
 
 import pytest
 
@@ -162,6 +163,41 @@ def test_dbl_plugin_tracing(pm: PluginManager) -> None:
         "  hello [hook]\n      arg: 3\n",
         "  finish hello --> [] [hook]\n",
     ]
+
+
+@pytest.mark.parametrize("spec", [str, dict])
+def test_tracing_specced_mock_does_not_raise(pm: PluginManager, spec: type) -> None:
+    """A specced ``Mock`` must not be routed through the str/dict special-casing.
+
+    ``Mock(spec=str)`` / ``Mock(spec=dict)`` report their spec through
+    ``__class__``, so ``isinstance`` would send them down the string
+    formatting or dict metadata path and raise ``TypeError``. See #792.
+    """
+
+    class Api:
+        @hookspec(firstresult=True)
+        def echo(self, value: object) -> None:
+            "return the value"
+
+    pm.add_hookspecs(Api)
+    test_hc = pm.hook.echo
+
+    class Plugin:
+        @hookimpl
+        def echo(self, value):
+            return value
+
+    value = Mock(spec=spec)
+    pm.register(Plugin())
+
+    trace_out: list[str] = []
+    pm.trace.root.setwriter(trace_out.append)
+    pm.enable_tracing()
+
+    out = test_hc(value=value)
+    assert out is value
+    assert "echo [hook]" in "".join(trace_out)
+    assert "finish echo" in "".join(trace_out)
 
 
 class BrokenRepr:
