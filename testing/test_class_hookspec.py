@@ -23,11 +23,11 @@ def test_class_valued_hookspec(namespace_kind: str, constructor: str) -> None:
 
     class Required:
         def __init__(self, value: object) -> None:
-            raise AssertionError("hookspec constructors must not execute")  # pragma: no cover
+            raise AssertionError("constructor executed")  # pragma: no cover
 
     class Default:
         def __init__(self, value: object = "fallback") -> None:
-            raise AssertionError("hookspec constructors must not execute")  # pragma: no cover
+            raise AssertionError("constructor executed")  # pragma: no cover
 
     class Inherited(Default):
         pass
@@ -35,7 +35,7 @@ def test_class_valued_hookspec(namespace_kind: str, constructor: str) -> None:
     class Wrapped:
         @wraps(Default.__init__)  # type: ignore[misc]
         def __init__(self, *args: object, **kwargs: object) -> None:
-            raise AssertionError("hookspec constructors must not execute")  # pragma: no cover
+            raise AssertionError("constructor executed")  # pragma: no cover
 
     specification = hookspec(
         {
