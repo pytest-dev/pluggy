@@ -1,6 +1,7 @@
 import enum
 import os
 import pathlib
+from unittest.mock import Mock
 
 import pytest
 
@@ -161,6 +162,32 @@ def test_dbl_plugin_tracing(pm: PluginManager) -> None:
     assert trace_out == [
         "  hello [hook]\n      arg: 3\n",
         "  finish hello --> [] [hook]\n",
+    ]
+
+
+@pytest.mark.parametrize("spec", [str, dict])
+def test_plugin_tracing_with_mock(pm: PluginManager, spec: type) -> None:
+    class Api:
+        @hookspec(firstresult=True)
+        def hello(self, arg: object) -> object:
+            "Return the argument."
+
+    class Plugin:
+        @hookimpl
+        def hello(self, arg: object) -> object:
+            return arg
+
+    pm.add_hookspecs(Api)
+    pm.register(Plugin())
+    trace_out: list[str] = []
+    pm.trace.root.setwriter(trace_out.append)
+    pm.enable_tracing()
+
+    value = Mock(spec=spec)
+    assert pm.hook.hello(arg=value) is value
+    assert trace_out == [
+        f"  hello [hook]\n      arg: {value}\n",
+        f"  finish hello --> {value} [hook]\n",
     ]
 
 
