@@ -59,7 +59,9 @@ def test_positional_only_deprecation_preserves_calls(style, defaulted):
     plugin = type("Plugin", (), {"hello": marked})()
     manager = PluginManager("posonly")
     manager.add_hookspecs(Spec)
-    with pytest.warns(DeprecationWarning, match="Positional-only.*pluggy 2.0") as recorded:
+    with pytest.warns(
+        DeprecationWarning, match="Positional-only.*pluggy 2.0"
+    ) as recorded:
         manager.register(plugin)
     assert len(recorded) == 1
     assert recorded[0].filename == plain_required.__code__.co_filename
