@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from collections.abc import Generator
-import inspect
 from typing import Final
 from typing import final
 from typing import TypeAlias
@@ -28,7 +27,6 @@ class HookImpl:
     """A hook implementation in a :class:`HookCaller`."""
 
     __slots__ = (
-        "_posonlydefaults",
         "argnames",
         "function",
         "hookwrapper",
@@ -52,30 +50,12 @@ class HookImpl:
         """:meta private:"""
         #: The hook implementation function.
         self.function: Final = function
-        argnames, kwargnames = varnames(self.function)
+        argnames, kwargnames = varnames(self.function, warn_posonly=True)
         #: The positional parameter names of ``function``.
         self.argnames: Final = argnames
         #: The keyword parameter names of ``function`` which declare defaults.
         #: Keyword-only parameters are *not* included.
         self.kwargnames: Final = kwargnames
-        # Optional positional-only arguments still need positional delivery.
-        # Inspect the same underlying callable as varnames, without evaluating
-        # annotations or requiring an inspect.Signature on the hot call path.
-        func = self.function
-        if inspect.isclass(func):
-            func = func.__init__
-        elif not inspect.isroutine(func):
-            func = getattr(func, "__call__", func)  # noqa: B004
-        func = inspect.unwrap(func)
-        code = getattr(func, "__code__", None)
-        posonly = () if code is None else code.co_varnames[: code.co_posonlyargcount]
-        self._posonlydefaults: Final = {
-            name: default
-            for name, default in zip(
-                kwargnames, getattr(func, "__defaults__", ()) or ()
-            )
-            if name in posonly
-        }
         #: The plugin which defined this hook implementation.
         self.plugin: Final = plugin
         #: The :class:`HookimplOpts` used to configure this hook implementation.

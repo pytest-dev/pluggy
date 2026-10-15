@@ -1,3 +1,0 @@
-Deliver defaulted positional-only hook implementation arguments positionally,
-including in hook wrappers and ``call_extra``. Explicit hook call values and
-hookspec defaults keep their precedence over implementation defaults.
