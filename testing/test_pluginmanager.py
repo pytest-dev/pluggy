@@ -30,8 +30,17 @@ def test_plugin_double_register(pm: PluginManager) -> None:
 
 
 def test_register_ignores_none(pm: PluginManager) -> None:
-    """``None`` collides with the blocked-name sentinel and must be ignored."""
-    assert pm.register(None) is None
+    """``None`` is ignored, and the caller sees a ``DeprecationWarning``."""
+    with pytest.warns(
+        DeprecationWarning,
+        match=(
+            r"Passing None to PluginManager\.register\(\) is deprecated and "
+            r"will become an error in a future version; it is currently ignored\."
+        ),
+    ) as record:
+        assert pm.register(None) is None
+    assert len(record) == 1
+    assert record[0].filename == __file__
     assert pm.get_plugins() == set()
     assert not pm.is_registered(None)
 

@@ -194,11 +194,20 @@ class PluginManager:
             ``None``.
 
         If the plugin is already registered, raises a :exc:`ValueError`.
+
+        Passing ``None`` as the plugin is deprecated. The call is ignored and
+        emits a :class:`DeprecationWarning`. A future version will raise an
+        error.
         """
         if plugin is None:
-            # Registering a `None` plugin causes problems (#731). However, some
-            # users are doing it, so can't error out (#749). Just ignore
-            # instead.
+            # #731: registering None misbehaves. #749: callers still pass it,
+            # so ignore it for now. #790: warn until a later version errors.
+            warnings.warn(
+                "Passing None to PluginManager.register() is deprecated and will "
+                "become an error in a future version; it is currently ignored.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             return None
 
         plugin_name = name or self.get_canonical_name(plugin)

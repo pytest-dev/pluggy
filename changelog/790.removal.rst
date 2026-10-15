@@ -1,0 +1,1 @@
+:func:`PluginManager.register(None) <pluggy.PluginManager.register>` is deprecated: the call is still ignored, but now emits a :class:`DeprecationWarning`. It will become an error in a future version.
