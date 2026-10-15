@@ -9,6 +9,7 @@ from collections.abc import Sequence
 import enum
 import os
 from typing import Any
+from typing import cast
 
 
 _Writer = Callable[[str], object]
@@ -60,10 +61,12 @@ def _format_block(indent: str, lines: list[str]) -> list[str]:
 
 def _render_value(obj: object) -> str:
     """Render a traced value, adding detail only where ``str`` is ambiguous."""
+    obj_type = type(obj)
     # Before the str check: a StrEnum member is a str whose str() drops the name.
-    if isinstance(obj, (enum.Enum, os.PathLike)):
+    if issubclass(obj_type, (enum.Enum, os.PathLike)):
         return _safe_repr(obj)
-    if isinstance(obj, str):
+    if issubclass(obj_type, str):
+        obj = cast(str, obj)
         if len(obj.splitlines()) > 1:
             return _safe_str(obj)
         if _is_plain_token(obj):
@@ -94,8 +97,8 @@ class TagTracer:
         return TagTracerSub(self, (name,))
 
     def _format_message(self, tags: Sequence[str], args: Sequence[object]) -> str:
-        if isinstance(args[-1], dict):
-            extra = args[-1]
+        if issubclass(type(args[-1]), dict):
+            extra = cast(dict[object, object], args[-1])
             args = args[:-1]
         else:
             extra = {}
