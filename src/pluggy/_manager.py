@@ -383,14 +383,19 @@ class PluginManager:
 
         Discovery uses :func:`inspect.getattr_static` so properties and other
         descriptors are not executed. Only functions, classmethods,
-        staticmethods, and bound methods are considered.
+        staticmethods, bound methods, and class-valued specifications are
+        considered.
         """
         found = _static_hook_attr(module_or_class, name)
         if found is None:
-            return None
+            holder = inspect.getattr_static(module_or_class, name, None)
+            if not inspect.isclass(holder):
+                return None
+        else:
+            holder = found[0]
         return cast(
             HookspecOpts | None,
-            _get_marker_opts(found[0], self.project_name + "_spec"),
+            _get_marker_opts(holder, self.project_name + "_spec"),
         )
 
     def get_plugins(self) -> set[Any]:

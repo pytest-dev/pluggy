@@ -1,0 +1,3 @@
+Restore discovery of class-valued hook specifications, such as those used by
+ScanCode's PluginCode, without evaluating descriptors. Read constructor defaults
+when a class supplies the specification signature.

@@ -349,7 +349,10 @@ class HookSpec:
         self.argnames, self.kwargnames = varnames(
             self.function, legacy_noself=legacy_noself
         )
-        defaults = inspect.unwrap(self.function).__defaults__
+        function = self.function
+        if inspect.isclass(function):
+            function = function.__init__
+        defaults = getattr(inspect.unwrap(function), "__defaults__", None)
         self.kwargdefaults = dict(zip(self.kwargnames, defaults or ()))
         self.opts = opts
         self.warn_on_impl = opts.get("warn_on_impl")
