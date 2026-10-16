@@ -1,0 +1,1 @@
+Ensure outer hook wrappers receive the error and complete teardown when a new-style hook wrapper yields more than once.
