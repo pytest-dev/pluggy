@@ -1,0 +1,1 @@
+Fix a stale entry in :meth:`~pluggy.PluginManager.list_name_plugin` when a plugin is unregistered with :meth:`~pluggy.PluginManager.unregister`: the distribution metadata recorded by :meth:`~pluggy.PluginManager.register` is now dropped together with the plugin, so re-registering a different plugin under the same name no longer reports the old distribution.
