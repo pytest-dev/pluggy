@@ -320,6 +320,14 @@ class PluginManager:
         if self._name2plugin.get(name) is not None:
             del self._name2plugin[name]
 
+        # Drop the entry-point bookkeeping for this plugin as well. Leaving it in
+        # place made list_plugin_distinfo()/list_plugin_distributions() keep
+        # reporting an unregistered plugin, and a later re-registration appended a
+        # second entry for the same plugin.
+        self._plugin_distinfo[:] = [
+            (p, dist) for p, dist in self._plugin_distinfo if p is not plugin
+        ]
+
         return plugin
 
     def set_blocked(self, name: str) -> None:
