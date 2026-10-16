@@ -182,6 +182,7 @@ def _multicall(
                 # Try to force finalizers otherwise postponed till GC action.
                 # Note: close() may raise if generator handles GeneratorExit.
                 teardown.close()
+                _raise_wrapfail(teardown, "has second yield")
             except StopIteration as si:
                 result = si.value
                 exception = None
@@ -189,7 +190,6 @@ def _multicall(
             except BaseException as e:
                 exception = e
                 continue
-            _raise_wrapfail(teardown, "has second yield")
 
     if exception is not None:
         raise exception
