@@ -1,0 +1,1 @@
+:meth:`PluginManager.unregister() <pluggy.PluginManager.unregister>` now also drops the plugin's entry from :meth:`~pluggy.PluginManager.list_plugin_distinfo` and :meth:`~pluggy.PluginManager.list_plugin_distributions`, so unloaded plugins no longer show up there and reloading them no longer adds duplicates.
