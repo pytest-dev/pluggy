@@ -47,6 +47,13 @@ class TestHookspecConfiguration:
         config = HookspecConfiguration(warn_on_impl_args=warnings_dict)
         assert config.warn_on_impl_args is warnings_dict
 
+    def test_repr_lists_only_set_options(self) -> None:
+        assert repr(HookspecConfiguration()) == "HookspecConfiguration()"
+        assert (
+            repr(HookspecConfiguration(firstresult=True))
+            == "HookspecConfiguration(firstresult=True)"
+        )
+
 
 class TestHookimplConfiguration:
     def test_basic_creation(self) -> None:
@@ -92,6 +99,13 @@ class TestHookimplConfiguration:
         config = HookimplConfiguration(specname="custom_name")
         assert config.specname == "custom_name"
 
+    def test_repr_lists_only_set_options(self) -> None:
+        assert repr(HookimplConfiguration()) == "HookimplConfiguration()"
+        assert (
+            repr(HookimplConfiguration(tryfirst=True, specname="other"))
+            == "HookimplConfiguration(specname='other', tryfirst=True)"
+        )
+
 
 class TestMappingShim:
     def test_hookspec_config_from_mapping(self) -> None:
@@ -120,8 +134,8 @@ class TestMappingShim:
     def test_read_hookimpl_accepts_legacy_dict_attribute(self) -> None:
         pm = PluginManager("test")
 
-        def method() -> str:
-            return "ok"
+        def method() -> None:
+            pass
 
         # setattr, not attribute access: the marker is dynamic and must not
         # be type-checked against the function object.
@@ -140,8 +154,8 @@ class TestMappingShim:
         hookimpl = HookimplMarker("test")
 
         @hookimpl(tryfirst=True)
-        def method() -> str:
-            return "ok"
+        def method() -> None:
+            pass
 
         class Plugin:
             pass
@@ -170,6 +184,20 @@ class TestMappingShim:
         assert isinstance(config, HookspecConfiguration)
         assert config.firstresult is True
 
+    def test_parse_hookspec_opts_returns_legacy_dict(self) -> None:
+        class Spec:
+            @HookspecMarker("test")
+            def myhook(self) -> None:
+                pass
+
+        opts = PluginManager("test").parse_hookspec_opts(Spec, "myhook")
+        assert opts == {
+            "firstresult": False,
+            "historic": False,
+            "warn_on_impl": None,
+            "warn_on_impl_args": None,
+        }
+
     def test_discover_skips_parse_hookimpl_opts_unless_overridden(self) -> None:
         calls: list[str] = []
 
@@ -188,11 +216,11 @@ class TestMappingShim:
 
         class Plugin:
             @HookimplMarker("test")
-            def marked(self) -> str:
-                return "marked"
+            def marked(self) -> None:
+                pass
 
-            def unmarked(self) -> str:
-                return "unmarked"
+            def unmarked(self) -> None:
+                pass
 
         pm = TrackingPluginManager("test")
         pm.add_hookspecs(Spec)
@@ -213,8 +241,8 @@ def test_markers_attach_configuration_objects() -> None:
         pass
 
     @hookimpl(tryfirst=True)
-    def myimpl(arg: object) -> str:
-        return "x"
+    def myimpl(arg: object) -> None:
+        pass
 
     spec_config = getattr(myspec, "test_spec")  # noqa: B009
     impl_config = getattr(myimpl, "test_impl")  # noqa: B009
@@ -246,10 +274,12 @@ def test_config_integration_with_hooks() -> None:
 
     pm.add_hookspecs(MySpec)
     pm.register(Plugin1())
-    pm.register(Plugin2())
+    plugin2 = Plugin2()
+    pm.register(plugin2)
 
-    result = pm.hook.myhook(arg="test")
-    assert result == "plugin2: test"
+    assert pm.hook.myhook(arg="test") == "plugin2: test"
+    pm.unregister(plugin2)
+    assert pm.hook.myhook(arg="test") == "plugin1: test"
 
 
 def test_historic_hook_configuration() -> None:
