@@ -14,7 +14,6 @@ from typing import TypeAlias
 import warnings
 
 from ._impl import HookImpl
-from ._result import HookCallError
 from ._result import Result
 from ._warnings import PluggyTeardownRaisedWarning
 
@@ -103,20 +102,7 @@ def _multicall(
     teardowns: list[Teardown] = []
     try:  # run impl and wrapper setup functions in a loop
         for hook_impl in reversed(hook_impls):
-            try:
-                args = [caller_kwargs[argname] for argname in hook_impl.argnames]
-                if hook_impl.kwargnames:
-                    kwargs = {
-                        argname: caller_kwargs[argname]
-                        for argname in hook_impl.kwargnames
-                        if argname in caller_kwargs
-                    } or None
-                else:
-                    kwargs = None
-            except KeyError as e:
-                raise HookCallError(
-                    f"hook call must provide argument {e.args[0]!r}"
-                ) from e
+            args, kwargs = hook_impl._get_call_args(caller_kwargs)
 
             if hook_impl.hookwrapper:
                 function_gen = run_old_style_hookwrapper(
