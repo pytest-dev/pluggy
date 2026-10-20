@@ -1,0 +1,1 @@
+Hook tracing no longer turns a successful hook call into an error when a traced argument name or a trace channel contains a character that cannot be encoded, such as a lone surrogate, or a name whose ``str()`` raises; both are now rendered in the trace like the rest of the message instead of being raised out of the call (`#805 <https://github.com/pytest-dev/pluggy/pull/805>`_).
