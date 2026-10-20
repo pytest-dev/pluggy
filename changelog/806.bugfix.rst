@@ -1,0 +1,1 @@
+A historic hook call now remembers the arguments it was made with instead of the mapping the caller passed in, so mutating that mapping afterwards no longer changes what plugins registered later, or the result callback, receive (`#806 <https://github.com/pytest-dev/pluggy/pull/806>`_).
