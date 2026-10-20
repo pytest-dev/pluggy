@@ -12,6 +12,7 @@ from typing import TypeAlias
 from typing import TypeVar
 
 from ._config import HookimplOpts
+from ._decorators import _kwonly_argnames
 from ._decorators import varnames
 from ._result import Result
 
@@ -31,6 +32,7 @@ class HookImpl:
         "function",
         "hookwrapper",
         "kwargnames",
+        "kwonlyargnames",
         "optionalhook",
         "opts",
         "plugin",
@@ -56,6 +58,9 @@ class HookImpl:
         #: The keyword parameter names of ``function`` which declare defaults.
         #: Keyword-only parameters are *not* included.
         self.kwargnames: Final = kwargnames
+        #: The keyword-only parameter names of ``function``. These are not
+        #: passed to the function; see :func:`warn_keyword_only_parameters`.
+        self.kwonlyargnames: Final = _kwonly_argnames(self.function)
         #: The plugin which defined this hook implementation.
         self.plugin: Final = plugin
         #: The :class:`HookimplOpts` used to configure this hook implementation.

@@ -26,6 +26,7 @@ from ._hooks import HookimplOpts
 from ._hooks import HookRelay
 from ._hooks import HookspecOpts
 from ._hooks import normalize_hookimpl_opts
+from ._hooks import warn_keyword_only_parameters
 from ._result import Result
 
 
@@ -358,6 +359,15 @@ class PluginManager:
                     hc.set_specification(module_or_class, spec_opts)
                     for hookfunction in hc.get_hookimpls():
                         self._verify_hook(hc, hookfunction)
+                assert hc.spec is not None
+                # Keyword-only parameters are never passed to hook
+                # implementations (#742), so warn even when no implementation
+                # requests this hook yet.
+                warn_keyword_only_parameters(
+                    hc.spec.function,
+                    what=f"hookspec {name!r}",
+                    stacklevel=3,
+                )
                 names.append(name)
 
         if not names:
@@ -437,6 +447,16 @@ class PluginManager:
         assert hook.spec is not None
         if hook.spec.warn_on_impl:
             _warn_for_function(hook.spec.warn_on_impl, hookimpl.function)
+
+        # Keyword-only parameters are never passed to the hookimpl (#742), so
+        # warn about any of them: one shared with the hookspec would be
+        # silently ignored.
+        if hook.spec.kwonlyargnames or hookimpl.kwonlyargnames:
+            warn_keyword_only_parameters(
+                hookimpl.function,
+                what=_formatdef(hookimpl.function),
+                stacklevel=4,
+            )
 
         # positional arg checking
         notinspec = set(hookimpl.argnames) - (

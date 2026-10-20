@@ -1,10 +1,16 @@
 from collections.abc import Callable
 from functools import wraps
+from pathlib import Path
 from typing import Any
 from typing import cast
 from typing import TypeVar
+import warnings
 
+import pytest
+
+from pluggy._hooks import _kwonly_argnames
 from pluggy._hooks import varnames
+from pluggy._hooks import warn_keyword_only_parameters
 from pluggy._manager import _formatdef
 
 
@@ -272,3 +278,89 @@ def test_varnames_unresolvable_annotation() -> None:
         pass
 
     assert varnames(func_with_bad_annotation) == (("x", "y"), ())
+
+
+def test_kwonly_argnames_forms() -> None:
+    """``_kwonly_argnames`` normalizes callables the same way ``varnames`` does.
+
+    These parameters are not part of ``varnames`` results, so they need to be
+    reported separately (see ``test_warnings.py``).
+    """
+
+    def function(a, b=1, *, c, d=2) -> None:
+        pass  # pragma: no cover
+
+    class CallableObject:
+        def __call__(self, q, *, cobalt) -> None:
+            pass  # pragma: no cover
+
+    class Methods:
+        def method(self, a, *, kwonly, other=2) -> None:
+            pass  # pragma: no cover
+
+        @classmethod
+        def cm(cls, a, *, kwonly) -> None:
+            pass  # pragma: no cover
+
+        @staticmethod
+        def sm(a, *, kwonly) -> None:
+            pass  # pragma: no cover
+
+    F = TypeVar("F", bound=Callable[..., Any])
+
+    def decorator(func: F) -> F:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)  # pragma: no cover
+
+        return cast(F, wrapper)
+
+    @decorator
+    def decorated(a, *, decorated_kwonly=3) -> None:
+        pass  # pragma: no cover
+
+    assert _kwonly_argnames(function) == ("c", "d")
+    assert _kwonly_argnames(lambda a: None) == ()
+    assert _kwonly_argnames(Methods.cm) == ("kwonly",)
+    assert _kwonly_argnames(Methods.sm) == ("kwonly",)
+    assert _kwonly_argnames(Methods.method) == ("kwonly", "other")
+    assert _kwonly_argnames(Methods().method) == ("kwonly", "other")
+    assert _kwonly_argnames(CallableObject()) == ("cobalt",)
+    assert _kwonly_argnames(decorated) == ("decorated_kwonly",)
+    # Callables without a code object, and classes whose __init__ has no
+    # keyword-only parameters.
+    assert _kwonly_argnames(len) == ()
+    assert _kwonly_argnames(type("Bare", (), {})) == ()
+
+    class RaisingCall:
+        def __getattr__(self, name):
+            if name == "__call__":
+                raise RuntimeError("boom")  # pragma: no cover
+            raise AttributeError(name)  # pragma: no cover
+
+    def broken_wrapped(*args, **kwargs) -> None:
+        pass  # pragma: no cover
+
+    broken_wrapped.__wrapped__ = 42  # type: ignore[attr-defined]
+
+    # Never raise on exotic callables, just report nothing.
+    assert _kwonly_argnames(RaisingCall()) == ()
+    assert _kwonly_argnames(broken_wrapped) == ()
+    assert _kwonly_argnames(5) == ()
+    assert _kwonly_argnames(None) == ()
+
+
+def test_warn_keyword_only_parameters_directly() -> None:
+    """The helper warns with the given description, pointing at the caller."""
+
+    def func(a, *, kwonly) -> None:
+        pass  # pragma: no cover
+
+    with pytest.warns(DeprecationWarning, match=r"func\(a, \*, kwonly\)") as wc:
+        warn_keyword_only_parameters(func, what="func(a, *, kwonly)", stacklevel=2)
+    assert len(wc.list) == 1
+    assert Path(wc.list[0].filename).name == "test_helpers.py"
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        warn_keyword_only_parameters(lambda a, b=1: None, what="lambda", stacklevel=2)

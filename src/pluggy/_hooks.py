@@ -16,11 +16,13 @@ from ._caller import HookRelay
 from ._config import HookimplOpts
 from ._config import HookspecOpts
 from ._config import normalize_hookimpl_opts
+from ._decorators import _kwonly_argnames
 from ._decorators import _Namespace
 from ._decorators import HookimplMarker
 from ._decorators import HookSpec
 from ._decorators import HookspecMarker
 from ._decorators import varnames
+from ._decorators import warn_keyword_only_parameters
 from ._impl import _HookImplFunction
 from ._impl import _Plugin
 from ._impl import HookImpl
@@ -42,6 +44,8 @@ __all__ = [
     "_Namespace",
     "_Plugin",
     "_SubsetHookCaller",
+    "_kwonly_argnames",
     "normalize_hookimpl_opts",
     "varnames",
+    "warn_keyword_only_parameters",
 ]

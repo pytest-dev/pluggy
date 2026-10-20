@@ -660,6 +660,25 @@ callers:
 .. versionadded:: 1.7
     Hookspec argument defaults.
 
+Keyword-only parameters
+^^^^^^^^^^^^^^^^^^^^^^^
+Keyword-only parameters, declared after a ``*``, are currently **ignored** by
+pluggy: they are not part of the *hookspec* signature, and they are never passed
+to a *hookimpl*. A *hookimpl* which requests one receives its own default (or
+raises :exc:`TypeError` if it has none), even when the caller passes a value.
+
+Declaring such a parameter in a *hookspec* or a *hookimpl* therefore emits a
+:class:`DeprecationWarning`. Declare the parameter as a regular one instead:
+
+.. code-block:: python
+
+    @hookspec
+    def myhook(config, args, kwonly=None):  # not `config, args, *, kwonly=None`
+        pass
+
+.. deprecated:: 1.7
+    Keyword-only parameters in hookspecs and hookimpls.
+
 .. _firstresult:
 
 First result only

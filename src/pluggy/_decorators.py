@@ -325,6 +325,80 @@ def varnames(
     return args, kwargs
 
 
+def _callable_code(func: object) -> types.CodeType | None:
+    """Return the code object of ``func``, or None if there is none.
+
+    ``func`` is normalized the same way :func:`varnames` does it: a class
+    stands for its ``__init__``, a callable object for its ``__call__``, and
+    wrappers are unwrapped. This keeps both functions reporting the same
+    parameters for the same input.
+    """
+    if inspect.isclass(func):
+        func = getattr(func, "__init__", None)
+    elif not inspect.isroutine(func):
+        try:
+            # Not a `callable()` check: the `__call__` attribute itself is
+            # wanted, so that its code can be inspected below.
+            func = getattr(func, "__call__", func)  # noqa: B004
+        except Exception:  # pragma: no cover - pypy special case
+            return None
+    if func is None:
+        return None
+    try:
+        func = inspect.unwrap(func)  # type: ignore[arg-type]
+    except Exception:  # pragma: no cover - broken __wrapped__ chain
+        return None
+    if inspect.ismethod(func):
+        func = func.__func__
+    code: types.CodeType | None = getattr(func, "__code__", None)
+    return code
+
+
+def _kwonly_argnames(func: object) -> tuple[str, ...]:
+    """Return the names of the keyword-only parameters of a callable.
+
+    Keyword-only parameters are not part of ``argnames``/``kwargnames``:
+    :func:`varnames` only looks at ``co_argcount``, which excludes the
+    parameters after ``*``. This exposes them so that they can be reported
+    instead of silently ignored.
+    """
+    code = _callable_code(func)
+    if code is None:
+        return ()
+    start = code.co_argcount
+    return code.co_varnames[start : start + code.co_kwonlyargcount]
+
+
+def warn_keyword_only_parameters(
+    func: Callable[..., object],
+    *,
+    what: str,
+    stacklevel: int,
+) -> None:
+    """Warn when ``func`` declares keyword-only parameters.
+
+    pluggy does not pass keyword-only parameters to hook implementations, so a
+    parameter that is declared in both the hookspec and the hookimpl is
+    silently ignored. Warn so that it can be removed before it becomes an
+    error.
+
+    ``stacklevel`` is relative to the caller of this function, like
+    :func:`warnings.warn`.
+    """
+    kwonly = _kwonly_argnames(func)
+    if not kwonly:
+        return
+    names = ", ".join(repr(name) for name in kwonly)
+    warnings.warn(
+        f"{what} declares keyword-only parameter(s) {names}, which pluggy "
+        "currently ignores (they are never passed to hook implementations). "
+        "Declare them as regular parameters instead. This will become an "
+        "error in a future version of pluggy.",
+        DeprecationWarning,
+        stacklevel=stacklevel,
+    )
+
+
 @final
 class HookSpec:
     __slots__ = (
@@ -332,6 +406,7 @@ class HookSpec:
         "function",
         "kwargdefaults",
         "kwargnames",
+        "kwonlyargnames",
         "name",
         "namespace",
         "opts",
@@ -349,6 +424,10 @@ class HookSpec:
         self.argnames, self.kwargnames = varnames(
             self.function, legacy_noself=legacy_noself
         )
+        #: The keyword-only parameter names of the hook specification. These
+        #: are not passed to hook implementations; see
+        #: :func:`warn_keyword_only_parameters`.
+        self.kwonlyargnames = _kwonly_argnames(self.function)
         defaults = inspect.unwrap(self.function).__defaults__
         self.kwargdefaults = dict(zip(self.kwargnames, defaults or ()))
         self.opts = opts
