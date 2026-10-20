@@ -993,6 +993,49 @@ def test_unregister_drops_plugin_distribution(
     assert pm.list_plugin_distributions() == [(a, dist)]
 
 
+def test_load_setuptools_declined_plugin_is_not_recorded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An entry point whose plugin ``register()`` declines was not loaded.
+
+    ``register()`` returns ``None`` when it registers nothing: for a ``None``
+    plugin, and for a ``PluginManager`` subclass which declines one, as
+    pytest's does for deprecated plugin names. Such an entry point must not be
+    counted, and must not be remembered for
+    :meth:`~pluggy.PluginManager.list_plugin_distinfo` and
+    :meth:`~pluggy.PluginManager.list_plugin_distributions`, which look the
+    recorded names up in the plugin registry.
+    """
+
+    class EntryPoint:
+        group = "hello"
+
+        def __init__(self, name: str, target: object) -> None:
+            self.name = name
+            self._target = target
+
+        def load(self) -> object:
+            return self._target
+
+    class Distribution:
+        entry_points = (EntryPoint("null", None), EntryPoint("declined", object()))
+
+    dist = cast(importlib.metadata.Distribution, Distribution())
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda: (dist,))
+
+    class DecliningPluginManager(PluginManager):
+        def register(self, plugin: object, name: str | None = None) -> str | None:
+            if name == "declined":
+                return None
+            return super().register(plugin, name=name)
+
+    pm = DecliningPluginManager("example")
+    assert pm.load_setuptools_entrypoints("hello") == 0
+    assert pm.list_name_plugin() == []
+    assert pm.list_plugin_distributions() == []
+    assert pm.list_plugin_distinfo() == []
+
+
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
     out: list[Any] = []
 

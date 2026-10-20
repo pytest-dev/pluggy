@@ -517,8 +517,16 @@ class PluginManager:
                 ):
                     continue
                 plugin = ep.load()
-                self.register(plugin, name=ep.name)
-                self._name2dist[ep.name] = dist
+                registered_name = self.register(plugin, name=ep.name)
+                if registered_name is None:
+                    # register() declined to register this plugin: it returns
+                    # None for a None plugin, and a PluginManager subclass may
+                    # do the same (pytest's ignores deprecated plugin names).
+                    # Nothing was registered, so nothing may be counted or
+                    # remembered -- list_plugin_distributions() looks the names
+                    # up in the plugin registry.
+                    continue
+                self._name2dist[registered_name] = dist
                 count += 1
         return count
 
