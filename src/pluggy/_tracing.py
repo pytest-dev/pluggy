@@ -101,17 +101,24 @@ class TagTracer:
         content = " ".join(map(_safe_str, args))
         indent = "  " * self.indent
 
-        lines = [f"{indent}{content} [{':'.join(tags)}]\n"]
+        # The channel names come from the tracer's user, so they are rendered
+        # like any other text in the message.
+        channels = _safe_str(":".join(tags))
+
+        lines = [f"{indent}{content} [{channels}]\n"]
 
         for name, value in extra.items():
+            # The key is text pluggy puts in the message itself: rendering it
+            # must not raise, nor leave a lone surrogate in the output.
+            key = _safe_str(name)
             rendered = _safe(_render_value, value, "format")
             # A bare \r is a line break too: inline, the terminal would
             # return to column 0 and overwrite the key.
             body = rendered.splitlines()
             if body in ([], [rendered]):
-                lines.append(f"{indent}    {name}: {rendered}\n")
+                lines.append(f"{indent}    {key}: {rendered}\n")
             else:
-                lines.append(f"{indent}    {name}:\n")
+                lines.append(f"{indent}    {key}:\n")
                 lines.extend(_format_block(indent, body))
 
         return "".join(lines)

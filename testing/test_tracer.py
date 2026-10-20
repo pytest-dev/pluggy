@@ -324,6 +324,12 @@ def test_dictargs_escape_surrogate_values(rootlogger: TagTracer) -> None:
     out.encode()
 
 
+def test_dictargs_escape_surrogate_keys(rootlogger: TagTracer) -> None:
+    out = rootlogger._format_message(["test"], ["test", {"\ud800": 1}])
+    assert out == "test [test]\n    \\ud800: 1\n"
+    out.encode()
+
+
 def test_escape_surrogates_from_repr(rootlogger: TagTracer) -> None:
     """A surrogate coming out of the object's own repr is escaped too."""
     out = rootlogger._format_message(["test"], ["test", {"arg": SurrogateRepr()}])
@@ -334,6 +340,12 @@ def test_escape_surrogates_from_repr(rootlogger: TagTracer) -> None:
 def test_escape_surrogates_in_labels(rootlogger: TagTracer) -> None:
     out = rootlogger._format_message(["test"], ["\ud800"])
     assert out == "\\ud800 [test]\n"
+    out.encode()
+
+
+def test_escape_surrogates_in_channels(rootlogger: TagTracer) -> None:
+    out = rootlogger._format_message(["\ud800"], ["test"])
+    assert out == "test [\\ud800]\n"
     out.encode()
 
 
@@ -353,6 +365,13 @@ def test_broken_repr_value_does_not_raise(rootlogger: TagTracer) -> None:
 
 def test_broken_str_label_does_not_raise(rootlogger: TagTracer) -> None:
     out = rootlogger._format_message(["test"], [BrokenStr()])
+    assert "RuntimeError('str is broken') raised in str()" in out
+    assert "BrokenStr object at 0x" in out
+    out.encode()
+
+
+def test_broken_str_key_does_not_raise(rootlogger: TagTracer) -> None:
+    out = rootlogger._format_message(["test"], ["test", {BrokenStr(): 1}])
     assert "RuntimeError('str is broken') raised in str()" in out
     assert "BrokenStr object at 0x" in out
     out.encode()
