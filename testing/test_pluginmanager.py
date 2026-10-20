@@ -540,6 +540,37 @@ def test_register_historic(pm: PluginManager) -> None:
     assert out == [1, 10, 120, 12]
 
 
+def test_call_historic_keeps_the_values_the_call_was_made_with(
+    pm: PluginManager,
+) -> None:
+    """The memorized call is replayed with the values it was made with, even
+    when the caller's mapping is mutated after the call."""
+
+    class Hooks:
+        @hookspec(historic=True)
+        def he_method1(self, arg): ...
+
+    pm.add_hookspecs(Hooks)
+
+    out = []
+    kwargs = {"arg": "value-at-call-time"}
+    pm.hook.he_method1.call_historic(lambda res: out.append(res), kwargs=kwargs)
+    kwargs["arg"] = "mutated-after-the-call"
+
+    seen = []
+
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg):
+            seen.append(arg)
+            return arg
+
+    pm.register(Plugin())
+
+    assert seen == ["value-at-call-time"]
+    assert out == ["value-at-call-time"]
+
+
 def test_historic_with_subset_hook_caller(pm: PluginManager) -> None:
     class Hooks:
         @hookspec(historic=True)

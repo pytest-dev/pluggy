@@ -214,6 +214,10 @@ class HookCaller:
         assert self._call_history is not None
         kwargs = kwargs or {}
         kwargs = self._apply_defaults(kwargs)
+        # ``kwargs`` may be a mapping the caller keeps and mutates; the call is
+        # memorized to be replayed, so it has to keep the values it was made
+        # with.
+        kwargs = dict(kwargs)
         self._verify_all_args_are_provided(kwargs)
         self._call_history.append((kwargs, result_callback))
         # Historizing hooks don't return results.
