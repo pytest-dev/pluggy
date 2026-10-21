@@ -317,11 +317,11 @@ def test_hookspec(pm: PluginManager) -> None:
 
     pm.add_hookspecs(HookSpec)
     assert pm.hook.he_myhook1.spec is not None
-    assert not pm.hook.he_myhook1.spec.opts["firstresult"]
+    assert not pm.hook.he_myhook1.spec.opts.firstresult
     assert pm.hook.he_myhook2.spec is not None
-    assert pm.hook.he_myhook2.spec.opts["firstresult"]
+    assert pm.hook.he_myhook2.spec.opts.firstresult
     assert pm.hook.he_myhook3.spec is not None
-    assert not pm.hook.he_myhook3.spec.opts["firstresult"]
+    assert not pm.hook.he_myhook3.spec.opts.firstresult
 
 
 @pytest.mark.parametrize("name", ["hookwrapper", "optionalhook", "tryfirst", "trylast"])
@@ -332,7 +332,7 @@ def test_hookimpl(name: str, val: bool) -> None:
         pass
 
     if val:
-        assert he_myhook1.example_impl.get(name)
+        assert getattr(he_myhook1.example_impl, name)
     else:
         assert not hasattr(he_myhook1, name)
 
