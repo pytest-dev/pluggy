@@ -1,0 +1,1 @@
+Outer hook wrappers now receive the error and complete their teardown when a new-style hook wrapper yields more than once.

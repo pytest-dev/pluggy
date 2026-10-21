@@ -1,0 +1,12 @@
+:class:`pluggy.HookCaller` is now a runtime-checkable
+:class:`~typing.Protocol` implemented by the new concrete callers
+:class:`pluggy.NormalHookCaller` (split normal/wrapper implementation
+lists), :class:`pluggy.HistoricHookCaller` (call memorization and replay,
+no wrappers) and :class:`pluggy.SubsetHookCaller`.
+``isinstance(caller, HookCaller)`` keeps working for all of them.
+
+The hook execution engine now runs a dual-sequence multicall: wrappers own
+their setup/teardown through ``CompletionHook`` callbacks which run LIFO
+after the normal implementations, removing all wrapper flag branching from
+the hot loop. Hook call monitoring callbacks still receive a single
+combined implementation list.
