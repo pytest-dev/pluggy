@@ -597,6 +597,29 @@ class TestHookspecDefaultArgumentValue:
 
         assert seen == [(1, "spec"), (2, "call")]
 
+    def test_historic_replay_copies_call_kwargs(self, pm: PluginManager) -> None:
+        class Api:
+            @hookspec(historic=True)
+            def hello(self, arg):
+                pass
+
+        pm.add_hookspecs(Api)
+
+        kwargs = {"arg": "at-call-time"}
+        pm.hook.hello.call_historic(kwargs=kwargs)
+        kwargs["arg"] = "mutated"
+
+        seen = []
+
+        class Plugin:
+            @hookimpl
+            def hello(self, arg):
+                seen.append(arg)
+
+        pm.register(Plugin())
+
+        assert seen == ["at-call-time"]
+
     def test_call_extra(self, pm: PluginManager) -> None:
         """Test calls with extras respect defaults."""
 

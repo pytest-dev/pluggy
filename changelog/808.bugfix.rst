@@ -1,0 +1,1 @@
+Historic hook calls now copy their keyword argument mapping, so later changes to the caller's mapping do not affect calls replayed to newly registered plugins.

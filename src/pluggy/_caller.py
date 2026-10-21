@@ -215,7 +215,7 @@ class HookCaller:
         kwargs = kwargs or {}
         kwargs = self._apply_defaults(kwargs)
         self._verify_all_args_are_provided(kwargs)
-        self._call_history.append((kwargs, result_callback))
+        self._call_history.append((dict(kwargs), result_callback))
         # Historizing hooks don't return results.
         # Remember firstresult isn't compatible with historic.
         # Copy because plugins may register other plugins during iteration (#438).

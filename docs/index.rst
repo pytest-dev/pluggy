@@ -995,6 +995,10 @@ using the :py:meth:`~pluggy.HookCaller.call_historic()` method:
     # historic callback is invoked here
     pm.register(mylateplugin)
 
+The keyword argument mapping is copied when the call is recorded, so later
+changes to the caller's mapping do not affect calls replayed to newly registered
+plugins.
+
 Note that if you :py:meth:`~pluggy.HookCaller.call_historic()`
 the :py:class:`~pluggy.HookCaller` (and thus your calling code)
 can not receive results back from the underlying *hookimpl* functions.
