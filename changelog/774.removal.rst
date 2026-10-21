@@ -1,0 +1,3 @@
+Deprecate positional-only hook implementation parameters, without changing
+their current call behavior. Use positional-or-keyword parameters instead.
+Positional-only implementation parameters will become an error in pluggy 2.0.
