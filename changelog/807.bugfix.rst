@@ -1,0 +1,1 @@
+Fix :meth:`~pluggy.PluginManager.load_setuptools_entrypoints` crashing distribution listing when an entry point is declined during registration.
