@@ -517,8 +517,10 @@ class PluginManager:
                 ):
                     continue
                 plugin = ep.load()
-                self.register(plugin, name=ep.name)
-                self._name2dist[ep.name] = dist
+                plugin_name = self.register(plugin, name=ep.name)
+                if plugin_name is None:
+                    continue
+                self._name2dist[plugin_name] = dist
                 count += 1
         return count
 

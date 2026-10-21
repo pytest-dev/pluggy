@@ -993,6 +993,44 @@ def test_unregister_drops_plugin_distribution(
     assert pm.list_plugin_distributions() == [(a, dist)]
 
 
+def test_load_setuptools_ignores_declined_plugins(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class EntryPoint:
+        group = "hello"
+
+        def __init__(self, name: str, plugin: object) -> None:
+            self.name = name
+            self.plugin = plugin
+
+        def load(self) -> object:
+            return self.plugin
+
+    accepted = object()
+
+    class Distribution:
+        entry_points = (
+            EntryPoint("none-plugin", None),
+            EntryPoint("declined", object()),
+            EntryPoint("renamed", accepted),
+        )
+
+    class DecliningPluginManager(PluginManager):
+        def register(self, plugin: object, name: str | None = None) -> str | None:
+            if name == "declined":
+                return None
+            if name == "renamed":
+                name = "accepted"
+            return super().register(plugin, name)
+
+    dist = cast(importlib.metadata.Distribution, Distribution())
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda: (dist,))
+    pm = DecliningPluginManager("example")
+
+    assert pm.load_setuptools_entrypoints("hello") == 1
+    assert pm.list_plugin_distributions() == [(accepted, dist)]
+
+
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
     out: list[Any] = []
 
