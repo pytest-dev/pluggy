@@ -44,9 +44,12 @@ Repository = "https://github.com/pytest-dev/pluggy"
 Issues = "https://github.com/pytest-dev/pluggy/issues"
 Funding = "https://tidelift.com/subscription/pkg/pypi-pluggy"
 
+[project.optional-dependencies]
+async = ["greenlet"]
+
 [dependency-groups]
 dev = ["pre-commit"]
-testing = ["pytest>=8", "pytest-benchmark", "coverage"]
+testing = ["pytest>=8", "pytest-benchmark", "coverage", "greenlet"]
 
 
 [tool.setuptools]
