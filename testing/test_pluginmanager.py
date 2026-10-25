@@ -1352,12 +1352,9 @@ def test_register_historic_lifecycle_self_block(pm: PluginManager) -> None:
     assert events == ["replay"]
 
 
-@pytest.mark.parametrize("block", [False, True])
-def test_register_historic_lifecycle_multiple_implementations(
-    pm: PluginManager, block: bool
-) -> None:
-    events: list[Any] = []
-
+def _make_historic_lifecycle_multiple_plugin(
+    pm: PluginManager, events: list[Any], block: bool | None
+) -> Any:
     class Plugin:
         @hookimpl
         def a_ordinary(self):
@@ -1372,7 +1369,7 @@ def test_register_historic_lifecycle_multiple_implementations(
             events.append("cancel")
             if block:
                 pm.set_blocked("p")
-            else:
+            elif block is False:
                 assert pm.unregister(self) is self
 
         @hookimpl(specname="c_cancel")
@@ -1387,13 +1384,45 @@ def test_register_historic_lifecycle_multiple_implementations(
         def z_ordinary(self):
             return "p"
 
+    return Plugin()
+
+
+@pytest.mark.parametrize("block", [False, True, pytest.param(None, id="no-cancel")])
+def test_register_historic_lifecycle_multiple_implementations(
+    pm: PluginManager, block: bool | None
+) -> None:
+    events: list[Any] = []
+
     pm.add_hookspecs(_HistoricLifecycleMultipleHooks)
     other = _HistoricLifecycleOther()
     pm.register(other, "other")
     for hook in (pm.hook.b_earlier, pm.hook.c_cancel, pm.hook.e_later):
         hook.call_historic()
-    plugin = Plugin()
+    plugin = _make_historic_lifecycle_multiple_plugin(pm, events, block)
     assert pm.register(plugin, "p") == "p"
+    if block is None:
+        assert events == ["earlier", "cancel", "same-hook", "later"]
+        assert pm.get_plugins() == {plugin, other}
+        assert pm.get_plugin("p") is plugin
+        assert plugin is not None
+        assert pm.is_registered(plugin)
+        assert not pm.is_blocked("p")
+        assert pm.hook.a_ordinary() == ["p", "other"]
+        assert pm.hook.z_ordinary() == ["p"]
+        for hook, functions in (
+            (pm.hook.b_earlier, [plugin.b_earlier]),
+            (pm.hook.c_cancel, [plugin.c_cancel, plugin.d_same_hook]),
+            (pm.hook.e_later, [plugin.e_later]),
+        ):
+            assert [(impl.plugin, impl.function) for impl in hook.get_hookimpls()] == [
+                (plugin, function) for function in functions
+            ]
+        events.clear()
+        pm.hook.b_earlier.call_historic()
+        pm.hook.c_cancel.call_historic()
+        pm.hook.e_later.call_historic()
+        assert events == ["earlier", "same-hook", "cancel", "later"]
+        return
     assert events == ["earlier", "cancel"]
     assert pm.get_plugins() == {other}
     assert pm.is_blocked("p") is block
@@ -1439,9 +1468,9 @@ def test_register_historic_lifecycle_result_callback(
     assert results == [0]
 
 
-@pytest.mark.parametrize("block", [False, True])
+@pytest.mark.parametrize("block", [False, True, pytest.param(None, id="no-cancel")])
 def test_register_historic_lifecycle_history_in_progress(
-    pm: PluginManager, block: bool
+    pm: PluginManager, block: bool | None
 ) -> None:
     class Hooks:
         @hookspec(historic=True)
@@ -1456,7 +1485,7 @@ def test_register_historic_lifecycle_history_in_progress(
             if value == 1:
                 if block:
                     pm.set_blocked("p")
-                else:
+                elif block is False:
                     assert pm.unregister(self) is self
             return value
 
@@ -1470,7 +1499,28 @@ def test_register_historic_lifecycle_history_in_progress(
     pm.add_hookspecs(Hooks)
     for value in (1, 2):
         pm.hook.configure.call_historic(callback, {"value": value})
-    assert pm.register(Plugin(), "p") == "p"
+    plugin = Plugin()
+    assert pm.register(plugin, "p") == "p"
+    if block is None:
+        assert events == [
+            ("impl", 1),
+            ("callback", 1),
+            ("impl", 2),
+            ("callback", 2),
+            ("later", 1),
+            ("later", 2),
+        ]
+        assert pm.get_plugins() == {plugin}
+        assert pm.get_plugin("p") is plugin
+        assert pm.is_registered(plugin)
+        assert not pm.is_blocked("p")
+        assert [
+            (impl.plugin, impl.function) for impl in pm.hook.configure.get_hookimpls()
+        ] == [(plugin, plugin.configure), (plugin, plugin.later)]
+        events.clear()
+        pm.hook.configure.call_historic(callback, {"value": 3})
+        assert events == [("later", 3), ("impl", 3), ("callback", 3)]
+        return
     assert events == [("impl", 1), ("callback", 1), ("impl", 2), ("callback", 2)]
     assert pm.is_blocked("p") is block
     assert pm.get_plugin("p") is None
@@ -1711,27 +1761,7 @@ def test_register_historic_lifecycle_replay_exception(
     assert pm.hook.z_later() == ["later"]
 
 
-@pytest.mark.parametrize("raise_from", ["impl", "callback"])
-@pytest.mark.parametrize("replace", [False, True])
-@pytest.mark.parametrize("block", [False, True])
-def test_register_historic_lifecycle_cancel_then_raise(
-    pm: PluginManager, raise_from: str, replace: bool, block: bool
-) -> None:
-    error = RuntimeError("cancelled replay failed")
-
-    replacement = _HistoricLifecycleReplacement()
-
-    def cancel() -> None:
-        if block:
-            pm.set_blocked("p")
-        else:
-            assert pm.unregister(plugin) is plugin
-        if replace:
-            if block:
-                assert pm.unblock("p")
-            assert pm.register(replacement, "p") == "p"
-        raise error
-
+def _make_historic_lifecycle_failure_plugin(raise_from: str, cancel: Any) -> Any:
     class Plugin:
         @hookimpl
         def configure(self):
@@ -1743,13 +1773,42 @@ def test_register_historic_lifecycle_cancel_then_raise(
         def later(self):
             return "outer"
 
+    return Plugin()
+
+
+@pytest.mark.parametrize("raise_from", ["impl", "callback"])
+@pytest.mark.parametrize("replace", [False, True])
+@pytest.mark.parametrize("block", [False, True])
+def test_register_historic_lifecycle_cancel_then_raise(
+    pm: PluginManager, raise_from: str, replace: bool, block: bool
+) -> None:
+    error = RuntimeError("cancelled replay failed")
+    fail = True
+    results: list[Any] = []
+
+    replacement = _HistoricLifecycleReplacement()
+
+    def cancel() -> None:
+        if not fail:
+            return
+        if block:
+            pm.set_blocked("p")
+        else:
+            assert pm.unregister(plugin) is plugin
+        if replace:
+            if block:
+                assert pm.unblock("p")
+            assert pm.register(replacement, "p") == "p"
+        raise error
+
     def callback(result):
         assert result == 0
+        results.append(result)
         cancel()
 
     pm.add_hookspecs(_HistoricLifecycleFailureHooks)
     pm.hook.configure.call_historic(callback)
-    plugin = Plugin()
+    plugin = _make_historic_lifecycle_failure_plugin(raise_from, cancel)
     with pytest.raises(RuntimeError) as excinfo:
         pm.register(plugin, "p")
     assert excinfo.value is error
@@ -1764,6 +1823,25 @@ def test_register_historic_lifecycle_cancel_then_raise(
     else:
         assert pm.unblock("p") is block
     assert pm.register(object(), "p") == "p"
+    anonymous = pm.get_plugin("p")
+    assert pm.unregister(anonymous) is anonymous
+    results.clear()
+    fail = False
+    assert pm.register(plugin, "p") == "p"
+    assert pm.get_plugin("p") is plugin
+    assert plugin is not None
+    assert pm.is_registered(plugin)
+    assert not pm.is_blocked("p")
+    assert [
+        (impl.plugin, impl.function) for impl in pm.hook.configure.get_hookimpls()
+    ] == [(plugin, plugin.configure)]
+    assert [(impl.plugin, impl.function) for impl in pm.hook.later.get_hookimpls()] == [
+        (plugin, plugin.later)
+    ]
+    assert results == [0]
+    assert pm.hook.later() == ["outer"]
+    pm.hook.configure.call_historic(callback)
+    assert results == [0, 0]
 
 
 def test_register_historic_lifecycle_late_spec_validation(pm: PluginManager) -> None:
