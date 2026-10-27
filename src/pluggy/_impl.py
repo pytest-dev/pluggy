@@ -50,7 +50,7 @@ class HookImpl:
         """:meta private:"""
         #: The hook implementation function.
         self.function: Final = function
-        argnames, kwargnames = varnames(self.function)
+        argnames, kwargnames = varnames(self.function, warn_posonly=True)
         #: The positional parameter names of ``function``.
         self.argnames: Final = argnames
         #: The keyword parameter names of ``function`` which declare defaults.
