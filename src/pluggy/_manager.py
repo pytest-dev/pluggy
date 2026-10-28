@@ -625,18 +625,20 @@ class PluginManager:
                 return
             current = self._inner_hookexec
             outer: list[_HookCallMonitor] = []
-            while isinstance(current, _HookCallMonitor):
+            while True:
+                # An active token is always present in the monitoring chain.
+                assert isinstance(current, _HookCallMonitor)
                 if current.token is token:
-                    inner = current.inner
-                    # Keep the old chain intact for hooks already in flight.
-                    for monitor in reversed(outer):
-                        inner = _HookCallMonitor(
-                            inner, monitor.before, monitor.after, monitor.token
-                        )
-                    self._inner_hookexec = inner
                     break
                 outer.append(current)
                 current = current.inner
+            inner = current.inner
+            # Keep the old chain intact for hooks already in flight.
+            for monitor in reversed(outer):
+                inner = _HookCallMonitor(
+                    inner, monitor.before, monitor.after, monitor.token
+                )
+            self._inner_hookexec = inner
             token = None
 
         return undo

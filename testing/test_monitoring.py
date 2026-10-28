@@ -249,6 +249,9 @@ def test_removed_monitors_are_released(he_pm: PluginManager) -> None:
     for _ in range(100):
         undo_old = add()
         undo_new = add()
+        assert he_pm.hook.he_method1(arg=42) == [42]
+        assert events == ["before", "before"]
+        events.clear()
         undo_old()
         undo_new()
     del undo_old, undo_new
