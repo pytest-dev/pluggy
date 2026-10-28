@@ -17,8 +17,8 @@ from typing import TypeAlias
 from typing import TypeVar
 import warnings
 
-from ._config import HookimplOpts
-from ._config import HookspecOpts
+from ._config import HookimplConfiguration
+from ._config import HookspecConfiguration
 
 
 _F = TypeVar("_F", bound=Callable[..., object])
@@ -96,15 +96,13 @@ class HookspecMarker:
         """
 
         def setattr_hookspec_opts(func: _F) -> _F:
-            if historic and firstresult:
-                raise ValueError("cannot have a historic firstresult hook")
-            opts: HookspecOpts = {
-                "firstresult": firstresult,
-                "historic": historic,
-                "warn_on_impl": warn_on_impl,
-                "warn_on_impl_args": warn_on_impl_args,
-            }
-            setattr(func, self.project_name + "_spec", opts)
+            config = HookspecConfiguration(
+                firstresult=firstresult,
+                historic=historic,
+                warn_on_impl=warn_on_impl,
+                warn_on_impl_args=warn_on_impl_args,
+            )
+            setattr(func, self.project_name + "_spec", config)
             return func
 
         if function is not None:
@@ -213,15 +211,15 @@ class HookimplMarker:
         """
 
         def setattr_hookimpl_opts(func: _F) -> _F:
-            opts: HookimplOpts = {
-                "wrapper": wrapper,
-                "hookwrapper": hookwrapper,
-                "optionalhook": optionalhook,
-                "tryfirst": tryfirst,
-                "trylast": trylast,
-                "specname": specname,
-            }
-            setattr(func, self.project_name + "_impl", opts)
+            config = HookimplConfiguration(
+                wrapper=wrapper,
+                hookwrapper=hookwrapper,
+                optionalhook=optionalhook,
+                tryfirst=tryfirst,
+                trylast=trylast,
+                specname=specname,
+            )
+            setattr(func, self.project_name + "_impl", config)
             return func
 
         if function is None:
@@ -329,17 +327,19 @@ def varnames(
 class HookSpec:
     __slots__ = (
         "argnames",
+        "config",
         "function",
         "kwargdefaults",
         "kwargnames",
         "name",
         "namespace",
-        "opts",
         "warn_on_impl",
         "warn_on_impl_args",
     )
 
-    def __init__(self, namespace: _Namespace, name: str, opts: HookspecOpts) -> None:
+    def __init__(
+        self, namespace: _Namespace, name: str, config: HookspecConfiguration
+    ) -> None:
         self.namespace = namespace
         self.name = name
         self.function: Callable[..., object] = getattr(namespace, name)
@@ -351,6 +351,44 @@ class HookSpec:
         )
         defaults = inspect.unwrap(self.function).__defaults__
         self.kwargdefaults = dict(zip(self.kwargnames, defaults or ()))
-        self.opts = opts
-        self.warn_on_impl = opts.get("warn_on_impl")
-        self.warn_on_impl_args = opts.get("warn_on_impl_args")
+        self.config = config
+        self.warn_on_impl = config.warn_on_impl
+        self.warn_on_impl_args = config.warn_on_impl_args
+
+    @property
+    def opts(self) -> HookspecConfiguration:
+        """Alias for :attr:`config`.
+
+        .. deprecated::
+            Use :attr:`config` instead.
+        """
+        return self.config
+
+    def apply_defaults(self, kwargs: Mapping[str, object]) -> Mapping[str, object]:
+        """Fill in hookspec argument defaults the call did not provide."""
+        if not self.kwargdefaults:
+            return kwargs
+        return {**self.kwargdefaults, **kwargs}
+
+    def verify_all_args_are_provided(self, kwargs: Mapping[str, object]) -> None:
+        """Warn if a hook call does not provide all declared arguments."""
+        # This is written to avoid expensive operations when not needed.
+        for argname in self.argnames:
+            if argname not in kwargs:
+                notincall = ", ".join(
+                    repr(argname)
+                    for argname in self.argnames
+                    # Avoid self.argnames - kwargs.keys()
+                    # it doesn't preserve order.
+                    if argname not in kwargs
+                )
+                warnings.warn(
+                    f"Argument(s) {notincall} which are declared in the hookspec "
+                    "cannot be found in this hook call",
+                    # 3, not 2: the warning is raised here, in the spec, which
+                    # every caller invokes directly from __call__/
+                    # call_historic/call_extra, which the calling code invokes.
+                    # Adding a hop between those two breaks this.
+                    stacklevel=3,
+                )
+                break
