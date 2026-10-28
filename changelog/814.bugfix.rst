@@ -1,0 +1,1 @@
+Fix :meth:`~pluggy.PluginManager.add_hookcall_monitoring` undo callbacks removing other monitors or restoring removed ones when called out of order or repeatedly.

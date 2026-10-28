@@ -16,6 +16,7 @@ import warnings
 from . import _tracing
 from ._callers import _multicall
 from ._compat import DistFacade
+from ._hooks import _HookExec
 from ._hooks import _HookImplFunction
 from ._hooks import _Namespace
 from ._hooks import _Plugin
@@ -37,6 +38,32 @@ _BeforeTrace: TypeAlias = Callable[[str, Sequence[HookImpl], Mapping[str, Any]],
 _AfterTrace: TypeAlias = Callable[
     [Result[Any], str, Sequence[HookImpl], Mapping[str, Any]], None
 ]
+
+
+class _HookCallMonitor:
+    def __init__(
+        self, inner: _HookExec, before: _BeforeTrace, after: _AfterTrace, token: object
+    ) -> None:
+        self.inner: Final = inner
+        self.before: Final = before
+        self.after: Final = after
+        self.token: Final = token
+
+    def __call__(
+        self,
+        hook_name: str,
+        hook_impls: Sequence[HookImpl],
+        caller_kwargs: Mapping[str, object],
+        firstresult: bool,
+    ) -> object | list[object]:
+        # An undo during a callback affects subsequent calls, not this pair.
+        inner = self.inner
+        self.before(hook_name, hook_impls, caller_kwargs)
+        outcome = Result.from_call(
+            lambda: inner(hook_name, hook_impls, caller_kwargs, firstresult)
+        )
+        self.after(outcome, hook_name, hook_impls, caller_kwargs)
+        return outcome.get_result()
 
 
 def _warn_for_function(warning: Warning, function: Callable[..., object]) -> None:
@@ -167,7 +194,7 @@ class PluginManager:
         self.trace: Final[_tracing.TagTracerSub] = _tracing.TagTracer().get(
             "pluginmanage"
         )
-        self._inner_hookexec = _multicall
+        self._inner_hookexec: _HookExec = _multicall
 
     def _hookexec(
         self,
@@ -587,25 +614,32 @@ class PluginManager:
         same arguments as ``before`` but also a :class:`~pluggy.Result` object
         which represents the result of the overall hook call.
         """
-        oldcall = self._inner_hookexec
-
-        def traced_hookexec(
-            hook_name: str,
-            hook_impls: Sequence[HookImpl],
-            caller_kwargs: Mapping[str, object],
-            firstresult: bool,
-        ) -> object | list[object]:
-            before(hook_name, hook_impls, caller_kwargs)
-            outcome = Result.from_call(
-                lambda: oldcall(hook_name, hook_impls, caller_kwargs, firstresult)
-            )
-            after(outcome, hook_name, hook_impls, caller_kwargs)
-            return outcome.get_result()
-
-        self._inner_hookexec = traced_hookexec
+        token: object | None = object()
+        self._inner_hookexec = _HookCallMonitor(
+            self._inner_hookexec, before, after, token
+        )
 
         def undo() -> None:
-            self._inner_hookexec = oldcall
+            nonlocal token
+            if token is None:
+                return
+            current = self._inner_hookexec
+            outer: list[_HookCallMonitor] = []
+            while True:
+                # An active token is always present in the monitoring chain.
+                assert isinstance(current, _HookCallMonitor)
+                if current.token is token:
+                    break
+                outer.append(current)
+                current = current.inner
+            inner = current.inner
+            # Keep the old chain intact for hooks already in flight.
+            for monitor in reversed(outer):
+                inner = _HookCallMonitor(
+                    inner, monitor.before, monitor.after, monitor.token
+                )
+            self._inner_hookexec = inner
+            token = None
 
         return undo
 
