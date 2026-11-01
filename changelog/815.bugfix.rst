@@ -1,0 +1,1 @@
+Fix hook-call monitoring so undo functions work regardless of registration order. Removing a monitor no longer removes other active monitors or restores previously removed monitors. Repeated undo calls are harmless.

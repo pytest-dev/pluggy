@@ -168,6 +168,8 @@ class PluginManager:
             "pluginmanage"
         )
         self._inner_hookexec = _multicall
+        self._hookcall_monitor_base = _multicall
+        self._hookcall_monitors: list[tuple[_BeforeTrace, _AfterTrace]] = []
 
     def _hookexec(
         self,
@@ -587,25 +589,47 @@ class PluginManager:
         same arguments as ``before`` but also a :class:`~pluggy.Result` object
         which represents the result of the overall hook call.
         """
-        oldcall = self._inner_hookexec
+        if not self._hookcall_monitors:
+            self._hookcall_monitor_base = self._inner_hookexec
 
-        def traced_hookexec(
-            hook_name: str,
-            hook_impls: Sequence[HookImpl],
-            caller_kwargs: Mapping[str, object],
-            firstresult: bool,
-        ) -> object | list[object]:
-            before(hook_name, hook_impls, caller_kwargs)
-            outcome = Result.from_call(
-                lambda: oldcall(hook_name, hook_impls, caller_kwargs, firstresult)
-            )
-            after(outcome, hook_name, hook_impls, caller_kwargs)
-            return outcome.get_result()
+        monitor = (before, after)
+        self._hookcall_monitors.append(monitor)
 
-        self._inner_hookexec = traced_hookexec
+        def wrap(
+            oldcall: Callable[..., object | list[object]],
+            callbacks: tuple[_BeforeTrace, _AfterTrace],
+        ) -> Callable[..., object | list[object]]:
+            before_cb, after_cb = callbacks
+
+            def traced_hookexec(
+                hook_name: str,
+                hook_impls: Sequence[HookImpl],
+                caller_kwargs: Mapping[str, object],
+                firstresult: bool,
+            ) -> object | list[object]:
+                before_cb(hook_name, hook_impls, caller_kwargs)
+                outcome = Result.from_call(
+                    lambda: oldcall(hook_name, hook_impls, caller_kwargs, firstresult)
+                )
+                after_cb(outcome, hook_name, hook_impls, caller_kwargs)
+                return outcome.get_result()
+
+            return traced_hookexec
+
+        def rebuild() -> None:
+            hookexec = self._hookcall_monitor_base
+            for active in self._hookcall_monitors:
+                hookexec = wrap(hookexec, active)
+            self._inner_hookexec = hookexec
+
+        rebuild()
 
         def undo() -> None:
-            self._inner_hookexec = oldcall
+            for index, active in enumerate(self._hookcall_monitors):
+                if active is monitor:
+                    del self._hookcall_monitors[index]
+                    rebuild()
+                    break
 
         return undo
 
