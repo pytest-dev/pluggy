@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from collections.abc import Mapping
+from functools import partial
 import inspect
 import sys
 import types
@@ -261,6 +262,26 @@ def varnames(
         When the function looks like a class method but has no implicit first
         parameter, a :class:`DeprecationWarning` is emitted.
     """
+    if isinstance(func, partial):
+        try:
+            parameters = inspect.signature(
+                func, follow_wrapped=False
+            ).parameters.values()
+        except (TypeError, ValueError):
+            return (), ()
+        partial_args = []
+        partial_kwargs = []
+        for parameter in parameters:
+            if parameter.kind in (
+                inspect.Parameter.POSITIONAL_ONLY,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            ):
+                if parameter.default is inspect.Parameter.empty:
+                    partial_args.append(parameter.name)
+                else:
+                    partial_kwargs.append(parameter.name)
+        return tuple(partial_args), tuple(partial_kwargs)
+
     is_bound = False
     if inspect.isclass(func):
         try:
