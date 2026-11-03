@@ -16,6 +16,7 @@ import warnings
 from . import _tracing
 from ._callers import _multicall
 from ._compat import DistFacade
+from ._hooks import _HookExec
 from ._hooks import _HookImplFunction
 from ._hooks import _Namespace
 from ._hooks import _Plugin
@@ -167,7 +168,9 @@ class PluginManager:
         self.trace: Final[_tracing.TagTracerSub] = _tracing.TagTracer().get(
             "pluginmanage"
         )
-        self._inner_hookexec = _multicall
+        self._inner_hookexec: _HookExec = _multicall
+        self._hookcall_monitors: list[Callable[[_HookExec], _HookExec]] = []
+        self._monitoring_base: _HookExec = _multicall
 
     def _hookexec(
         self,
@@ -587,25 +590,36 @@ class PluginManager:
         same arguments as ``before`` but also a :class:`~pluggy.Result` object
         which represents the result of the overall hook call.
         """
-        oldcall = self._inner_hookexec
+        if not self._hookcall_monitors:
+            self._monitoring_base = self._inner_hookexec
 
-        def traced_hookexec(
-            hook_name: str,
-            hook_impls: Sequence[HookImpl],
-            caller_kwargs: Mapping[str, object],
-            firstresult: bool,
-        ) -> object | list[object]:
-            before(hook_name, hook_impls, caller_kwargs)
-            outcome = Result.from_call(
-                lambda: oldcall(hook_name, hook_impls, caller_kwargs, firstresult)
-            )
-            after(outcome, hook_name, hook_impls, caller_kwargs)
-            return outcome.get_result()
+        def wrap_hookexec(oldcall: _HookExec) -> _HookExec:
+            def traced_hookexec(
+                hook_name: str,
+                hook_impls: Sequence[HookImpl],
+                caller_kwargs: Mapping[str, object],
+                firstresult: bool,
+            ) -> object | list[object]:
+                before(hook_name, hook_impls, caller_kwargs)
+                outcome = Result.from_call(
+                    lambda: oldcall(hook_name, hook_impls, caller_kwargs, firstresult)
+                )
+                after(outcome, hook_name, hook_impls, caller_kwargs)
+                return outcome.get_result()
 
-        self._inner_hookexec = traced_hookexec
+            return traced_hookexec
+
+        self._hookcall_monitors.append(wrap_hookexec)
+        self._inner_hookexec = wrap_hookexec(self._inner_hookexec)
 
         def undo() -> None:
-            self._inner_hookexec = oldcall
+            if wrap_hookexec not in self._hookcall_monitors:
+                return
+            self._hookcall_monitors.remove(wrap_hookexec)
+            hookexec = self._monitoring_base
+            for wrap in self._hookcall_monitors:
+                hookexec = wrap(hookexec)
+            self._inner_hookexec = hookexec
 
         return undo
 
