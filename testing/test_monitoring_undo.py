@@ -49,3 +49,8 @@ def test_monitoring_undo_out_of_order(undo_newer: bool) -> None:
 
     assert pm.hook.hello() == [1]
     assert events == ([] if undo_newer else ["before B", "after B"])
+
+    events.clear()
+    undo_a()
+    assert pm.hook.hello() == [1]
+    assert events == ([] if undo_newer else ["before B", "after B"])
