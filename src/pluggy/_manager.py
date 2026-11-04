@@ -160,6 +160,7 @@ class PluginManager:
         self.project_name: Final = project_name
         self._name2plugin: Final[dict[str, _Plugin]] = {}
         self._name2dist: Final[dict[str, importlib.metadata.Distribution]] = {}
+        self._registration_tokens: Final[dict[str, object]] = {}
         #: The "hook relay", used to call a hook on all registered plugins.
         #: See :ref:`calling`.
         self.hook: Final = HookRelay()
@@ -239,8 +240,23 @@ class PluginManager:
                 hookimpls.append((hook_name, hookimpl, verified))
 
         self._name2plugin[plugin_name] = plugin
+        token = object()
+        self._registration_tokens[plugin_name] = token
+        try:
+            self._register_hookimpls(plugin_name, hookimpls, token)
+        finally:
+            if self._registration_tokens.get(plugin_name) is token:
+                del self._registration_tokens[plugin_name]
+        return plugin_name
+
+    def _register_hookimpls(
+        self,
+        plugin_name: str,
+        hookimpls: Sequence[tuple[str, HookImpl, bool]],
+        token: object,
+    ) -> None:
         for hook_name, hookimpl, verified in hookimpls:
-            hook = getattr(self.hook, hook_name, None)
+            hook: HookCaller | None = getattr(self.hook, hook_name, None)
             if hook is None:
                 hook = HookCaller(hook_name, self._hookexec)
                 setattr(self.hook, hook_name, hook)
@@ -250,8 +266,9 @@ class PluginManager:
                 # registered, but only user code during replay can get here.
                 self._verify_hook(hook, hookimpl)
             hook._maybe_apply_history(hookimpl)
+            if self._registration_tokens.get(plugin_name) is not token:
+                return
             hook._add_hookimpl(hookimpl)
-        return plugin_name
 
     def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
         """Try to obtain a hook implementation from an item with the given name
@@ -309,6 +326,7 @@ class PluginManager:
                     f" plugin is registered as {registered_name!r})"
                 )
 
+        self._registration_tokens.pop(name, None)
         hookcallers = self.get_hookcallers(plugin)
         if hookcallers:
             for hookcaller in hookcallers:
