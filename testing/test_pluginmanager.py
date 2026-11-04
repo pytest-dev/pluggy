@@ -36,6 +36,68 @@ def test_register_ignores_none(pm: PluginManager) -> None:
     assert not pm.is_registered(None)
 
 
+def test_register_distinct_equal_plugins(pm: PluginManager) -> None:
+    class Spec:
+        @hookspec
+        def myhook(self):
+            pass
+
+    class Plugin:
+        def __init__(self, value: str) -> None:
+            self.value = value
+
+        def __eq__(self, other):
+            return isinstance(other, Plugin)
+
+        @hookimpl
+        def myhook(self):
+            return self.value
+
+    pm.add_hookspecs(Spec)
+    first, second, unknown = Plugin("one"), Plugin("two"), Plugin("unknown")
+    assert first == second
+    pm.register(first, "one")
+    assert not pm.is_registered(second)
+    assert pm.get_name(second) is None
+    assert pm.get_hookcallers(second) is None
+    pm.register(second, "two")
+    assert pm.get_name(first) == "one"
+    assert pm.get_name(second) == "two"
+    assert pm.hook.myhook() == ["two", "one"]
+    assert not pm.is_registered(unknown)
+    assert pm.subset_hook_caller("myhook", [unknown]) is pm.hook.myhook
+    assert pm.subset_hook_caller("myhook", [second])() == ["one"]
+    assert pm.subset_hook_caller("myhook", [first])() == ["two"]
+    assert pm.subset_hook_caller("myhook", [first, second])() == []
+    assert pm.unregister(second) is second
+    assert pm.is_registered(first)
+    assert not pm.is_registered(second)
+    assert pm.hook.myhook() == ["one"]
+    with pytest.raises(ValueError, match="already registered"):
+        pm.register(first, "other")
+
+
+def test_plugin_registry_does_not_call_equality(pm: PluginManager) -> None:
+    class Plugin:
+        def __eq__(self, other):
+            raise AssertionError("plugin equality must not be called")
+
+    first, second = Plugin(), Plugin()
+    with pytest.raises(AssertionError, match="plugin equality must not be called"):
+        assert first == second
+    pm.register(first, "one")
+    pm.register(second, "two")
+    assert pm.is_registered(first)
+    assert pm.get_name(first) == "one"
+    assert pm.unregister(second) is second
+
+
+def test_blocked_name_is_not_a_registered_plugin(pm: PluginManager) -> None:
+    pm.set_blocked("blocked")
+    assert not pm.is_registered(None)
+    assert pm.get_name(None) is None
+
+
 def test_pm(pm: PluginManager) -> None:
     """Basic registration with objects"""
 
