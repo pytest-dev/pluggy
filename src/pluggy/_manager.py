@@ -642,12 +642,16 @@ class PluginManager:
         """Return a proxy :class:`~pluggy.HookCaller` for the named hook which
         calls all registered plugins except the ones from remove_plugins."""
         orig: HookCaller = getattr(self.hook, name)
-        plugins_to_remove = set(remove_plugins)
-        # Optimization: discard plugins to remove which don't actually implement
-        # the hook, to make checks faster.
-        plugins_to_remove.intersection_update(
-            hookimpl.plugin for hookimpl in orig._hookimpls
-        )
+        implementing = {hookimpl.plugin for hookimpl in orig._hookimpls}
+        # Optimization: discard plugins to remove which are registered but don't
+        # implement the hook, to make checks faster. A plugin that isn't
+        # registered yet is kept, since the proxy is live and must still exclude
+        # it if it gets registered later.
+        plugins_to_remove = {
+            plugin
+            for plugin in remove_plugins
+            if plugin in implementing or not self.is_registered(plugin)
+        }
         # Optimization: if none of the plugins to remove actually implement the
         # hook, avoid the subset hook caller overhead.
         if not plugins_to_remove:
