@@ -17,7 +17,7 @@ def test_parse_hookimpl_override() -> None:
         def parse_hookimpl_opts(self, module_or_class, name):
             opts = PluginManager.parse_hookimpl_opts(self, module_or_class, name)
             if opts is None and name.startswith("x1"):
-                opts = {}  # type: ignore[assignment]
+                return {}
             return opts
 
     class Plugin:

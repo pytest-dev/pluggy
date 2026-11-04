@@ -13,9 +13,8 @@ from ._caller import _HookRelay
 from ._caller import _SubsetHookCaller
 from ._caller import HookCaller
 from ._caller import HookRelay
-from ._config import HookimplOpts
-from ._config import HookspecOpts
-from ._config import normalize_hookimpl_opts
+from ._config import HookimplConfiguration
+from ._config import HookspecConfiguration
 from ._decorators import _Namespace
 from ._decorators import HookimplMarker
 from ._decorators import HookSpec
@@ -31,10 +30,10 @@ __all__ = [
     "HookImpl",
     "HookRelay",
     "HookSpec",
+    "HookimplConfiguration",
     "HookimplMarker",
-    "HookimplOpts",
+    "HookspecConfiguration",
     "HookspecMarker",
-    "HookspecOpts",
     "_HookCaller",
     "_HookExec",
     "_HookImplFunction",
@@ -42,6 +41,5 @@ __all__ = [
     "_Namespace",
     "_Plugin",
     "_SubsetHookCaller",
-    "normalize_hookimpl_opts",
     "varnames",
 ]
