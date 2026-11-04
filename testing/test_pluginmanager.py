@@ -2,6 +2,8 @@
 ``PluginManager`` unit and public API testing.
 """
 
+from functools import partial
+from functools import wraps
 import importlib.metadata
 import types
 from typing import Any
@@ -1421,3 +1423,72 @@ def test_unregister_falsy_plugin(pm: PluginManager) -> None:
     # The name is free again.
     pm.register(plugin, "falsy")
     assert pm.is_registered(plugin)
+
+
+@pytest.mark.parametrize("binding", ["positional", "keyword", "middle_keyword"])
+@pytest.mark.parametrize("decorated", [False, True])
+@pytest.mark.parametrize("explicit", [False, True])
+def test_call_extra_partial_signature(
+    pm: PluginManager, binding, decorated, explicit
+) -> None:
+    class Hooks:
+        @hookspec
+        def calculate(self, value=3, other=4):
+            pass
+
+    class Plugin:
+        @hookimpl
+        def calculate(self, value, other):
+            return ("registered", value, other)
+
+    def leading(ctx, value, other=20):
+        return (ctx, value, other)
+
+    def middle(value, ctx, other=20):
+        return (ctx, value, other)
+
+    function = middle if binding == "middle_keyword" else leading
+    if decorated:
+        original = function
+
+        @wraps(original)
+        def wrapped(*args, **kwargs):
+            return original(*args, **kwargs)
+
+        function = wrapped
+
+    extra = (
+        partial(function, "c")
+        if binding == "positional"
+        else partial(function, ctx="c")
+    )
+    pm.add_hookspecs(Hooks)
+    pm.register(Plugin())
+    kwargs = {"value": 7, "other": 8} if explicit else {}
+    value, other = (7, 8) if explicit else (3, 4)
+    assert pm.hook.calculate.call_extra([extra], kwargs) == [
+        ("c", value, other),
+        ("registered", value, other),
+    ]
+    assert pm.hook.calculate(value=9, other=10) == [("registered", 9, 10)]
+
+
+def test_call_extra_builtin_signature(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec
+        def calculate(self, obj):
+            pass
+
+    pm.add_hookspecs(Hooks)
+    assert pm.hook.calculate.call_extra([len], {"obj": [1, 2, 3]}) == [3]
+
+
+def test_call_extra_uninspectable_signature(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec
+        def calculate(self, value):
+            pass
+
+    pm.add_hookspecs(Hooks)
+    with pytest.raises(ValueError):
+        pm.hook.calculate.call_extra([partial(str, "c")], {"value": 7})
