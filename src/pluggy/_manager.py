@@ -643,6 +643,11 @@ class PluginManager:
         calls all registered plugins except the ones from remove_plugins."""
         orig: HookCaller = getattr(self.hook, name)
         implementing = {hookimpl.plugin for hookimpl in orig._hookimpls}
+        # Built once, since this runs for every hook pytest looks up on a
+        # conftest-scoped proxy. None marks a blocked name.
+        registered = {
+            plugin for plugin in self._name2plugin.values() if plugin is not None
+        }
         # Optimization: discard plugins to remove which are registered but don't
         # implement the hook, to make checks faster. A plugin that isn't
         # registered yet is kept, since the proxy is live and must still exclude
@@ -650,7 +655,7 @@ class PluginManager:
         plugins_to_remove = {
             plugin
             for plugin in remove_plugins
-            if plugin in implementing or not self.is_registered(plugin)
+            if plugin in implementing or plugin not in registered
         }
         # Optimization: if none of the plugins to remove actually implement the
         # hook, avoid the subset hook caller overhead.
