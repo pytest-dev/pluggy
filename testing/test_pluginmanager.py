@@ -811,6 +811,39 @@ def test_subset_hook_caller_with_specname(pm: PluginManager) -> None:
     assert hc() == [2]
 
 
+def test_subset_hook_caller_excludes_plugin_registered_later(pm: PluginManager) -> None:
+    """A plugin to remove that is registered after the proxy exists stays excluded."""
+
+    class Hooks:
+        @hookspec
+        def he_method1(self):
+            pass
+
+    pm.add_hookspecs(Hooks)
+
+    class Plugin:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        @hookimpl
+        def he_method1(self):
+            return self.name
+
+    early, late, kept = Plugin("early"), Plugin("late"), Plugin("kept")
+    pm.register(early)
+
+    # Only `early` is registered when the proxies are created.
+    hc_late_only = pm.subset_hook_caller("he_method1", remove_plugins=[late])
+    hc_both = pm.subset_hook_caller("he_method1", remove_plugins=[early, late])
+
+    pm.register(late)
+    pm.register(kept)
+
+    assert pm.hook.he_method1() == ["kept", "late", "early"]
+    assert hc_late_only() == ["kept", "early"]
+    assert hc_both() == ["kept"]
+
+
 def test_get_hookimpls(pm: PluginManager) -> None:
     class Hooks:
         @hookspec

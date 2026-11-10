@@ -1,0 +1,1 @@
+Fix :meth:`~pluggy.PluginManager.subset_hook_caller` calling a plugin from ``remove_plugins`` that was registered after the subset hook caller was created, a regression in 1.7.0.
