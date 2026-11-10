@@ -8,6 +8,9 @@ API Reference
 .. autoclass:: pluggy.PluginManager
     :members:
 
+.. autoclass:: pluggy.ProjectSpec
+    :members:
+
 .. autoclass:: pluggy.PluginValidationError
     :show-inheritance:
     :members:
@@ -29,6 +32,17 @@ API Reference
     :members:
     :special-members: __call__
 
+.. autoclass:: pluggy.NormalHookCaller()
+    :members:
+    :special-members: __call__
+
+.. autoclass:: pluggy.HistoricHookCaller()
+    :members:
+    :special-members: __call__
+
+.. autoclass:: pluggy.SubsetHookCaller()
+    :members:
+
 .. autoclass:: pluggy.HookCallError()
     :show-inheritance:
     :members:
@@ -40,12 +54,18 @@ API Reference
 .. autoclass:: pluggy.HookImpl()
     :members:
 
-.. autoclass:: pluggy.HookspecOpts()
+.. autoclass:: pluggy.NormalImpl()
     :show-inheritance:
     :members:
 
-.. autoclass:: pluggy.HookimplOpts()
+.. autoclass:: pluggy.WrapperImpl()
     :show-inheritance:
+    :members:
+
+.. autoclass:: pluggy.HookspecConfiguration()
+    :members:
+
+.. autoclass:: pluggy.HookimplConfiguration()
     :members:
 
 
