@@ -1,8 +1,13 @@
 from collections.abc import Callable
+from functools import partial
+from functools import update_wrapper
 from functools import wraps
+import sys
 from typing import Any
 from typing import cast
 from typing import TypeVar
+
+import pytest
 
 from pluggy._hooks import varnames
 from pluggy._manager import _formatdef
@@ -272,3 +277,80 @@ def test_varnames_unresolvable_annotation() -> None:
         pass
 
     assert varnames(func_with_bad_annotation) == (("x", "y"), ())
+
+
+@pytest.mark.parametrize("binding", ["positional", "keyword"])
+def test_varnames_partial(binding) -> None:
+    def callback(ctx: str, value: int, flag: bool = False) -> None:
+        pass
+
+    expected: tuple[tuple[str, ...], tuple[str, ...]]
+    if binding == "positional":
+        function = partial(callback, "c")
+        expected = (("value",), ("flag",))
+    else:
+        function = partial(callback, ctx="c")
+        expected = ((), ("ctx", "value", "flag"))
+    assert varnames(function) == expected
+
+
+def test_varnames_partial_middle_keyword() -> None:
+    def callback(value, ctx, other):
+        pass
+
+    assert varnames(partial(callback, ctx="c")) == (("value",), ("ctx", "other"))
+
+
+def test_varnames_partial_decorator() -> None:
+    def callback(ctx: str, value: int, flag: bool = False) -> None:
+        pass
+
+    @wraps(callback)
+    def decorated(*args, **kwargs):
+        return callback(*args, **kwargs)
+
+    assert varnames(partial(decorated, "c")) == (("value",), ("flag",))
+    assert varnames(partial(decorated, ctx="c")) == ((), ("ctx", "value", "flag"))
+
+
+def test_varnames_partial_wrapper_metadata() -> None:
+    def callback(ctx: str, value: int, flag: bool = False) -> None:
+        pass
+
+    function = update_wrapper(partial(callback, "c"), callback)
+    assert varnames(function) == (("value",), ("flag",))
+
+
+def test_varnames_partial_bound_method() -> None:
+    class Callback:
+        def run(self, ctx, value, flag=False):
+            pass
+
+    assert varnames(partial(Callback().run, "c")) == (("value",), ("flag",))
+    assert varnames(partial(Callback().run, ctx="c")) == ((), ("ctx", "value", "flag"))
+
+
+@pytest.mark.parametrize(
+    "function, expected", [(len, (("obj",), ())), ([].count, (("value",), ()))]
+)
+def test_varnames_builtin_signature(function, expected) -> None:
+    assert varnames(function) == expected
+
+
+@pytest.mark.parametrize(
+    "function, error", [(42, TypeError), (partial(str, "c"), ValueError)]
+)
+def test_varnames_signature_error(function, error) -> None:
+    with pytest.raises(error):
+        varnames(function)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 14), reason="Requires deferred annotations")
+def test_varnames_partial_deferred_annotation() -> None:
+    def callback(
+        ctx: str,
+        value: MissingType,  # type: ignore[name-defined]  # noqa: F821
+    ) -> None:
+        pass
+
+    assert varnames(partial(callback, "c")) == (("value",), ())
