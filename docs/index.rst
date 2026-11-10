@@ -435,6 +435,28 @@ The function should do one of two things:
 The return value or exception propagate to further hook wrappers, and finally
 to the hook caller.
 
+With multiple wrappers, execution enters from the outside in and resumes
+from the inside out. In this successful-call example, the outer wrapper reaches
+its ``yield`` first, then the inner wrapper reaches its ``yield``, and then the
+non-wrapper implementations run. Pluggy sends their result to the inner
+wrapper's ``yield``; that wrapper's return value is sent to the outer wrapper's
+``yield``. The outer wrapper's return value becomes the hook call's result.
+
+.. figure:: _static/img/wrapper-order.png
+    :alt: Outer and inner wrappers suspend at yield before the non-wrapper implementations run; the result returns through the inner wrapper and then the outer wrapper.
+    :width: 690px
+
+    Successful hook call with two new-style wrappers.
+    :download:`Editable SVG <_static/img/wrapper-order.svg>`.
+    Diagram created with `svgdiagram.ai <https://svgdiagram.ai>`_.
+
+The arrows show execution order managed by Pluggy, rather than direct calls
+between wrapper functions. ``tryfirst`` and ``trylast`` affect wrapper entry
+order as described in :ref:`callorder`; wrappers resume in reverse entry order.
+If an inner call raises, Pluggy throws the exception into the suspended
+wrapper instead of sending a result. Each wrapper can preserve or replace the
+result or exception before the next outer wrapper resumes.
+
 Also see the :ref:`pytest:hookwrapper` section in the ``pytest`` docs.
 
 .. _old_style_hookwrappers:
