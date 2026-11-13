@@ -83,6 +83,16 @@ def test_register_dynamic_attr(he_pm: PluginManager) -> None:
     assert not he_pm.get_hookcallers(a)
 
 
+def test_register_ignores_dir_only_attr(he_pm: PluginManager) -> None:
+    class A:
+        def __dir__(self):
+            return [*super().__dir__(), "he_method1"]
+
+    a = A()
+    he_pm.register(a)
+    assert not he_pm.get_hookcallers(a)
+
+
 def test_pm_name(pm: PluginManager) -> None:
     class A:
         pass
