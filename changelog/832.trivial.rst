@@ -1,0 +1,1 @@
+Plugin registration and :meth:`~pluggy.PluginManager.add_hookspecs` are faster on CPython: hook discovery no longer calls :func:`inspect.getattr_static` for plain modules, classes and instances.

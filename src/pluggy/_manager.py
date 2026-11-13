@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from collections.abc import Mapping
 from collections.abc import Sequence
 import inspect
+import sys
 import types
 from typing import Any
 from typing import cast
@@ -61,6 +62,43 @@ def _instance_dict(obj: object) -> dict[str, Any]:
     return instance_dict if isinstance(instance_dict, dict) else {}
 
 
+# The lookups below replace inspect.getattr_static() for plain classes,
+# instances and modules. On PyPy they made the other inputs slower, so PyPy
+# keeps getattr_static() for all of them.
+_FAST_STATIC_LOOKUP: Final = sys.implementation.name != "pypy"
+
+
+def _mro_lookup(mro: tuple[type, ...], name: str) -> object:
+    """Return ``name`` from the first class ``__dict__`` in ``mro``, else None."""
+    for base in mro:
+        if name in base.__dict__:
+            return base.__dict__[name]
+    return None
+
+
+def _plain_metaclass(meta: type) -> bool:
+    """Whether classes of ``meta`` show their real MRO and ``__dict__``."""
+    return meta is type or (
+        type(meta) is type
+        and not any(
+            "__dict__" in vars(m)
+            or "__mro__" in vars(m)
+            or "__getattribute__" in vars(m)
+            for m in meta.__mro__[:-2]
+        )
+    )
+
+
+def _instance_static(obj: object, name: str) -> object:
+    """``inspect.getattr_static(obj, name, None)`` for a name not on the instance."""
+    cls = type(obj)
+    if _FAST_STATIC_LOOKUP and _plain_metaclass(type(cls)):
+        # No class ``__dict__`` is shadowed, so the static lookup is a plain
+        # walk of the MRO.
+        return _mro_lookup(cls.__mro__, name)
+    return inspect.getattr_static(obj, name, None)
+
+
 def _static_hook_attr(
     obj: object, name: str
 ) -> tuple[object, Callable[..., object]] | None:
@@ -77,27 +115,41 @@ def _static_hook_attr(
     applied above it, the underlying function otherwise. ``function`` is bound
     exactly the way ``getattr()`` would have bound it.
     """
-    if not (inspect.isclass(obj) or inspect.ismodule(obj)):
+    static: object = _ABSENT
+    is_namespace = isinstance(obj, (type, types.ModuleType))
+    if not is_namespace:
         # Values stored on the instance itself -- in ``__dict__`` or in a
         # ``__slots__`` slot -- are handed out by ``getattr()`` as they are,
         # bypassing the descriptor protocol, so they must not be bound here.
         value = _instance_dict(obj).get(name, _ABSENT)
         if value is _ABSENT:
-            slot = inspect.getattr_static(obj, name, None)
-            if isinstance(slot, types.MemberDescriptorType):
+            static = _instance_static(obj, name)
+            if isinstance(static, types.MemberDescriptorType):
                 # Reading a slot runs no user code.
                 try:
-                    value = slot.__get__(obj, type(obj))
+                    value = static.__get__(obj, type(obj))
                 except AttributeError:
                     value = _ABSENT
         if value is not _ABSENT:
             if isinstance(value, types.MethodType):
                 return value.__func__, value
-            if inspect.isfunction(value):
+            if isinstance(value, types.FunctionType):
                 return value, value
             return None
 
-    static: object = inspect.getattr_static(obj, name, None)
+    if static is _ABSENT:
+        objtype = type(obj)
+        if not _FAST_STATIC_LOOKUP:
+            static = inspect.getattr_static(obj, name, None)
+        elif objtype is types.ModuleType and not name.startswith("__"):
+            # A plain module type has only dunder attributes, so for any
+            # other name the static lookup is the module namespace itself.
+            static = obj.__dict__.get(name)
+        elif isinstance(obj, type) and _plain_metaclass(objtype):
+            # A class: its MRO, then the MRO of its metaclass.
+            static = _mro_lookup(obj.__mro__ + objtype.__mro__, name)
+        else:
+            static = inspect.getattr_static(obj, name, None)
     if isinstance(static, staticmethod):
         return static, static.__func__
     if isinstance(static, classmethod):
@@ -105,8 +157,8 @@ def _static_hook_attr(
         return static, cast(Callable[..., object], static.__get__(owner, owner))
     if isinstance(static, types.MethodType):
         return static.__func__, static
-    if inspect.isfunction(static):
-        if inspect.isclass(obj) or inspect.ismodule(obj):
+    if isinstance(static, types.FunctionType):
+        if is_namespace:
             return static, static
         return static, static.__get__(obj, type(obj))
     return None
