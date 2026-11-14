@@ -99,7 +99,7 @@ def test_unregister_equal_plugin_keeps_other_implementations(
 def test_plugin_comparison_does_not_call_eq(he_pm: PluginManager) -> None:
     class Plugin:
         def __eq__(self, other: object) -> bool:
-            raise AssertionError("plugin equality must not be called")
+            raise AssertionError("plugin equality called")  # pragma: no cover
 
         @hookimpl
         def he_method1(self, arg):
@@ -126,7 +126,9 @@ def test_subset_hook_caller_keeps_excluded_plugin_alive(he_pm: PluginManager) ->
 
     plugin = Plugin()
     he_pm.register(plugin)
+    assert he_pm.hook.he_method1(arg=0) == [0]
     subset = he_pm.subset_hook_caller("he_method1", [plugin])
+    assert subset(arg=0) == []
     reference = weakref.ref(plugin)
     he_pm.unregister(plugin)
     del plugin
