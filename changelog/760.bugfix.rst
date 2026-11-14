@@ -1,0 +1,3 @@
+Use object identity when registering, looking up, removing and excluding plugins
+from hook calls, so distinct plugins that compare equal do not interfere with
+each other.

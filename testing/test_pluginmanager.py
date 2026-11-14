@@ -2,10 +2,13 @@
 ``PluginManager`` unit and public API testing.
 """
 
+from dataclasses import dataclass
+import gc
 import importlib.metadata
 import types
 from typing import Any
 from typing import cast
+import weakref
 
 import pytest
 
@@ -34,6 +37,104 @@ def test_register_ignores_none(pm: PluginManager) -> None:
     assert pm.register(None) is None
     assert pm.get_plugins() == set()
     assert not pm.is_registered(None)
+
+
+def test_equal_plugins_are_distinct(he_pm: PluginManager) -> None:
+    @dataclass
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg):
+            return id(self)
+
+    first, second = Plugin(), Plugin()
+    assert first == second
+    he_pm.register(first, "first")
+    assert not he_pm.is_registered(second)
+    assert he_pm.get_name(second) is None
+    assert he_pm.get_hookcallers(second) is None
+    assert he_pm.subset_hook_caller("he_method1", [second]) is he_pm.hook.he_method1
+
+    he_pm.register(second, "second")
+    assert he_pm.get_name(first) == "first"
+    assert he_pm.get_name(second) == "second"
+    assert he_pm.hook.he_method1(arg=0) == [id(second), id(first)]
+    with pytest.raises(ValueError, match="already registered"):
+        he_pm.register(first, "again")
+
+    subset = he_pm.subset_hook_caller("he_method1", iter([first]))
+    assert subset(arg=0) == [id(second)]
+    he_pm.unregister(first)
+    assert not he_pm.is_registered(first)
+    assert he_pm.get_name(first) is None
+    assert he_pm.is_registered(second)
+    assert he_pm.hook.he_method1(arg=0) == [id(second)]
+    assert subset(arg=0) == [id(second)]
+
+
+def test_unregister_equal_plugin_keeps_other_implementations(
+    he_pm: PluginManager,
+) -> None:
+    @dataclass
+    class Plugin:
+        value: int
+
+        @hookimpl
+        def he_method1(self, arg):
+            return id(self)
+
+        @hookimpl(specname="he_method1")
+        def another(self, arg):
+            return id(self)
+
+    first, second = Plugin(1), Plugin(2)
+    he_pm.register(first, "first")
+    he_pm.register(second, "second")
+    second.value = first.value
+    assert first == second
+    assert he_pm.unregister(name="first") is first
+    assert he_pm.hook.he_method1(arg=0) == [id(second), id(second)]
+    assert he_pm.get_name(second) == "second"
+
+
+def test_plugin_comparison_does_not_call_eq(he_pm: PluginManager) -> None:
+    class Plugin:
+        def __eq__(self, other: object) -> bool:
+            raise AssertionError("plugin equality must not be called")
+
+        @hookimpl
+        def he_method1(self, arg):
+            return id(self)
+
+    first, second = Plugin(), Plugin()
+    he_pm.set_blocked("blocked")
+    assert not he_pm.is_registered(first)
+    assert he_pm.get_name(first) is None
+    he_pm.register(first, "first")
+    he_pm.register(second, "second")
+    assert he_pm.get_name(second) == "second"
+    assert he_pm.hook.he_method1(arg=0) == [id(second), id(first)]
+    assert he_pm.subset_hook_caller("he_method1", [first])(arg=0) == [id(second)]
+    assert he_pm.unregister(first) is first
+    assert he_pm.hook.he_method1(arg=0) == [id(second)]
+
+
+def test_subset_hook_caller_keeps_excluded_plugin_alive(he_pm: PluginManager) -> None:
+    class Plugin:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg
+
+    plugin = Plugin()
+    he_pm.register(plugin)
+    subset = he_pm.subset_hook_caller("he_method1", [plugin])
+    reference = weakref.ref(plugin)
+    he_pm.unregister(plugin)
+    del plugin
+    gc.collect()
+    assert reference() is not None
+    del subset
+    gc.collect()
+    assert reference() is None
 
 
 def test_pm(pm: PluginManager) -> None:

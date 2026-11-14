@@ -7,7 +7,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from collections.abc import Mapping
 from collections.abc import Sequence
-from collections.abc import Set as AbstractSet
 from typing import Any
 from typing import Final
 from typing import final
@@ -115,7 +114,7 @@ class HookCaller:
 
     def _remove_plugin(self, plugin: _Plugin) -> None:
         """Remove all hook implementations registered by the given plugin."""
-        remaining = [impl for impl in self._hookimpls if impl.plugin != plugin]
+        remaining = [impl for impl in self._hookimpls if impl.plugin is not plugin]
         if len(remaining) == len(self._hookimpls):
             raise ValueError(f"plugin {plugin!r} not found")
         self._hookimpls[:] = remaining
@@ -296,7 +295,7 @@ class _SubsetHookCaller(HookCaller):
         "_remove_plugins",
     )
 
-    def __init__(self, orig: HookCaller, remove_plugins: AbstractSet[_Plugin]) -> None:
+    def __init__(self, orig: HookCaller, remove_plugins: Mapping[int, _Plugin]) -> None:
         self._orig = orig
         self._remove_plugins = remove_plugins
         self.name = orig.name  # type: ignore[misc]
@@ -307,7 +306,7 @@ class _SubsetHookCaller(HookCaller):
         return [
             impl
             for impl in self._orig._hookimpls
-            if impl.plugin not in self._remove_plugins
+            if id(impl.plugin) not in self._remove_plugins
         ]
 
     @property
