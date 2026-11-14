@@ -1,0 +1,3 @@
+Identify plugins by object identity when registering, looking up, unregistering,
+or excluding them from a hook call. Distinct plugins that compare equal can now
+be registered under different names and managed independently.

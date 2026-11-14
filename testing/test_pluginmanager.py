@@ -2,6 +2,8 @@
 ``PluginManager`` unit and public API testing.
 """
 
+from dataclasses import dataclass
+from dataclasses import field
 import importlib.metadata
 import types
 from typing import Any
@@ -34,6 +36,37 @@ def test_register_ignores_none(pm: PluginManager) -> None:
     assert pm.register(None) is None
     assert pm.get_plugins() == set()
     assert not pm.is_registered(None)
+    pm.set_blocked("blocked")
+    assert not pm.is_registered(None)
+    assert pm.get_name(None) is None
+
+
+def test_equal_plugins_are_registered_and_removed_independently(
+    pm: PluginManager,
+) -> None:
+    @dataclass
+    class Plugin:
+        greeting: str = field(compare=False)
+
+        @hookimpl
+        def greet(self) -> str:
+            return self.greeting
+
+    first, second = Plugin("first"), Plugin("second")
+    assert first == second
+    pm.register(first, "first")
+    assert not pm.is_registered(second)
+    assert pm.get_name(second) is None
+
+    assert pm.register(second, "second") == "second"
+    assert pm.get_name(second) == "second"
+    assert pm.hook.greet() == ["second", "first"]
+    assert pm.subset_hook_caller("greet", [first])() == ["second"]
+
+    assert pm.unregister(second) is second
+    assert pm.get_plugin("first") is first
+    assert pm.get_plugin("second") is None
+    assert pm.hook.greet() == ["first"]
 
 
 def test_pm(pm: PluginManager) -> None:
