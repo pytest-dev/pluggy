@@ -11,6 +11,7 @@ from typing import cast
 from typing import Final
 from typing import TYPE_CHECKING
 from typing import TypeAlias
+from typing import TypeGuard
 import warnings
 
 from . import _tracing
@@ -61,6 +62,26 @@ def _instance_dict(obj: object) -> dict[str, Any]:
     return instance_dict if isinstance(instance_dict, dict) else {}
 
 
+def _is_function_like(obj: object) -> TypeGuard[types.FunctionType]:
+    """Return whether ``obj`` is a plain function or a compiled duck type of one.
+
+    Compiled functions such as Cython's ``cython_function_or_method`` are not
+    :class:`types.FunctionType` instances, but their type exposes ``__code__``
+    as a C-level getset descriptor and binds through ``__get__`` the way a
+    function does. Both checks are static, so no user code runs; descriptors
+    written in Python, such as :class:`functools.cached_property`, never
+    match. The ``TypeGuard`` is a typing convenience: a compiled function only
+    behaves like :class:`types.FunctionType`.
+    """
+    if inspect.isfunction(obj):
+        return True
+    obj_type = type(obj)
+    return isinstance(
+        inspect.getattr_static(obj_type, "__code__", None),
+        types.GetSetDescriptorType,
+    ) and (inspect.getattr_static(obj_type, "__get__", None) is not None)
+
+
 def _static_hook_attr(
     obj: object, name: str
 ) -> tuple[object, Callable[..., object]] | None:
@@ -69,8 +90,9 @@ def _static_hook_attr(
     Lookup avoids ``getattr()`` so that properties, ``cached_property`` and
     other descriptors are skipped instead of being evaluated -- hooks provided
     through such a descriptor (or only through ``__getattr__``) are not
-    supported. Only plain functions, :class:`classmethod`, :class:`staticmethod`
-    and already-bound :class:`~types.MethodType` objects are hookable.
+    supported. Only plain functions (including compiled ones, such as Cython
+    functions), :class:`classmethod`, :class:`staticmethod` and already-bound
+    :class:`~types.MethodType` objects are hookable.
 
     ``marker_holder`` is the object that may carry the hookimpl/hookspec
     options: the ``classmethod``/``staticmethod`` wrapper when the marker was
@@ -93,7 +115,7 @@ def _static_hook_attr(
         if value is not _ABSENT:
             if isinstance(value, types.MethodType):
                 return value.__func__, value
-            if inspect.isfunction(value):
+            if _is_function_like(value):
                 return value, value
             return None
 
@@ -105,7 +127,7 @@ def _static_hook_attr(
         return static, cast(Callable[..., object], static.__get__(owner, owner))
     if isinstance(static, types.MethodType):
         return static.__func__, static
-    if inspect.isfunction(static):
+    if _is_function_like(static):
         if inspect.isclass(obj) or inspect.ismodule(obj):
             return static, static
         return static, static.__get__(obj, type(obj))
