@@ -2,7 +2,7 @@
 pluggy - A minimalist production ready plugin system
 ====================================================
 
-|pypi| |conda-forge| |versions| |github-actions| |gitter| |black| |codecov|
+|pypi| |conda-forge| |versions| |github-actions| |discord| |black| |codecov|
 
 This is the core framework used by the `pytest`_, `tox`_, and `devpi`_ projects.
 
@@ -79,9 +79,9 @@ Running this directly gets us::
 .. |conda-forge| image:: https://img.shields.io/conda/vn/conda-forge/pluggy.svg
     :target: https://anaconda.org/conda-forge/pytest
 
-.. |gitter| image:: https://badges.gitter.im/pytest-dev/pluggy.svg
-    :alt: Join the chat at https://gitter.im/pytest-dev/pluggy
-    :target: https://gitter.im/pytest-dev/pluggy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+.. |discord| image:: https://img.shields.io/badge/Discord-pytest--dev-blue
+    :alt: Discord
+    :target: https://discord.com/invite/pytest-dev
 
 .. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
