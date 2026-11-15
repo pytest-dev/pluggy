@@ -10,6 +10,7 @@ skipping; CI runs it as a dedicated job.
 from collections.abc import Iterator
 import functools
 import importlib
+import importlib.util
 import os
 import sys
 import textwrap
@@ -71,9 +72,11 @@ CYTHON_SOURCE = textwrap.dedent(
 
 @pytest.fixture(scope="module")
 def cymod(tmp_path_factory: pytest.TempPathFactory) -> Iterator[types.ModuleType]:
-    if not os.environ.get("PLUGGY_REQUIRE_CYTHON"):
-        pytest.importorskip("Cython")
-        pytest.importorskip("setuptools")
+    missing = [
+        m for m in ("Cython", "setuptools") if importlib.util.find_spec(m) is None
+    ]
+    if missing and not os.environ.get("PLUGGY_REQUIRE_CYTHON"):
+        pytest.skip(f"needs {', '.join(missing)}")
     import pyximport
 
     src = tmp_path_factory.mktemp("cysrc")
