@@ -220,12 +220,17 @@ runs user code. Only these are recognised as hookimpls and hookspecs:
 * plain functions (:class:`types.FunctionType`),
 * bound methods,
 * :class:`staticmethod` and :class:`classmethod` wrapping one of those,
-* compiled functions that behave like a plain function, such as Cython
-  functions compiled with ``binding=True`` (the default) and Nuitka functions.
+* Cython functions compiled with ``binding=True`` (the default).
 
-Anything else is ignored even when it carries a marker: classes, callable
-instances, :func:`functools.partial` objects, proxies that expose a marker only
-through ``__getattr__``, and properties or other descriptors. Cython functions
+Nuitka-compiled functions also work, since Nuitka makes them pass
+:func:`inspect.isfunction`.
+
+Anything else cannot be a hook: classes, callable instances,
+:func:`functools.partial` objects, proxies that expose a marker only through
+``__getattr__``, and properties or other descriptors. A marked hookimpl of
+that kind is ignored; a marked hookspec makes
+:meth:`~pluggy.PluginManager.add_hookspecs` raise
+:class:`~pluggy.PluginValidationError`. Cython functions
 compiled with ``binding=False`` and mypyc-compiled functions cannot carry a
 marker at all.
 

@@ -62,24 +62,33 @@ def _instance_dict(obj: object) -> dict[str, Any]:
     return instance_dict if isinstance(instance_dict, dict) else {}
 
 
-def _is_function_like(obj: object) -> TypeGuard[types.FunctionType]:
-    """Return whether ``obj`` is a plain function or a compiled duck type of one.
+_CYTHON_FUNCTION_TYPES: Final = frozenset(
+    {"cython_function_or_method", "fused_cython_function"}
+)
 
-    Compiled functions such as Cython's ``cython_function_or_method`` are not
-    :class:`types.FunctionType` instances, but their type exposes ``__code__``
-    as a C-level getset descriptor and binds through ``__get__`` the way a
-    function does. Both checks are static, so no user code runs; descriptors
-    written in Python, such as :class:`functools.cached_property`, never
-    match. The ``TypeGuard`` is a typing convenience: a compiled function only
-    behaves like :class:`types.FunctionType`.
+
+def _is_function_like(obj: object) -> TypeGuard[types.FunctionType]:
+    """Return whether ``obj`` is a plain function or a Cython function.
+
+    Cython's binding functions are not :class:`types.FunctionType` instances.
+    They are accepted when their type has one of Cython's names (matched
+    without the versioned module, e.g. ``_cython_3_3_1``), exposes ``__code__``
+    as a C-level getset descriptor, and binds through ``__get__`` the way a
+    function does. All checks are static, so no user code runs. The
+    ``TypeGuard`` is a typing convenience: a Cython function only behaves like
+    :class:`types.FunctionType`.
     """
     if inspect.isfunction(obj):
         return True
     obj_type = type(obj)
-    return isinstance(
-        inspect.getattr_static(obj_type, "__code__", None),
-        types.GetSetDescriptorType,
-    ) and (inspect.getattr_static(obj_type, "__get__", None) is not None)
+    return (
+        obj_type.__name__ in _CYTHON_FUNCTION_TYPES
+        and isinstance(
+            inspect.getattr_static(obj_type, "__code__", None),
+            types.GetSetDescriptorType,
+        )
+        and inspect.getattr_static(obj_type, "__get__", None) is not None
+    )
 
 
 def _static_hook_attr(
@@ -90,8 +99,8 @@ def _static_hook_attr(
     Lookup avoids ``getattr()`` so that properties, ``cached_property`` and
     other descriptors are skipped instead of being evaluated -- hooks provided
     through such a descriptor (or only through ``__getattr__``) are not
-    supported. Only plain functions (including compiled ones, such as Cython
-    functions), :class:`classmethod`, :class:`staticmethod` and already-bound
+    supported. Only plain functions (including Cython functions),
+    :class:`classmethod`, :class:`staticmethod` and already-bound
     :class:`~types.MethodType` objects are hookable.
 
     ``marker_holder`` is the object that may carry the hookimpl/hookspec
@@ -287,8 +296,8 @@ class PluginManager:
         options for items decorated with :class:`HookimplMarker`.
 
         Discovery uses :func:`inspect.getattr_static` so properties and other
-        descriptors are not executed. Only functions (including compiled ones
-        such as Cython functions), bound methods, and staticmethods or
+        descriptors are not executed. Only functions (including Cython
+        functions), bound methods, and staticmethods or
         classmethods wrapping them are considered; see :ref:`hookable`.
         """
         found = _static_hook_attr(plugin, name)
@@ -367,25 +376,62 @@ class PluginManager:
 
         Functions are recognized as hook specifications if they have been
         decorated with a matching :class:`HookspecMarker`.
+
+        :raises PluginValidationError:
+            If a marked attribute cannot be a hook, e.g. a class or a callable
+            object (see :ref:`hookable`).
         """
-        names = []
+        # Find every spec before changing any state, so that a rejected
+        # attribute leaves the manager untouched.
+        specs: list[tuple[str, HookspecOpts]] = []
         for name in dir(module_or_class):
             spec_opts = self.parse_hookspec_opts(module_or_class, name)
-            if spec_opts is not None:
-                hc: HookCaller | None = getattr(self.hook, name, None)
-                if hc is None:
-                    hc = HookCaller(name, self._hookexec, module_or_class, spec_opts)
-                    setattr(self.hook, name, hc)
-                else:
-                    # Plugins registered this hook without knowing the spec.
-                    hc.set_specification(module_or_class, spec_opts)
-                    for hookfunction in hc.get_hookimpls():
-                        self._verify_hook(hc, hookfunction)
-                names.append(name)
+            if spec_opts is None:
+                self._reject_unhookable_spec(module_or_class, name)
+            else:
+                specs.append((name, spec_opts))
 
-        if not names:
+        for name, spec_opts in specs:
+            hc: HookCaller | None = getattr(self.hook, name, None)
+            if hc is None:
+                hc = HookCaller(name, self._hookexec, module_or_class, spec_opts)
+                setattr(self.hook, name, hc)
+            else:
+                # Plugins registered this hook without knowing the spec.
+                hc.set_specification(module_or_class, spec_opts)
+                for hookfunction in hc.get_hookimpls():
+                    self._verify_hook(hc, hookfunction)
+
+        if not specs:
             raise ValueError(
                 f"did not find any {self.project_name!r} hooks in {module_or_class!r}"
+            )
+
+    def _reject_unhookable_spec(self, module_or_class: _Namespace, name: str) -> None:
+        """Raise if ``name`` carries a hookspec marker but cannot be a hook.
+
+        Until 1.7 such attributes (classes, callable objects, ``__getattr__``
+        proxies) were accepted; silently skipping them changes hook results,
+        so fail loudly instead. The marker is read with ``getattr()`` because
+        proxies only expose it that way. The value itself is fetched
+        statically and modules are skipped, so the namespace's descriptors and
+        module-level ``__getattr__`` hooks are not run.
+        """
+        if _static_hook_attr(module_or_class, name) is not None:
+            return
+        value = inspect.getattr_static(module_or_class, name, None)
+        if value is None or inspect.ismodule(value):
+            return
+        try:
+            marker = getattr(value, self.project_name + "_spec", None)
+        except Exception:
+            return
+        if isinstance(marker, dict):
+            raise PluginValidationError(
+                module_or_class,
+                f"{module_or_class!r}.{name} is marked as a hookspec but is a "
+                f"{type(value).__qualname__}, which cannot be a hook; mark a plain "
+                "function instead (see 'What can be a hook' in the pluggy docs)",
             )
 
     def parse_hookspec_opts(
@@ -403,8 +449,8 @@ class PluginManager:
         options for items decorated with :class:`HookspecMarker`.
 
         Discovery uses :func:`inspect.getattr_static` so properties and other
-        descriptors are not executed. Only functions (including compiled ones
-        such as Cython functions), bound methods, and staticmethods or
+        descriptors are not executed. Only functions (including Cython
+        functions), bound methods, and staticmethods or
         classmethods wrapping them are considered; see :ref:`hookable`.
         """
         found = _static_hook_attr(module_or_class, name)

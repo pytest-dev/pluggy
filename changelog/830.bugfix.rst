@@ -1,1 +1,1 @@
-Hook implementations and specifications written in Cython (``cython_function_or_method`` objects) are discovered again; this regressed in 1.7.0.
+Hook implementations and specifications written in Cython (``cython_function_or_method`` and ``fused_cython_function`` objects) are discovered again; this regressed in 1.7.0.
