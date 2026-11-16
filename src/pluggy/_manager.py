@@ -287,8 +287,9 @@ class PluginManager:
         options for items decorated with :class:`HookimplMarker`.
 
         Discovery uses :func:`inspect.getattr_static` so properties and other
-        descriptors are not executed. Only functions, classmethods,
-        staticmethods, and bound methods are considered.
+        descriptors are not executed. Only functions (including compiled ones
+        such as Cython functions), bound methods, and staticmethods or
+        classmethods wrapping them are considered; see :ref:`hookable`.
         """
         found = _static_hook_attr(plugin, name)
         if found is None:
@@ -402,8 +403,9 @@ class PluginManager:
         options for items decorated with :class:`HookspecMarker`.
 
         Discovery uses :func:`inspect.getattr_static` so properties and other
-        descriptors are not executed. Only functions, classmethods,
-        staticmethods, and bound methods are considered.
+        descriptors are not executed. Only functions (including compiled ones
+        such as Cython functions), bound methods, and staticmethods or
+        classmethods wrapping them are considered; see :ref:`hookable`.
         """
         found = _static_hook_attr(module_or_class, name)
         if found is None:

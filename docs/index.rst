@@ -209,6 +209,28 @@ Furthermore, each *hookimpl* or *hookspec* decorator can configure the
 underlying call-time behavior of each *hook* object by providing special
 *options* passed as keyword arguments.
 
+.. _hookable:
+
+What can be a hook
+^^^^^^^^^^^^^^^^^^
+The :py:class:`~pluggy.PluginManager` looks attributes up with
+:func:`inspect.getattr_static`, so scanning a plugin or a spec namespace never
+runs user code. Only these are recognised as hookimpls and hookspecs:
+
+* plain functions (:class:`types.FunctionType`),
+* bound methods,
+* :class:`staticmethod` and :class:`classmethod` wrapping one of those,
+* compiled functions that behave like a plain function, such as Cython
+  functions compiled with ``binding=True`` (the default) and Nuitka functions.
+
+Anything else is ignored even when it carries a marker: classes, callable
+instances, :func:`functools.partial` objects, proxies that expose a marker only
+through ``__getattr__``, and properties or other descriptors. Cython functions
+compiled with ``binding=False`` and mypyc-compiled functions cannot carry a
+marker at all.
+
+To hook a callable object, mark a plain function that calls it.
+
 
 .. note::
     The following sections correspond to similar documentation in
