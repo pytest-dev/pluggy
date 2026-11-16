@@ -144,6 +144,31 @@ class TestSetupAndGetCompletionHook:
         assert result == "kept"
         assert exception is exc
 
+    def test_completion_passes_through_stop_iteration(self) -> None:
+        """Throwing StopIteration into a generator surfaces as RuntimeError
+        (PEP 479); the original exception must come back out (#544)."""
+        impl = make_wrapper_impl(wrapper_func)
+        completion = impl.setup_and_get_completion_hook("myhook", {"arg": 1})
+        exc = StopIteration()
+        result, exception = completion("kept", exc)
+        assert result == "kept"
+        assert exception is exc
+
+    def test_completion_keeps_runtime_error_raised_by_wrapper(self) -> None:
+        def wrapper() -> Generator[None, object, object]:
+            try:
+                yield
+            except ValueError:
+                raise RuntimeError("from wrapper") from None
+            raise AssertionError("unreachable")
+
+        impl = make_wrapper_impl(wrapper)
+        completion = impl.setup_and_get_completion_hook("myhook", {})
+        result, exception = completion("kept", ValueError("boom"))
+        assert result == "kept"
+        assert isinstance(exception, RuntimeError)
+        assert str(exception) == "from wrapper"
+
     def test_completion_can_raise_new_exception(self) -> None:
         def wrapper() -> Generator[None, object, object]:
             yield
