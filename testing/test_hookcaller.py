@@ -13,6 +13,7 @@ from pluggy import HookspecMarker
 from pluggy import NormalHookCaller
 from pluggy import PluginManager
 from pluggy import PluginValidationError
+from pluggy import SubsetHookCaller
 from pluggy._hooks import HookImpl
 
 
@@ -621,3 +622,187 @@ def test_historic_rejects_direct_call_and_call_extra(pm: PluginManager) -> None:
 def test_normal_caller_rejects_call_historic(hc: NormalHookCaller) -> None:
     with pytest.raises(AssertionError, match="not historic"):
         hc.call_historic(kwargs={"arg": 1})
+
+
+def test_historic_unregister_removes_impl(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec(historic=True)
+        def he_history(self, arg: object) -> None:
+            pass
+
+    class Plugin:
+        @hookimpl
+        def he_history(self, arg: object) -> None:
+            pass  # pragma: no cover
+
+    pm.add_hookspecs(Hooks)
+    plugin = Plugin()
+    pm.register(plugin)
+    hc = pm.hook.he_history
+    assert isinstance(hc, HistoricHookCaller)
+    assert repr(hc) == "<HistoricHookCaller 'he_history'>"
+    assert len(hc.get_hookimpls()) == 1
+
+    pm.unregister(plugin)
+    assert hc.get_hookimpls() == []
+    with pytest.raises(ValueError, match=f"plugin {plugin!r} not found"):
+        hc._remove_plugin(plugin)
+
+
+def test_historic_spec_after_normal_spec_raises(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec
+        def he_method1(self, arg: object) -> None:
+            pass
+
+    class HistoricHooks:
+        @hookspec(historic=True)
+        def he_method1(self, arg: object) -> None:
+            pass
+
+    pm.add_hookspecs(Hooks)
+    with pytest.raises(ValueError, match="already registered"):
+        pm.add_hookspecs(HistoricHooks)
+    assert isinstance(pm.hook.he_method1, NormalHookCaller)
+
+
+def test_normal_caller_rejects_historic_spec(pm: PluginManager) -> None:
+    class Plugin:
+        @hookimpl
+        def he_unspecced(self, arg: object) -> None:
+            pass  # pragma: no cover
+
+    pm.register(Plugin())
+    hc = pm.hook.he_unspecced
+    assert isinstance(hc, NormalHookCaller)
+    with pytest.raises(ValueError, match="cannot handle historic hooks"):
+        hc.set_specification(Plugin, HookspecConfiguration(historic=True))
+    assert not hc.has_spec()
+
+
+def test_set_specification_accepts_legacy_mapping(pm: PluginManager) -> None:
+    """pytest still passes spec options as a plain mapping."""
+
+    class Plugin:
+        @hookimpl
+        def he_unspecced(self, arg: object) -> object:
+            return arg
+
+    class Hooks:
+        def he_unspecced(self, arg: object) -> None:
+            pass
+
+    pm.register(Plugin())
+    hc = pm.hook.he_unspecced
+    assert isinstance(hc, NormalHookCaller)
+    hc.set_specification(Hooks, {"firstresult": True})
+    assert hc.spec is not None
+    assert isinstance(hc.spec.config, HookspecConfiguration)
+    assert hc.spec.config.firstresult
+    assert not hc.spec.config.historic
+    assert hc(arg=1) == 1
+
+
+def test_calls_without_spec(pm: PluginManager) -> None:
+    class Plugin:
+        @hookimpl
+        def he_unspecced(self, arg: object) -> object:
+            return arg
+
+    class Removed:
+        @hookimpl
+        def he_unspecced(self, arg: object) -> object:
+            return "removed"
+
+    def extra(arg: object) -> object:
+        return "extra"
+
+    pm.register(Plugin())
+    removed = Removed()
+    pm.register(removed)
+    hc = pm.hook.he_unspecced
+    subset = pm.subset_hook_caller("he_unspecced", [removed])
+    assert not subset.has_spec()
+    assert hc.call_extra([extra], {"arg": 1}) == ["extra", "removed", 1]
+    assert subset(arg=1) == [1]
+    assert subset.call_extra([extra], {"arg": 1}) == ["extra", 1]
+
+
+def test_subset_hook_caller_proxies_spec_and_impls(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec
+        def he_method1(self, arg: object) -> None:
+            pass
+
+    class Kept:
+        @hookimpl
+        def he_method1(self, arg: object) -> None:
+            pass  # pragma: no cover
+
+    class Removed:
+        @hookimpl
+        def he_method1(self, arg: object) -> None:
+            pass  # pragma: no cover
+
+    pm.add_hookspecs(Hooks)
+    kept, removed = Kept(), Removed()
+    pm.register(kept)
+    pm.register(removed)
+    subset = pm.subset_hook_caller("he_method1", [removed])
+    assert subset.has_spec()
+    assert subset.spec is pm.hook.he_method1.spec
+    assert [impl.plugin for impl in subset.get_hookimpls()] == [kept]
+
+
+def test_subset_hook_caller_is_read_only(hc: NormalHookCaller) -> None:
+    subset = SubsetHookCaller(hc, set())
+    with pytest.raises(RuntimeError, match="read-only proxy"):
+        subset.set_specification(object, HookspecConfiguration())
+
+
+def test_subset_hook_caller_historic_rejects_direct_calls(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec(historic=True)
+        def he_history(self, arg: object) -> None:
+            pass
+
+    class Plugin:
+        @hookimpl
+        def he_history(self, arg: object) -> None:
+            pass  # pragma: no cover
+
+    pm.add_hookspecs(Hooks)
+    plugin = Plugin()
+    pm.register(plugin)
+    subset = pm.subset_hook_caller("he_history", [plugin])
+    assert isinstance(subset, SubsetHookCaller)
+    with pytest.raises(AssertionError, match="use call_historic"):
+        subset(arg=1)
+    with pytest.raises(AssertionError, match="use call_historic"):
+        subset.call_extra([], {"arg": 1})
+
+
+def test_subset_hook_caller_historic_result_callback(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec(historic=True)
+        def he_history(self, arg: object) -> None:
+            pass
+
+    class Kept:
+        @hookimpl
+        def he_history(self, arg: object) -> object:
+            return ("kept", arg)
+
+    class Removed:
+        @hookimpl
+        def he_history(self, arg: object) -> object:
+            return ("removed", arg)
+
+    pm.add_hookspecs(Hooks)
+    removed = Removed()
+    pm.register(Kept())
+    pm.register(removed)
+    results: list[object] = []
+    subset = pm.subset_hook_caller("he_history", [removed])
+    subset.call_historic(results.append, kwargs={"arg": 1})
+    assert results == [("kept", 1)]
