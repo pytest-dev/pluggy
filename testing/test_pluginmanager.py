@@ -1429,9 +1429,6 @@ class _SpecProxy:
     def __init__(self, func: Any) -> None:
         self._func = func
 
-    def __call__(self, *args: object, **kwargs: object) -> object:
-        return self._func(*args, **kwargs)
-
     def __getattr__(self, name: str) -> object:
         return getattr(self._func, name)
 
@@ -1485,7 +1482,8 @@ def test_add_hookspecs_partial(pm: PluginManager) -> None:
 
 
 def test_add_hookspecs_ignores_unmarked_attributes(pm: PluginManager) -> None:
-    """None values, modules and objects whose attribute access fails are skipped."""
+    """Unmarked functions, None values, modules and objects whose attribute
+    access fails are skipped."""
 
     class Exploding:
         def __getattr__(self, name: str) -> object:
@@ -1494,6 +1492,9 @@ def test_add_hookspecs_ignores_unmarked_attributes(pm: PluginManager) -> None:
     class Spec:
         @hookspec
         def ok(self, arg):
+            pass
+
+        def unmarked(self):
             pass
 
         nothing = None
