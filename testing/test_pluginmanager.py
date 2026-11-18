@@ -2,6 +2,7 @@
 ``PluginManager`` unit and public API testing.
 """
 
+from dataclasses import dataclass
 import importlib.metadata
 import types
 from typing import Any
@@ -1421,3 +1422,176 @@ def test_unregister_falsy_plugin(pm: PluginManager) -> None:
     # The name is free again.
     pm.register(plugin, "falsy")
     assert pm.is_registered(plugin)
+
+
+@dataclass
+class _MutableEqualPlugin:
+    value: int = 1
+
+    @hookimpl
+    def he_method1(self, arg: int) -> int:
+        return id(self)
+
+
+@dataclass(frozen=True)
+class _FrozenEqualPlugin:
+    value: int = 1
+
+    @hookimpl
+    def he_method1(self, arg: int) -> int:
+        return id(self)
+
+
+@pytest.mark.parametrize(
+    "plugin_cls",
+    [
+        pytest.param(_MutableEqualPlugin, id="mutable-unhashable"),
+        pytest.param(_FrozenEqualPlugin, id="frozen-hashable"),
+    ],
+)
+def test_equal_plugins_identity(
+    pm: PluginManager,
+    plugin_cls: type[_MutableEqualPlugin] | type[_FrozenEqualPlugin],
+) -> None:
+    """Distinct equal plugins are tracked by identity across registry APIs."""
+
+    class Hooks:
+        @hookspec
+        def he_method1(self, arg: int) -> int:
+            return arg  # pragma: no cover
+
+    pm.add_hookspecs(Hooks)
+
+    p1 = plugin_cls()
+    p2 = plugin_cls()
+    unregistered = plugin_cls()
+    assert p1 == p2 == unregistered
+    assert p1 is not p2
+    assert p1 is not unregistered
+    assert p2 is not unregistered
+
+    assert pm.register(p1, "one") == "one"
+    assert pm.register(p2, "two") == "two"
+    with pytest.raises(ValueError):
+        pm.register(p1, "one")
+    with pytest.raises(ValueError):
+        pm.register(p1, "three")
+
+    assert pm.is_registered(p1)
+    assert pm.is_registered(p2)
+    assert pm.is_registered(unregistered) is False
+
+    assert pm.get_name(p1) == "one"
+    assert pm.get_name(p2) == "two"
+    assert pm.get_name(unregistered) is None
+
+    assert pm.get_hookcallers(p1) == [pm.hook.he_method1]
+    assert pm.get_hookcallers(p2) == [pm.hook.he_method1]
+    assert pm.get_hookcallers(unregistered) is None
+
+    with pytest.raises(AssertionError, match="plugin is not registered"):
+        pm.unregister(unregistered)
+    with pytest.raises(ValueError, match="do not agree"):
+        pm.unregister(unregistered, "one")
+
+    assert pm.is_registered(p1)
+    assert pm.is_registered(p2)
+    assert pm.get_plugin("one") is p1
+    assert pm.get_plugin("two") is p2
+    assert pm.hook.he_method1(arg=1) == [id(p2), id(p1)]
+
+    shc = pm.subset_hook_caller("he_method1", [p1])
+    assert shc is not pm.hook.he_method1
+    assert shc(arg=1) == [id(p2)]
+
+    shc_unreg = pm.subset_hook_caller("he_method1", [unregistered])
+    assert shc_unreg is pm.hook.he_method1
+    assert shc_unreg(arg=1) == [id(p2), id(p1)]
+
+    assert pm.unregister(p1) is p1
+    assert pm.is_registered(p1) is False
+    assert pm.get_name(p1) is None
+    assert pm.get_hookcallers(p1) is None
+    assert pm.is_registered(p2)
+    assert pm.get_name(p2) == "two"
+    assert pm.hook.he_method1(arg=1) == [id(p2)]
+
+
+@pytest.mark.parametrize(
+    "plugin_cls",
+    [
+        pytest.param(_MutableEqualPlugin, id="mutable-unhashable"),
+        pytest.param(_FrozenEqualPlugin, id="frozen-hashable"),
+    ],
+)
+def test_equal_plugins_canonical_names(
+    pm: PluginManager,
+    plugin_cls: type[_MutableEqualPlugin] | type[_FrozenEqualPlugin],
+) -> None:
+    """Equal plugins get distinct canonical names and cannot double-register."""
+    p1 = plugin_cls()
+    p2 = plugin_cls()
+    assert p1 == p2
+    assert p1 is not p2
+
+    name1 = pm.register(p1)
+    name2 = pm.register(p2)
+    assert name1 == str(id(p1))
+    assert name2 == str(id(p2))
+    assert name1 != name2
+    assert pm.get_name(p1) == name1
+    assert pm.get_name(p2) == name2
+
+    with pytest.raises(ValueError):
+        pm.register(p1)
+    with pytest.raises(ValueError):
+        pm.register(p1, "other")
+
+
+def test_set_blocked_none_sentinel(pm: PluginManager) -> None:
+    """Blocked names store ``None`` internally; ``None`` is never registered."""
+    pm.set_blocked("somename")
+    assert pm.is_blocked("somename")
+    assert pm.is_registered(None) is False
+    assert pm.get_name(None) is None
+
+
+def test_plugin_identity_with_raising_eq(pm: PluginManager) -> None:
+    """Registry operations use identity and never invoke ``__eq__``."""
+
+    class Hooks:
+        @hookspec
+        def he_method1(self, arg: int) -> int:
+            return arg  # pragma: no cover
+
+    pm.add_hookspecs(Hooks)
+
+    class RaisingEqPlugin:
+        def __eq__(self, other: object) -> bool:
+            raise TypeError("equality not supported")
+
+        @hookimpl
+        def he_method1(self, arg: int) -> int:
+            return id(self)
+
+    p1 = RaisingEqPlugin()
+    p2 = RaisingEqPlugin()
+    unregistered = RaisingEqPlugin()
+    with pytest.raises(TypeError):
+        _ = p1 == p2
+
+    assert pm.register(p1, "p1") == "p1"
+    assert pm.register(p2, "p2") == "p2"
+    assert pm.is_registered(p1)
+    assert pm.is_registered(unregistered) is False
+    assert pm.get_name(p1) == "p1"
+    assert pm.get_name(unregistered) is None
+
+    shc = pm.subset_hook_caller("he_method1", [p1])
+    assert shc(arg=1) == [id(p2)]
+    assert pm.subset_hook_caller("he_method1", [unregistered]) is pm.hook.he_method1
+
+    assert pm.unregister(p1) is p1
+    assert pm.is_registered(p1) is False
+    assert pm.unregister(p2, "p2") is p2
+    assert pm.is_registered(p2) is False

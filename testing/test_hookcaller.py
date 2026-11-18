@@ -1,6 +1,8 @@
 from collections.abc import Callable
 from collections.abc import Generator
 from collections.abc import Sequence
+from dataclasses import dataclass
+import re
 from typing import TypeVar
 
 import pytest
@@ -532,4 +534,34 @@ def test_remove_plugin_not_found_raises(hc: HookCaller, pm: PluginManager) -> No
 
     # the failed removal must not have touched the existing registration
     assert len(hc.get_hookimpls()) == 1
+    pm.unregister(plugin)
+
+
+def test_remove_plugin_equal_but_distinct_raises(
+    hc: HookCaller, pm: PluginManager
+) -> None:
+    """_remove_plugin() uses identity, not equality, so an equal unregistered
+    plugin raises ValueError and leaves the registered plugin intact."""
+
+    @dataclass
+    class Plugin:
+        value: int = 1
+
+        @hookimpl
+        def he_method1(self, arg: object) -> object:
+            return arg  # pragma: no cover
+
+    plugin = Plugin()
+    pm.register(plugin)
+    assert len(hc.get_hookimpls()) == 1
+
+    other = Plugin()
+    assert other == plugin
+    assert other is not plugin
+    with pytest.raises(ValueError, match=re.escape(f"plugin {other!r} not found")):
+        hc._remove_plugin(other)
+
+    impls = hc.get_hookimpls()
+    assert len(impls) == 1
+    assert impls[0].plugin is plugin
     pm.unregister(plugin)

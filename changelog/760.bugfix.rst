@@ -1,0 +1,1 @@
+:class:`~pluggy.PluginManager` and :class:`~pluggy.HookCaller` now compare plugins by identity (``is``) rather than equality (``==``) when registering, checking, looking up, subsetting, and removing plugins, so distinct plugin instances that compare equal (such as dataclasses) or raise on ``==`` are handled properly.
