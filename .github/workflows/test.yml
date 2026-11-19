@@ -43,6 +43,7 @@ jobs:
           "ubuntu-py313",
           "ubuntu-py314",
           "ubuntu-pypy3",
+          "ubuntu-py314-cython",
           "ubuntu-benchmark",
         ]
 
@@ -97,6 +98,11 @@ jobs:
             python: "pypy3.10"
             os: ubuntu-latest
             tox_env: "pypy3"
+            use_coverage: true
+          - name: "ubuntu-py314-cython"
+            python: "3.14"
+            os: ubuntu-latest
+            tox_env: "py314-cython"
             use_coverage: true
           - name: "ubuntu-benchmark"
             python: "3.10"
