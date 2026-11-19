@@ -239,18 +239,24 @@ class PluginManager:
                 hookimpls.append((hook_name, hookimpl, verified))
 
         self._name2plugin[plugin_name] = plugin
-        for hook_name, hookimpl, verified in hookimpls:
-            hook = getattr(self.hook, hook_name, None)
-            if hook is None:
-                hook = HookCaller(hook_name, self._hookexec)
-                setattr(self.hook, hook_name, hook)
-            elif not verified and hook.has_spec():
-                # An earlier impl's historic replay added this spec after the
-                # first pass. Failing here leaves the plugin partially
-                # registered, but only user code during replay can get here.
-                self._verify_hook(hook, hookimpl)
-            hook._maybe_apply_history(hookimpl)
-            hook._add_hookimpl(hookimpl)
+        try:
+            for hook_name, hookimpl, verified in hookimpls:
+                hook = getattr(self.hook, hook_name, None)
+                if hook is None:
+                    hook = HookCaller(hook_name, self._hookexec)
+                    setattr(self.hook, hook_name, hook)
+                elif not verified and hook.has_spec():
+                    # An earlier impl's historic replay added this spec after
+                    # the first pass, so validate against it now.
+                    self._verify_hook(hook, hookimpl)
+                hook._maybe_apply_history(hookimpl)
+                hook._add_hookimpl(hookimpl)
+        except BaseException:
+            # Replay runs user code, including result callbacks. Remove the
+            # failed plugin without disturbing other plugins registered by it.
+            if self._name2plugin.get(plugin_name) is plugin:
+                self.unregister(name=plugin_name)
+            raise
         return plugin_name
 
     def parse_hookimpl_opts(self, plugin: _Plugin, name: str) -> HookimplOpts | None:
