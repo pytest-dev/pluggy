@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from collections.abc import Mapping
+from functools import partial
 import inspect
 import sys
 import types
@@ -254,13 +255,14 @@ def varnames(
     For bound methods, the already-bound first parameter is not included.
     For unbound methods with a dotted ``__qualname__``, the first parameter is
     stripped only if its name is a known implicit name (``self``, ``cls``).
-    Keyword-only parameters are not included.
+    Keyword-only parameters are included only for the signature fallback.
 
     :param legacy_noself:
         If ``True``, support hookspec classes whose methods omit ``self``.
         When the function looks like a class method but has no implicit first
         parameter, a :class:`DeprecationWarning` is emitted.
     """
+    original = func
     is_bound = False
     if inspect.isclass(func):
         try:
@@ -279,6 +281,8 @@ def varnames(
     # Track bound methods before unwrapping, since __func__ loses that info.
     if inspect.ismethod(func):
         is_bound = True
+    if not hasattr(func, "__code__"):
+        return _varnames_from_signature(original)
     func = inspect.unwrap(func)  # type: ignore[arg-type]
     if inspect.ismethod(func):
         is_bound = True
@@ -288,8 +292,8 @@ def varnames(
         code: types.CodeType = func.__code__  # type: ignore[attr-defined]
         defaults: tuple[object, ...] | None = func.__defaults__  # type: ignore[attr-defined]
         qualname: str = func.__qualname__  # type: ignore[attr-defined]
-    except AttributeError:  # pragma: no cover
-        return (), ()
+    except AttributeError:
+        return _varnames_from_signature(original)
 
     # Get positional argument names (positional-only + positional-or-keyword)
     args: tuple[str, ...] = code.co_varnames[: code.co_argcount]
@@ -323,6 +327,39 @@ def varnames(
             )
 
     return args, kwargs
+
+
+def _varnames_from_signature(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Inspect callables whose implementation has no Python code object."""
+    if (
+        isinstance(func, partial)
+        and hasattr(func, "__wrapped__")
+        and not hasattr(func, "__signature__")
+    ):
+        # Metadata on the partial must not hide its bound arguments. The
+        # wrapped function itself still follows normal decorator unwrapping.
+        func = partial(func.func, *func.args, **func.keywords)
+    if sys.version_info >= (3, 14):
+        from annotationlib import Format
+
+        signature = inspect.signature(func, annotation_format=Format.STRING)  # type: ignore[arg-type]
+    else:
+        signature = inspect.signature(func)  # type: ignore[arg-type]
+    parameters = signature.parameters.values()
+    args = []
+    kwargs = []
+    for parameter in parameters:
+        if parameter.kind in (
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        ):
+            if parameter.default is inspect.Parameter.empty:
+                args.append(parameter.name)
+            else:
+                kwargs.append(parameter.name)
+        elif parameter.kind is inspect.Parameter.KEYWORD_ONLY:
+            kwargs.append(parameter.name)
+    return tuple(args), tuple(kwargs)
 
 
 @final

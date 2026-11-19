@@ -1,0 +1,1 @@
+Fix argument forwarding to partially bound and other inspectable callbacks passed to ``HookCaller.call_extra()``, including wrapped functions and parameters made keyword-only by a partial.

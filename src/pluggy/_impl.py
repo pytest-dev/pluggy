@@ -53,8 +53,8 @@ class HookImpl:
         argnames, kwargnames = varnames(self.function)
         #: The positional parameter names of ``function``.
         self.argnames: Final = argnames
-        #: The keyword parameter names of ``function`` which declare defaults.
-        #: Keyword-only parameters are *not* included.
+        #: Parameters passed by keyword: defaulted positional parameters and
+        #: keyword-only parameters discovered by the signature fallback.
         self.kwargnames: Final = kwargnames
         #: The plugin which defined this hook implementation.
         self.plugin: Final = plugin
