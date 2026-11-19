@@ -246,7 +246,7 @@ _NOSELF_WARN_SUPPRESS: frozenset[str] = frozenset(
 
 
 def varnames(
-    func: object, *, legacy_noself: bool = False
+    func: object, *, legacy_noself: bool = False, warn_posonly: bool = False
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Return tuple of positional and keyword parameter names for a callable.
 
@@ -260,6 +260,9 @@ def varnames(
         If ``True``, support hookspec classes whose methods omit ``self``.
         When the function looks like a class method but has no implicit first
         parameter, a :class:`DeprecationWarning` is emitted.
+    :param warn_posonly:
+        If ``True``, warn about positional-only hook implementation parameters,
+        excluding the already-bound instance/class parameter.
     """
     is_bound = False
     if inspect.isclass(func):
@@ -320,6 +323,23 @@ def varnames(
                 f" This will become an error in a future version of pluggy.",
                 DeprecationWarning,
                 stacklevel=2,
+            )
+
+    if warn_posonly:
+        positional_only = tuple(
+            name
+            for name in code.co_varnames[: code.co_posonlyargcount]
+            if name in args or name in kwargs
+        )
+        if positional_only:
+            warnings.warn_explicit(
+                f"Positional-only parameters {positional_only!r} in {qualname} "
+                "are deprecated. Use positional-or-keyword parameters instead. "
+                "Positional-only hook implementation parameters will be an error "
+                "in pluggy 2.0.",
+                DeprecationWarning,
+                filename=code.co_filename,
+                lineno=code.co_firstlineno,
             )
 
     return args, kwargs
