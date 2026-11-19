@@ -7,8 +7,9 @@ import pytest
 from pluggy import HookCallError
 from pluggy import HookimplMarker
 from pluggy import HookspecMarker
+from pluggy import NormalImpl
+from pluggy import WrapperImpl
 from pluggy._callers import _multicall
-from pluggy._hooks import HookImpl
 
 
 hookspec = HookspecMarker("example")
@@ -20,12 +21,16 @@ def MC(
     kwargs: Mapping[str, object],
     firstresult: bool = False,
 ) -> object | list[object]:
-    caller = _multicall
-    hookfuncs = []
+    normal_impls: list[NormalImpl] = []
+    wrapper_impls: list[WrapperImpl] = []
     for method in methods:
-        f = HookImpl(None, "<temp>", method, method.example_impl)  # type: ignore[attr-defined]
-        hookfuncs.append(f)
-    return caller("foo", hookfuncs, kwargs, firstresult)
+        config = method.example_impl  # type: ignore[attr-defined]
+        f = config.create_hookimpl(None, "<temp>", method)
+        if isinstance(f, WrapperImpl):
+            wrapper_impls.append(f)
+        else:
+            normal_impls.append(f)
+    return _multicall("foo", normal_impls, wrapper_impls, kwargs, firstresult)
 
 
 def test_keyword_args() -> None:
@@ -140,6 +145,56 @@ def test_wrapper_two_yields() -> None:
 
     with pytest.raises(RuntimeError, match="has second yield"):
         MC([m], {})
+
+
+@pytest.mark.parametrize("old_style_outer", [False, True])
+@pytest.mark.parametrize("hook_raises", [False, True])
+def test_wrapper_two_yields_unwinds_outer_wrappers(
+    old_style_outer: bool, hook_raises: bool
+) -> None:
+    out = []
+    errors = []
+
+    @hookimpl
+    def impl():
+        if hook_raises:
+            raise ValueError("hook failed")
+        return 1
+
+    @hookimpl(wrapper=True)
+    def inner():
+        try:
+            try:
+                yield
+            except ValueError:
+                pass
+            yield
+        finally:
+            out.append("inner cleanup")
+
+    @hookimpl(wrapper=not old_style_outer, hookwrapper=old_style_outer)
+    def outer():
+        try:
+            if old_style_outer:
+                outcome = yield
+                errors.append(outcome.exception)
+            else:
+                try:
+                    yield
+                except RuntimeError as exc:
+                    errors.append(exc)
+                    raise
+        finally:
+            out.append("outer cleanup")
+
+    with pytest.raises(RuntimeError, match="has second yield") as excinfo:
+        try:
+            MC([impl, inner, outer], {})
+        finally:
+            out.append("caller cleanup")
+
+    assert errors == [excinfo.value]
+    assert out == ["inner cleanup", "outer cleanup", "caller cleanup"]
 
 
 def test_hookwrapper_order() -> None:
