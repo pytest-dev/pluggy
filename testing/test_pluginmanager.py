@@ -852,6 +852,10 @@ def test_subset_hook_caller_registered_after_proxy(pm: PluginManager) -> None:
     pm.register(plugin1)
     pm.register(plugin_no)
 
+    # When remove_plugins is empty, returns original hook caller directly.
+    hc_empty = pm.subset_hook_caller("he_method1", remove_plugins=[])
+    assert hc_empty is pm.hook.he_method1
+
     # Excluding already-registered plugin with no hookimpl returns original caller.
     hc_orig = pm.subset_hook_caller("he_method1", remove_plugins=[plugin_no])
     assert hc_orig is pm.hook.he_method1
