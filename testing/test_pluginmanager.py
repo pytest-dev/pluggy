@@ -828,12 +828,12 @@ def test_subset_hook_caller_registered_after_proxy(pm: PluginManager) -> None:
     class Plugin1:
         @hookimpl
         def he_method1(self):
-            return 1
+            return 1  # pragma: no cover
 
     class Plugin2:
         @hookimpl(specname="he_method1")
         def custom(self):
-            return 2
+            return 2  # pragma: no cover
 
     class Plugin3:
         @hookimpl
@@ -866,6 +866,9 @@ def test_subset_hook_caller_registered_after_proxy(pm: PluginManager) -> None:
     # Now register plugin2 and plugin3.
     pm.register(plugin2)
     pm.register(plugin3)
+
+    # Original caller executes all three plugins.
+    assert pm.hook.he_method1() == [3, 2, 1]
 
     # plugin1 and plugin2 should both be excluded; only plugin3 should be called.
     assert hc() == [3]
