@@ -1,0 +1,1 @@
+Deprecate passing ``None`` to :meth:`~pluggy.PluginManager.register`; it is currently ignored and will raise an error in a future version.

@@ -197,6 +197,12 @@ class PluginManager:
             # Registering a `None` plugin causes problems (#731). However, some
             # users are doing it, so can't error out (#749). Just ignore
             # instead.
+            warnings.warn(
+                "Passing None to PluginManager.register() is deprecated and will "
+                "raise an error in a future version.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             return None
 
         plugin_name = name or self.get_canonical_name(plugin)

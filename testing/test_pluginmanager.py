@@ -31,7 +31,8 @@ def test_plugin_double_register(pm: PluginManager) -> None:
 
 def test_register_ignores_none(pm: PluginManager) -> None:
     """``None`` collides with the blocked-name sentinel and must be ignored."""
-    assert pm.register(None) is None
+    with pytest.warns(DeprecationWarning, match="Passing None"):
+        assert pm.register(None) is None
     assert pm.get_plugins() == set()
     assert not pm.is_registered(None)
 
@@ -1029,7 +1030,8 @@ def test_load_setuptools_ignores_declined_plugins(
     monkeypatch.setattr(importlib.metadata, "distributions", lambda: (dist,))
     pm = DecliningPluginManager("example")
 
-    assert pm.load_setuptools_entrypoints("hello") == 1
+    with pytest.warns(DeprecationWarning, match="Passing None"):
+        assert pm.load_setuptools_entrypoints("hello") == 1
     assert pm.list_plugin_distributions() == [(accepted, dist)]
 
 
