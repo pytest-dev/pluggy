@@ -46,11 +46,13 @@ class HookImpl:
         plugin_name: str,
         function: _HookImplFunction[object],
         hook_impl_opts: HookimplOpts,
+        *,
+        is_staticmethod: bool = False,
     ) -> None:
         """:meta private:"""
         #: The hook implementation function.
         self.function: Final = function
-        argnames, kwargnames = varnames(self.function)
+        argnames, kwargnames = varnames(self.function, is_staticmethod=is_staticmethod)
         #: The positional parameter names of ``function``.
         self.argnames: Final = argnames
         #: The keyword parameter names of ``function`` which declare defaults.

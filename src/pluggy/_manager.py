@@ -229,7 +229,13 @@ class PluginManager:
                     f"{plugin!r}.{attr_name} is not a hookable attribute"
                 )
                 method: _HookImplFunction[object] = found[1]
-                hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
+                hookimpl = HookImpl(
+                    plugin,
+                    plugin_name,
+                    method,
+                    hookimpl_opts,
+                    is_staticmethod=isinstance(found[0], staticmethod),
+                )
                 hook_name = hookimpl_opts.get("specname") or attr_name
                 hook: HookCaller | None = getattr(self.hook, hook_name, None)
                 verified = False
