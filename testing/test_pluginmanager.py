@@ -813,6 +813,60 @@ def test_subset_hook_caller_with_specname(pm: PluginManager) -> None:
     assert hc() == [2]
 
 
+def test_subset_hook_caller_registered_after_proxy(pm: PluginManager) -> None:
+    """Test that subset_hook_caller excludes plugins registered after the proxy
+    is created (#840).
+    """
+
+    class Hooks:
+        @hookspec
+        def he_method1(self):
+            pass
+
+    pm.add_hookspecs(Hooks)
+
+    class Plugin1:
+        @hookimpl
+        def he_method1(self):
+            return 1
+
+    class Plugin2:
+        @hookimpl(specname="he_method1")
+        def custom(self):
+            return 2
+
+    class Plugin3:
+        @hookimpl
+        def he_method1(self):
+            return 3
+
+    class PluginNo:
+        pass
+
+    plugin1, plugin2, plugin3, plugin_no = (
+        Plugin1(),
+        Plugin2(),
+        Plugin3(),
+        PluginNo(),
+    )
+    pm.register(plugin1)
+    pm.register(plugin_no)
+
+    # Excluding already-registered plugin with no hookimpl returns original caller.
+    hc_orig = pm.subset_hook_caller("he_method1", remove_plugins=[plugin_no])
+    assert hc_orig is pm.hook.he_method1
+
+    # Create subset hook caller removing plugin1 and plugin2 (not registered yet).
+    hc = pm.subset_hook_caller("he_method1", remove_plugins=[plugin1, plugin2])
+
+    # Now register plugin2 and plugin3.
+    pm.register(plugin2)
+    pm.register(plugin3)
+
+    # plugin1 and plugin2 should both be excluded; only plugin3 should be called.
+    assert hc() == [3]
+
+
 def test_get_hookimpls(pm: PluginManager) -> None:
     class Hooks:
         @hookspec

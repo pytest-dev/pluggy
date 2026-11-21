@@ -1,0 +1,1 @@
+Fix :meth:`~pluggy.PluginManager.subset_hook_caller` not excluding plugins registered after the subset caller was created.
