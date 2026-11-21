@@ -246,7 +246,7 @@ _NOSELF_WARN_SUPPRESS: frozenset[str] = frozenset(
 
 
 def varnames(
-    func: object, *, legacy_noself: bool = False
+    func: object, *, legacy_noself: bool = False, is_staticmethod: bool = False
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Return tuple of positional and keyword parameter names for a callable.
 
@@ -260,6 +260,9 @@ def varnames(
         If ``True``, support hookspec classes whose methods omit ``self``.
         When the function looks like a class method but has no implicit first
         parameter, a :class:`DeprecationWarning` is emitted.
+    :param is_staticmethod:
+        If ``True``, ``func`` was obtained from a :class:`staticmethod`, so its
+        first parameter is never implicit, whatever its name.
     """
     is_bound = False
     if inspect.isclass(func):
@@ -308,7 +311,7 @@ def varnames(
     # means it's a class method (e.g. "MyClass.method" or
     # "func.<locals>.MyClass.method"), not just a nested function.
     _tail = qualname.rsplit("<locals>.", maxsplit=1)[-1]
-    _is_class_method = "." in _tail
+    _is_class_method = "." in _tail and not is_staticmethod
     if args:
         if is_bound or (_is_class_method and args[0] in _IMPLICIT_NAMES):
             args = args[1:]
@@ -343,11 +346,13 @@ class HookSpec:
         self.namespace = namespace
         self.name = name
         self.function: Callable[..., object] = getattr(namespace, name)
-        legacy_noself = inspect.isclass(namespace) and not isinstance(
+        is_staticmethod = inspect.isclass(namespace) and isinstance(
             inspect.getattr_static(namespace, name), staticmethod
         )
         self.argnames, self.kwargnames = varnames(
-            self.function, legacy_noself=legacy_noself
+            self.function,
+            legacy_noself=inspect.isclass(namespace) and not is_staticmethod,
+            is_staticmethod=is_staticmethod,
         )
         defaults = inspect.unwrap(self.function).__defaults__
         self.kwargdefaults = dict(zip(self.kwargnames, defaults or ()))
