@@ -1,0 +1,1 @@
+A :class:`staticmethod` hook specification or implementation whose first parameter is named ``cls`` no longer loses that parameter (`#844 <https://github.com/pytest-dev/pluggy/pull/844>`_).
