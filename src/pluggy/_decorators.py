@@ -346,7 +346,7 @@ class HookSpec:
         self.namespace = namespace
         self.name = name
         self.function: Callable[..., object] = getattr(namespace, name)
-        is_staticmethod = inspect.isclass(namespace) and isinstance(
+        is_staticmethod = isinstance(
             inspect.getattr_static(namespace, name), staticmethod
         )
         self.argnames, self.kwargnames = varnames(
