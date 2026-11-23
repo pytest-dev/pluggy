@@ -159,6 +159,7 @@ class PluginManager:
         #: The project name.
         self.project_name: Final = project_name
         self._name2plugin: Final[dict[str, _Plugin]] = {}
+        self._plugin2name: Final[dict[_Plugin, str]] = {}
         self._name2dist: Final[dict[str, importlib.metadata.Distribution]] = {}
         #: The "hook relay", used to call a hook on all registered plugins.
         #: See :ref:`calling`.
@@ -239,6 +240,10 @@ class PluginManager:
                 hookimpls.append((hook_name, hookimpl, verified))
 
         self._name2plugin[plugin_name] = plugin
+        try:
+            self._plugin2name[plugin] = plugin_name
+        except TypeError:
+            pass
         for hook_name, hookimpl, verified in hookimpls:
             hook = getattr(self.hook, hook_name, None)
             if hook is None:
@@ -323,6 +328,10 @@ class PluginManager:
 
         if not self.is_blocked(name):
             self._name2plugin.pop(name, None)
+        try:
+            self._plugin2name.pop(plugin, None)
+        except TypeError:
+            pass
         self._name2dist.pop(name, None)
 
         return plugin
@@ -404,7 +413,10 @@ class PluginManager:
 
     def is_registered(self, plugin: _Plugin) -> bool:
         """Return whether the plugin is already registered."""
-        return any(plugin == val for val in self._name2plugin.values())
+        try:
+            return plugin in self._plugin2name
+        except TypeError:
+            return any(plugin == val for val in self._name2plugin.values())
 
     def get_canonical_name(self, plugin: _Plugin) -> str:
         """Return a canonical name for a plugin object.
@@ -649,14 +661,12 @@ class PluginManager:
         """Return a proxy :class:`~pluggy.HookCaller` for the named hook which
         calls all registered plugins except the ones from remove_plugins."""
         orig: HookCaller = getattr(self.hook, name)
-        plugins_to_remove = set(remove_plugins)
-        # Optimization: discard plugins to remove which don't actually implement
-        # the hook, to make checks faster.
-        plugins_to_remove.intersection_update(
-            hookimpl.plugin for hookimpl in orig._hookimpls
-        )
+        implementing = {hookimpl.plugin for hookimpl in orig._hookimpls}
+        plugins_to_remove = {
+            p for p in remove_plugins if p in implementing or not self.is_registered(p)
+        }
         # Optimization: if none of the plugins to remove actually implement the
-        # hook, avoid the subset hook caller overhead.
+        # hook or could be registered later, avoid the subset hook caller overhead.
         if not plugins_to_remove:
             return orig
         return _SubsetHookCaller(orig, plugins_to_remove)

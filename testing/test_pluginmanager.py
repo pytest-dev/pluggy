@@ -813,6 +813,38 @@ def test_subset_hook_caller_with_specname(pm: PluginManager) -> None:
     assert hc() == [2]
 
 
+def test_subset_hook_caller_excludes_later_registered_plugins(pm: PluginManager) -> None:
+    class Hooks:
+        @hookspec
+        def he_method1(self):
+            pass
+
+    pm.add_hookspecs(Hooks)
+
+    class Plugin1:
+        @hookimpl
+        def he_method1(self):
+            return 1  # pragma: no cover
+
+    class Plugin2:
+        @hookimpl(specname="he_method1")
+        def alias(self):
+            return 2  # pragma: no cover
+
+    class Plugin3:
+        @hookimpl
+        def he_method1(self):
+            return 3
+
+    plugin1, plugin2, plugin3 = Plugin1(), Plugin2(), Plugin3()
+    pm.register(plugin3)
+    hc = pm.subset_hook_caller("he_method1", remove_plugins=[plugin1, plugin2])
+
+    pm.register(plugin1)
+    pm.register(plugin2)
+    assert hc() == [3]
+
+
 def test_get_hookimpls(pm: PluginManager) -> None:
     class Hooks:
         @hookspec
