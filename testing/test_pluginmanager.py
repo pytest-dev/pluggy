@@ -813,7 +813,9 @@ def test_subset_hook_caller_with_specname(pm: PluginManager) -> None:
     assert hc() == [2]
 
 
-def test_subset_hook_caller_excludes_later_registered_plugins(pm: PluginManager) -> None:
+def test_subset_hook_caller_excludes_later_registered_plugins(
+    pm: PluginManager,
+) -> None:
     class Hooks:
         @hookspec
         def he_method1(self):
