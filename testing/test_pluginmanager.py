@@ -221,7 +221,7 @@ def test_staticmethod_first_param_named_cls(pm: PluginManager) -> None:
     class Spec:
         @staticmethod
         @hookspec
-        def he_method1(cls: object, arg: object) -> None: ...  # noqa: PLW0211
+        def he_method1(cls: object, arg: object) -> None: ...  # pragma: no cover  # noqa: PLW0211
 
     class Plugin:
         @staticmethod
@@ -244,7 +244,7 @@ def test_staticmethod_first_param_named_cls_instance_namespace(
     class Spec:
         @staticmethod
         @hookspec
-        def he_method1(cls: object, arg: object) -> None: ...  # noqa: PLW0211
+        def he_method1(cls: object, arg: object) -> None: ...  # pragma: no cover  # noqa: PLW0211
 
     pm.add_hookspecs(Spec())  # type: ignore[arg-type]
     assert pm.hook.he_method1.spec is not None
