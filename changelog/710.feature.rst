@@ -1,0 +1,9 @@
+New async bridge for awaitable hook results:
+``await pm.run_async(lambda: pm.hook.my_hook())`` runs the hook call in a
+greenlet context where awaitable results from hook implementations are
+awaited on the current event loop ("await-me-maybe"). Outside
+``run_async``, awaitable results are passed through unchanged, as before.
+Requires the optional ``greenlet`` dependency, installable via
+``pluggy[async]``. The bridge is a persistent per-manager ``Submitter``;
+async wrapper generators are not auto-awaited (a manual
+``async_generator_to_sync`` helper is provided).
