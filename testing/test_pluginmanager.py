@@ -772,7 +772,47 @@ def test_subset_hook_caller(pm: PluginManager) -> None:
     pm.hook.he_method1(arg=1)
     assert out == [10]
 
-    assert repr(hc) == "<_SubsetHookCaller 'he_method1'>"
+    assert repr(hc) == "<SubsetHookCaller 'he_method1'>"
+
+
+def test_subset_hook_caller_call_extra(pm: PluginManager) -> None:
+    """SubsetHookCaller has its own call_extra; it must filter both the normal
+    implementations and the wrappers of the removed plugins."""
+
+    class Hooks:
+        @hookspec
+        def he_method1(self, arg):
+            pass
+
+    pm.add_hookspecs(Hooks)
+
+    class Kept:
+        @hookimpl
+        def he_method1(self, arg):
+            return arg
+
+        @hookimpl(wrapper=True, specname="he_method1")
+        def wrapper(self, arg):
+            return [*(yield), "kept-wrapper"]
+
+    class Removed:
+        @hookimpl
+        def he_method1(self, arg):
+            return "removed"
+
+        @hookimpl(wrapper=True, specname="he_method1")
+        def wrapper(self, arg):
+            return [*(yield), "removed-wrapper"]
+
+    pm.register(Kept())
+    removed = Removed()
+    pm.register(removed)
+
+    def extra(arg):
+        return arg * 10
+
+    hc = pm.subset_hook_caller("he_method1", [removed])
+    assert hc.call_extra([extra], {"arg": 2}) == [20, 2, "kept-wrapper"]
 
 
 def test_subset_hook_caller_with_specname(pm: PluginManager) -> None:
