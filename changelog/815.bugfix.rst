@@ -1,0 +1,1 @@
+Fix ``PluginManager.add_hookcall_monitoring`` undo functions removing other monitors or restoring removed monitors when called out of order.
