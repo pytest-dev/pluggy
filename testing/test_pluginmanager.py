@@ -214,6 +214,43 @@ def test_register_hookimpl_above_staticmethod(he_pm: PluginManager) -> None:
     assert he_pm.hook.he_method1(arg=1) == [[1]]
 
 
+def test_staticmethod_first_param_named_cls(pm: PluginManager) -> None:
+    """A staticmethod's first parameter is a hook argument even if it is
+    named ``cls``, in both the hookspec and the hookimpl."""
+
+    class Spec:
+        @staticmethod
+        @hookspec
+        def he_method1(cls: object, arg: object) -> None: ...  # pragma: no cover  # noqa: PLW0211
+
+    class Plugin:
+        @staticmethod
+        @hookimpl
+        def he_method1(cls: object, arg: object) -> tuple[object, object]:  # noqa: PLW0211
+            return (cls, arg)
+
+    pm.add_hookspecs(Spec)
+    assert pm.hook.he_method1.spec is not None
+    assert pm.hook.he_method1.spec.argnames == ("cls", "arg")
+    pm.register(Plugin())
+    assert pm.hook.he_method1(cls=1, arg=2) == [(1, 2)]
+
+
+def test_staticmethod_first_param_named_cls_instance_namespace(
+    pm: PluginManager,
+) -> None:
+    """Same as above, with the hookspecs given as an instance."""
+
+    class Spec:
+        @staticmethod
+        @hookspec
+        def he_method1(cls: object, arg: object) -> None: ...  # pragma: no cover  # noqa: PLW0211
+
+    pm.add_hookspecs(Spec())  # type: ignore[arg-type]
+    assert pm.hook.he_method1.spec is not None
+    assert pm.hook.he_method1.spec.argnames == ("cls", "arg")
+
+
 def test_register_instance_attribute_function_is_not_bound(
     he_pm: PluginManager,
 ) -> None:

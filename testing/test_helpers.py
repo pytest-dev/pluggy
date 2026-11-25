@@ -168,6 +168,15 @@ def test_varnames_staticmethod() -> None:
     assert varnames(MyClass().sm) == (("x",), ("y",))
 
 
+def test_varnames_staticmethod_first_param_named_cls() -> None:
+    class MyClass:
+        @staticmethod
+        def sm(cls, y=1) -> None:  # noqa: PLW0211
+            pass  # pragma: no cover
+
+    assert varnames(MyClass.sm, is_staticmethod=True) == (("cls",), ("y",))
+
+
 def test_varnames_hookspec_without_self() -> None:
     """Hookspec-style class methods without self/cls preserve all parameters.
 
