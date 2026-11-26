@@ -65,6 +65,9 @@ Bug Fixes
 - `#701 <https://github.com/pytest-dev/pluggy/issues/701>`_: Hookimpls and hookspecs are now discovered via :func:`inspect.getattr_static`, so
   properties, ``cached_property`` and other descriptors are no longer executed while
   scanning a plugin. Hooks declared through such a descriptor are not supported.
+  Only functions, bound methods and ``staticmethod``/``classmethod`` wrapping them
+  are recognised; marked classes, callable objects and ``__getattr__`` proxies, which
+  1.6 accepted as hookspecs, are no longer picked up (see :ref:`hookable`).
 
   As a side effect, ``@hookimpl``/``@hookspec`` applied *above* ``@classmethod`` or
   ``@staticmethod`` is now picked up; previously the marker sat on the wrapper where

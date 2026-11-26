@@ -1460,3 +1460,85 @@ def test_unregister_falsy_plugin(pm: PluginManager) -> None:
     # The name is free again.
     pm.register(plugin, "falsy")
     assert pm.is_registered(plugin)
+
+
+class _SpecProxy:
+    """Forwards attribute access to a wrapped function (as in pluggy#839)."""
+
+    def __init__(self, func: Any) -> None:
+        self._func = func
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._func, name)
+
+
+def _marked_spec(arg):
+    pass
+
+
+def test_add_hookspecs_rejects_marked_proxy(pm: PluginManager) -> None:
+    """pluggy#839: a proxy exposing the marker via __getattr__ must not vanish."""
+
+    class Spec:
+        @hookspec
+        def ok(self, arg):
+            pass
+
+        proxied = _SpecProxy(hookspec(firstresult=True)(_marked_spec))
+
+    with pytest.raises(
+        PluginValidationError, match=r"\.proxied is marked .* _SpecProxy"
+    ):
+        pm.add_hookspecs(Spec)
+    assert not hasattr(pm.hook, "ok")
+
+
+def test_add_hookspecs_rejects_marked_class(pm: PluginManager) -> None:
+    class Spec:
+        @hookspec
+        class nested:
+            pass
+
+    with pytest.raises(PluginValidationError, match=r"\.nested is marked .* type"):
+        pm.add_hookspecs(Spec)
+
+
+def test_add_hookspecs_partial(pm: PluginManager) -> None:
+    """A partial never is a hook: ignored unmarked, rejected when marked."""
+    import functools
+
+    class Unmarked:
+        p = functools.partial(hookspec(_marked_spec))
+
+    with pytest.raises(ValueError, match="did not find any"):
+        pm.add_hookspecs(Unmarked)
+
+    class Marked:
+        p = hookspec(functools.partial(_marked_spec))
+
+    with pytest.raises(PluginValidationError, match=r"\.p is marked .* partial"):
+        pm.add_hookspecs(Marked)
+
+
+def test_add_hookspecs_ignores_unmarked_attributes(pm: PluginManager) -> None:
+    """Unmarked functions, None values, modules and objects whose attribute
+    access fails are skipped."""
+
+    class Exploding:
+        def __getattr__(self, name: str) -> object:
+            raise RuntimeError(name)
+
+    class Spec:
+        @hookspec
+        def ok(self, arg):
+            pass
+
+        def unmarked(self):
+            pass
+
+        nothing = None
+        module = types
+        exploding = Exploding()
+
+    pm.add_hookspecs(Spec)
+    assert pm.hook.ok.has_spec()

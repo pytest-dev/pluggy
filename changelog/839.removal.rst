@@ -1,0 +1,1 @@
+:meth:`PluginManager.add_hookspecs() <pluggy.PluginManager.add_hookspecs>` now raises :class:`~pluggy.PluginValidationError` for a marked hookspec that cannot be a hook, such as a class, a callable object or a ``__getattr__`` proxy, instead of silently skipping it as 1.7.0 did; see :ref:`hookable`.
