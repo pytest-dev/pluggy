@@ -1,0 +1,1 @@
+Illustrate the entry and resumption order of nested new-style hook wrappers.
