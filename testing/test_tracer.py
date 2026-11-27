@@ -1,6 +1,7 @@
 import enum
 import os
 import pathlib
+from unittest.mock import Mock
 
 import pytest
 
@@ -162,6 +163,70 @@ def test_dbl_plugin_tracing(pm: PluginManager) -> None:
         "  hello [hook]\n      arg: 3\n",
         "  finish hello --> [] [hook]\n",
     ]
+
+
+class FakeStr:
+    """Claims to be a str the way a specced Mock does, through ``__class__``."""
+
+    __class__ = property(lambda self: str)
+
+    def __str__(self) -> str:
+        return "fake str"
+
+
+def echo_pm(pm: PluginManager) -> list[str]:
+    class Api:
+        @hookspec(firstresult=True)
+        def echo(self, value: object) -> object:
+            "Return the value."
+
+    class Plugin:
+        @hookimpl
+        def echo(self, value: object) -> object:
+            return value
+
+    pm.add_hookspecs(Api)
+    pm.register(Plugin())
+    trace_out: list[str] = []
+    pm.trace.root.setwriter(trace_out.append)
+    pm.enable_tracing()
+    return trace_out
+
+
+@pytest.mark.parametrize(
+    "value",
+    [Mock(spec=str), Mock(spec=dict), FakeStr()],
+    ids=["mock-spec-str", "mock-spec-dict", "fake-class-str"],
+)
+def test_tracing_impostor_value_is_traced_as_itself(
+    pm: PluginManager, value: object
+) -> None:
+    """isinstance() trusts __class__, so impostors once crashed the call (#792)."""
+    trace_out = echo_pm(pm)
+    assert pm.hook.echo(value=value) is value
+    assert trace_out == [
+        f"  echo [hook]\n      value: {value}\n",
+        f"  finish echo --> {value} [hook]\n",
+    ]
+
+
+def test_tracing_dict_result_is_not_read_as_arguments(pm: PluginManager) -> None:
+    trace_out = echo_pm(pm)
+    assert pm.hook.echo(value={"a": 1}) == {"a": 1}
+    assert trace_out == [
+        "  echo [hook]\n      value: {'a': 1}\n",
+        "  finish echo --> {'a': 1} [hook]\n",
+    ]
+
+
+def test_broken_str_subclass_value_does_not_raise(rootlogger: TagTracer) -> None:
+    class BrokenLines(str):
+        def splitlines(self, keepends: bool = False) -> list[str]:
+            raise RuntimeError("splitlines is broken")
+
+    out = rootlogger._format_message(["test"], ["test", {"arg": BrokenLines("x")}])
+    assert "RuntimeError('splitlines is broken') raised in format()" in out
+    assert "BrokenLines object at 0x" in out
 
 
 class BrokenRepr:

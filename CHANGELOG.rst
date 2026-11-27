@@ -21,6 +21,120 @@ Versions follow `Semantic Versioning <https://semver.org/>`_ (``<major>.<minor>.
 
 .. towncrier release notes start
 
+pluggy 1.7.0 (2026-10-14)
+=========================
+
+Deprecations and Removals
+-------------------------
+
+- `#632 <https://github.com/pytest-dev/pluggy/issues/632>`_: Hookspec methods defined without ``self`` as the first parameter now emit a :class:`DeprecationWarning`. Add ``self`` as the first parameter or use ``@staticmethod``.
+
+
+
+Features
+--------
+
+- `#170 <https://github.com/pytest-dev/pluggy/issues/170>`_: Hookspecs can now declare default values for arguments, using the usual ``def myhook(myarg="default")`` syntax.
+  This is mainly a backward compatibility feature, to allow a hookspec to add new parameters to an existing hook without breaking existing *callers*.
+  See :ref:`hookspec_arg_default` for details.
+
+
+- `#729 <https://github.com/pytest-dev/pluggy/issues/729>`_: Tracing now adds detail where ``str()`` is ambiguous: empty strings and strings containing
+  whitespace are quoted, and enums and paths show their ``repr()``.
+
+  A value spanning several lines is now displayed as a block instead of running into the
+  surrounding trace.
+
+
+
+Bug Fixes
+---------
+
+- `#629 <https://github.com/pytest-dev/pluggy/issues/629>`_: Fix hooks failing to register on Python 3.14+ when type annotations use forward references.
+
+
+- `#315 <https://github.com/pytest-dev/pluggy/issues/315>`_: Source archives created by ``git archive`` (including GitHub's "Source code" downloads) now carry version information, so building pluggy from them no longer fails with a missing version.
+
+
+- `#442 <https://github.com/pytest-dev/pluggy/issues/442>`_: With the addition of default values for hookspec arguments, we also changed the precedence of default values for *hookimpl* arguments.
+  Previously, if a hookimpl function declared a default for an argument, it was always used, even if the *hook call* passed an explicit value.
+  Now the precedence is changed to: hook call passed value > hookspec default value > hookimpl default value.
+  See :ref:`hookimpl_arg_defaults`.
+
+
+- `#701 <https://github.com/pytest-dev/pluggy/issues/701>`_: Hookimpls and hookspecs are now discovered via :func:`inspect.getattr_static`, so
+  properties, ``cached_property`` and other descriptors are no longer executed while
+  scanning a plugin. Hooks declared through such a descriptor are not supported.
+
+  As a side effect, ``@hookimpl``/``@hookspec`` applied *above* ``@classmethod`` or
+  ``@staticmethod`` is now picked up; previously the marker sat on the wrapper where
+  ``getattr()`` never saw it. Callables stored directly on a plugin instance -- in its
+  ``__dict__`` or in a ``__slots__`` slot -- keep being called exactly as ``getattr()``
+  returned them, i.e. without an implicit ``self``.
+
+
+- `#431 <https://github.com/pytest-dev/pluggy/issues/431>`_: Fix ``HookCaller._remove_plugin()`` to remove all hook implementations for a plugin in a single call, instead of only the first one. Also fix ``PluginManager.get_hookcallers()`` to not return duplicate ``HookCaller`` entries when a plugin has multiple implementations on the same hook (e.g. via ``specname``).
+
+
+- `#695 <https://github.com/pytest-dev/pluggy/issues/695>`_: Fixed :func:`~pluggy.PluginManager.subset_hook_caller()` not excluding removed plugins which use :func:`@hookiml(specname="...") <pluggy.HookimplMarker>`.
+
+
+- `#424 <https://github.com/pytest-dev/pluggy/issues/424>`_: Tracing no longer breaks hook execution when a traced object has a broken ``__repr__``
+  or ``__str__``. Such a value is now rendered as
+  ``<[RuntimeError(...) raised in str()] Broken object at 0x...>``, in the same style
+  pytest uses for unpresentable objects, instead of propagating the exception out of the
+  hook call.
+
+
+- `#681 <https://github.com/pytest-dev/pluggy/issues/681>`_: Tracing no longer crashes with ``UnicodeEncodeError`` when a hook argument or return
+  value contains lone surrogates; they are escaped with ``backslashreplace`` before the
+  message reaches the writer. Trace output is otherwise unchanged.
+
+
+- `#727 <https://github.com/pytest-dev/pluggy/issues/727>`_: Fix the warning for hookspec arguments missing from a hook call being attributed to pluggy's own frame instead of to the code making the call. This affected ``HookCaller.__call__``, ``call_historic`` and ``call_extra``.
+
+
+- `#731 <https://github.com/pytest-dev/pluggy/issues/731>`_: :func:`PluginManager.register(None) <pluggy.PluginManager.register>` is now ignored instead of having some weird behaviors.
+
+
+- `#733 <https://github.com/pytest-dev/pluggy/issues/733>`_: :meth:`PluginManager.register() <pluggy.PluginManager.register>` now validates all hook implementations of a plugin before registering any of them, so a plugin that fails validation no longer stays partially registered.
+
+
+- `#755 <https://github.com/pytest-dev/pluggy/issues/755>`_: Skip already registered entry-point plugins without evaluating the plugin object's truthiness.
+
+
+- `#757 <https://github.com/pytest-dev/pluggy/issues/757>`_: Restore the project URLs in the package metadata, which were lost in pluggy 1.6.0 when the packaging configuration moved to ``pyproject.toml``.
+  Links to the documentation, changelog, issue tracker and funding page were added as well.
+
+
+- `#759 <https://github.com/pytest-dev/pluggy/issues/759>`_: :meth:`PluginManager.unregister() <pluggy.PluginManager.unregister>` now raises :exc:`ValueError` when both ``plugin`` and ``name`` are given but refer to different plugins, instead of removing one plugin's hook implementations and another plugin's registry entry.
+  It also fully unregisters plugin objects that are falsy (e.g. define ``__len__`` returning ``0``); previously their name stayed in the registry.
+
+
+- `#186 <https://github.com/pytest-dev/pluggy/issues/186>`_: Fixed broken external documentation references in the list of projects using pluggy.
+
+
+Trivial/Internal Changes
+------------------------
+
+- `#417 <https://github.com/pytest-dev/pluggy/issues/417>`_: Fix the ``tox -e docs`` build, which failed under ``sphinx-build -W`` because nitpicky mode reported unresolved references to the private names.
+
+
+- `#590 <https://github.com/pytest-dev/pluggy/issues/590>`_: The ``pluggy.__version__`` variable is now dynamically provided via a module-level ``__getattr__`` implementation, using ``importlib`` to obtain the installed version.
+
+
+- `#691 <https://github.com/pytest-dev/pluggy/issues/691>`_: Fix outdated links in ``README.rst``.
+
+
+- `#703 <https://github.com/pytest-dev/pluggy/issues/703>`_: The internal ``pluggy._hooks`` module was split into role-specific modules
+  (``_caller``, ``_config``, ``_decorators``, ``_execution`` and ``_impl``).
+  ``pluggy._hooks`` remains as a re-export shim, and the public API is
+  unchanged.
+
+
+- `#776 <https://github.com/pytest-dev/pluggy/issues/776>`_: Building ``pluggy`` without git metadata now yields the placeholder version ``1.6.0+fallback`` instead of failing, so Dependabot relocks no longer resolve ``pluggy`` as ``0.0.0`` and silently downgrade pytest and tox in ``uv.lock``. ``tox`` was dropped from the ``dev`` dependency group; run it as a tool with ``uvx tox``.
+
+
 pluggy 1.6.0 (2025-05-15)
 =========================
 

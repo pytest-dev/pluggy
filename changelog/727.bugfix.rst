@@ -1,1 +1,0 @@
-Fix the warning for hookspec arguments missing from a hook call being attributed to pluggy's own frame instead of to the code making the call. This affected ``HookCaller.__call__``, ``call_historic`` and ``call_extra``.

@@ -159,9 +159,7 @@ class PluginManager:
         #: The project name.
         self.project_name: Final = project_name
         self._name2plugin: Final[dict[str, _Plugin]] = {}
-        self._plugin_distinfo: Final[
-            list[tuple[_Plugin, importlib.metadata.Distribution]]
-        ] = []
+        self._name2dist: Final[dict[str, importlib.metadata.Distribution]] = {}
         #: The "hook relay", used to call a hook on all registered plugins.
         #: See :ref:`calling`.
         self.hook: Final = HookRelay()
@@ -231,7 +229,13 @@ class PluginManager:
                     f"{plugin!r}.{attr_name} is not a hookable attribute"
                 )
                 method: _HookImplFunction[object] = found[1]
-                hookimpl = HookImpl(plugin, plugin_name, method, hookimpl_opts)
+                hookimpl = HookImpl(
+                    plugin,
+                    plugin_name,
+                    method,
+                    hookimpl_opts,
+                    is_staticmethod=isinstance(found[0], staticmethod),
+                )
                 hook_name = hookimpl_opts.get("specname") or attr_name
                 hook: HookCaller | None = getattr(self.hook, hook_name, None)
                 verified = False
@@ -287,11 +291,18 @@ class PluginManager:
         name. If both are specified, they must agree.
 
         Returns the unregistered plugin, or ``None`` if not found.
+
+        :raises TypeError:
+            If neither ``plugin`` nor ``name`` is given.
+        :raises ValueError:
+            If ``plugin`` is given but is not registered.
         """
         if name is None:
-            assert plugin is not None, "one of name or plugin needs to be specified"
+            if plugin is None:
+                raise TypeError("one of name or plugin needs to be specified")
             name = self.get_name(plugin)
-            assert name is not None, "plugin is not registered"
+            if name is None:
+                raise ValueError("plugin is not registered")
 
         if plugin is None:
             plugin = self.get_plugin(name)
@@ -316,9 +327,9 @@ class PluginManager:
             for hookcaller in hookcallers:
                 hookcaller._remove_plugin(plugin)
 
-        # if self._name2plugin[name] == None registration was blocked: ignore
-        if self._name2plugin.get(name) is not None:
-            del self._name2plugin[name]
+        if not self.is_blocked(name):
+            self._name2plugin.pop(name, None)
+        self._name2dist.pop(name, None)
 
         return plugin
 
@@ -519,8 +530,10 @@ class PluginManager:
                 ):
                     continue
                 plugin = ep.load()
-                self.register(plugin, name=ep.name)
-                self._plugin_distinfo.append((plugin, dist))
+                plugin_name = self.register(plugin, name=ep.name)
+                if plugin_name is None:
+                    continue
+                self._name2dist[plugin_name] = dist
                 count += 1
         return count
 
@@ -536,7 +549,10 @@ class PluginManager:
         """
         from ._compat import DistFacade
 
-        return [(plugin, DistFacade(dist)) for plugin, dist in self._plugin_distinfo]
+        return [
+            (plugin, DistFacade(dist))
+            for plugin, dist in self.list_plugin_distributions()
+        ]
 
     def list_plugin_distributions(
         self,
@@ -546,7 +562,9 @@ class PluginManager:
 
         .. versionadded:: 1.7
         """
-        return list(self._plugin_distinfo)
+        return [
+            (self._name2plugin[name], dist) for name, dist in self._name2dist.items()
+        ]
 
     def list_name_plugin(self) -> list[tuple[str, _Plugin]]:
         """Return a list of (name, plugin) pairs for all registered plugins."""
@@ -624,7 +642,9 @@ class PluginManager:
             kwargs: Mapping[str, object],
         ) -> None:
             if outcome.exception is None:
-                hooktrace("finish", hook_name, "-->", outcome.get_result())
+                # The trailing {} ends the message: without it a dict result
+                # would be listed as if it were the call's arguments.
+                hooktrace("finish", hook_name, "-->", outcome.get_result(), {})
             hooktrace.root.indent -= 1
 
         return self.add_hookcall_monitoring(before, after)

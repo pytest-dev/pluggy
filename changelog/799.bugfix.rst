@@ -1,0 +1,2 @@
+Hook tracing no longer turns a successful hook call into an error when an argument or result only claims to be a ``str`` or ``dict`` through ``__class__``, such as ``Mock(spec=str)`` (`#792 <https://github.com/pytest-dev/pluggy/issues/792>`_).
+A ``dict`` returned by a hook is now traced as the result instead of being listed as the call's arguments, and a value that fails to format is shown with its error instead of raising.

@@ -9,6 +9,7 @@ from collections.abc import Sequence
 import enum
 import os
 from typing import Any
+from typing import cast
 
 
 _Writer = Callable[[str], object]
@@ -36,16 +37,24 @@ def _escape_surrogates(text: str) -> str:
     return text.encode("utf-8", "backslashreplace").decode("utf-8")
 
 
-def _safe_str(obj: object) -> str:
-    """``str(obj)`` for tracing, with a failing ``__str__`` rendered, not raised.
+def _safe(render: Callable[[object], str], obj: object, name: str) -> str:
+    """``render(obj)`` for tracing, with a failure rendered as ``name``, not raised.
 
     The result has lone surrogates escaped, so any text writer accepts it.
     """
     try:
-        text = str(obj)
+        text = render(obj)
     except Exception as exc:
-        text = _describe_failure(exc, obj, "str")
+        text = _describe_failure(exc, obj, name)
     return _escape_surrogates(text)
+
+
+def _safe_str(obj: object) -> str:
+    return _safe(str, obj, "str")
+
+
+def _safe_repr(obj: object) -> str:
+    return _safe(repr, obj, "repr")
 
 
 def _is_plain_token(text: str) -> bool:
@@ -60,28 +69,17 @@ def _format_block(indent: str, lines: list[str]) -> list[str]:
 
 def _render_value(obj: object) -> str:
     """Render a traced value, adding detail only where ``str`` is ambiguous."""
+    # type(), not isinstance(): a Mock(spec=str) claims str through __class__.
+    cls = type(obj)
     # Before the str check: a StrEnum member is a str whose str() drops the name.
-    if isinstance(obj, (enum.Enum, os.PathLike)):
+    if issubclass(cls, (enum.Enum, os.PathLike)):
         return _safe_repr(obj)
-    if isinstance(obj, str):
-        if len(obj.splitlines()) > 1:
-            return _safe_str(obj)
-        if _is_plain_token(obj):
-            return _safe_str(obj)
-        return _safe_repr(obj)
+    if issubclass(cls, str):
+        text = cast(str, obj)
+        if len(text.splitlines()) > 1 or _is_plain_token(text):
+            return _safe_str(text)
+        return _safe_repr(text)
     return _safe_str(obj)
-
-
-def _safe_repr(obj: object) -> str:
-    """``repr(obj)`` for tracing, with a failing ``__repr__`` rendered, not raised.
-
-    The result has lone surrogates escaped, so any text writer accepts it.
-    """
-    try:
-        text = repr(obj)
-    except Exception as exc:
-        text = _describe_failure(exc, obj, "repr")
-    return _escape_surrogates(text)
 
 
 class TagTracer:
@@ -94,8 +92,8 @@ class TagTracer:
         return TagTracerSub(self, (name,))
 
     def _format_message(self, tags: Sequence[str], args: Sequence[object]) -> str:
-        if isinstance(args[-1], dict):
-            extra = args[-1]
+        if issubclass(type(args[-1]), dict):
+            extra = cast(dict[str, object], args[-1])
             args = args[:-1]
         else:
             extra = {}
@@ -106,7 +104,7 @@ class TagTracer:
         lines = [f"{indent}{content} [{':'.join(tags)}]\n"]
 
         for name, value in extra.items():
-            rendered = _render_value(value)
+            rendered = _safe(_render_value, value, "format")
             # A bare \r is a line break too: inline, the terminal would
             # return to column 0 and overwrite the key.
             body = rendered.splitlines()

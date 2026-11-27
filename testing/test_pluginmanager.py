@@ -214,6 +214,43 @@ def test_register_hookimpl_above_staticmethod(he_pm: PluginManager) -> None:
     assert he_pm.hook.he_method1(arg=1) == [[1]]
 
 
+def test_staticmethod_first_param_named_cls(pm: PluginManager) -> None:
+    """A staticmethod's first parameter is a hook argument even if it is
+    named ``cls``, in both the hookspec and the hookimpl."""
+
+    class Spec:
+        @staticmethod
+        @hookspec
+        def he_method1(cls: object, arg: object) -> None: ...  # pragma: no cover  # noqa: PLW0211
+
+    class Plugin:
+        @staticmethod
+        @hookimpl
+        def he_method1(cls: object, arg: object) -> tuple[object, object]:  # noqa: PLW0211
+            return (cls, arg)
+
+    pm.add_hookspecs(Spec)
+    assert pm.hook.he_method1.spec is not None
+    assert pm.hook.he_method1.spec.argnames == ("cls", "arg")
+    pm.register(Plugin())
+    assert pm.hook.he_method1(cls=1, arg=2) == [(1, 2)]
+
+
+def test_staticmethod_first_param_named_cls_instance_namespace(
+    pm: PluginManager,
+) -> None:
+    """Same as above, with the hookspecs given as an instance."""
+
+    class Spec:
+        @staticmethod
+        @hookspec
+        def he_method1(cls: object, arg: object) -> None: ...  # pragma: no cover  # noqa: PLW0211
+
+    pm.add_hookspecs(Spec())  # type: ignore[arg-type]
+    assert pm.hook.he_method1.spec is not None
+    assert pm.hook.he_method1.spec.argnames == ("cls", "arg")
+
+
 def test_register_instance_attribute_function_is_not_bound(
     he_pm: PluginManager,
 ) -> None:
@@ -473,8 +510,10 @@ def test_register(pm: PluginManager) -> None:
     assert not pm.is_registered(my)
     assert pm.get_plugins() == {my2}
 
-    with pytest.raises(AssertionError, match=r"not registered"):
+    with pytest.raises(ValueError, match=r"not registered"):
         pm.unregister(my)
+    with pytest.raises(TypeError, match=r"one of name or plugin"):
+        pm.unregister()
 
 
 def test_unregister_blocked(pm: PluginManager) -> None:
@@ -487,6 +526,7 @@ def test_unregister_blocked(pm: PluginManager) -> None:
     # bloked plugins can be unregistred many times atm
     pm.unregister(p, "error")
     pm.unregister(p, "error")
+    assert pm.is_blocked("error")
 
 
 def test_register_unknown_hooks(pm: PluginManager) -> None:
@@ -957,6 +997,77 @@ def test_load_setuptools_instantiation(
 
     ret_distributions = pm.list_plugin_distributions()
     assert ret_distributions == [(plugin, dist)]
+
+
+def test_unregister_drops_plugin_distribution(
+    monkeypatch: pytest.MonkeyPatch, pm: PluginManager
+) -> None:
+    class EntryPoint:
+        group = "hello"
+
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def load(self) -> object:
+            return type(self.name, (), {})()
+
+    class Distribution:
+        entry_points = (EntryPoint("a"), EntryPoint("b"))
+
+    dist = cast(importlib.metadata.Distribution, Distribution())
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda: (dist,))
+
+    assert pm.load_setuptools_entrypoints("hello") == 2
+    b = pm.get_plugin("b")
+    pm.unregister(name="a")
+    assert pm.list_plugin_distributions() == [(b, dist)]
+    assert [p for p, _ in pm.list_plugin_distinfo()] == [b]
+
+    # reloading must not duplicate the remaining entry
+    assert pm.load_setuptools_entrypoints("hello") == 1
+    a = pm.get_plugin("a")
+    assert pm.list_plugin_distributions() == [(b, dist), (a, dist)]
+
+    pm.set_blocked("b")
+    assert pm.list_plugin_distributions() == [(a, dist)]
+
+
+def test_load_setuptools_ignores_declined_plugins(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class EntryPoint:
+        group = "hello"
+
+        def __init__(self, name: str, plugin: object) -> None:
+            self.name = name
+            self.plugin = plugin
+
+        def load(self) -> object:
+            return self.plugin
+
+    accepted = object()
+
+    class Distribution:
+        entry_points = (
+            EntryPoint("none-plugin", None),
+            EntryPoint("declined", object()),
+            EntryPoint("renamed", accepted),
+        )
+
+    class DecliningPluginManager(PluginManager):
+        def register(self, plugin: object, name: str | None = None) -> str | None:
+            if name == "declined":
+                return None
+            if name == "renamed":
+                name = "accepted"
+            return super().register(plugin, name)
+
+    dist = cast(importlib.metadata.Distribution, Distribution())
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda: (dist,))
+    pm = DecliningPluginManager("example")
+
+    assert pm.load_setuptools_entrypoints("hello") == 1
+    assert pm.list_plugin_distributions() == [(accepted, dist)]
 
 
 def test_add_tracefuncs(he_pm: PluginManager) -> None:
