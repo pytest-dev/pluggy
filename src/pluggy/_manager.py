@@ -49,6 +49,19 @@ def _warn_for_function(warning: Warning, function: Callable[..., object]) -> Non
     )
 
 
+def _positional_only_names(
+    function: Callable[..., object], names: Sequence[str]
+) -> tuple[str, ...]:
+    """Return the names among ``names`` which ``function`` declares as
+    positional-only."""
+    func = inspect.unwrap(function)
+    code = getattr(getattr(func, "__func__", func), "__code__", None)
+    if code is None:  # pragma: no cover
+        return ()
+    posonly = code.co_varnames[: code.co_posonlyargcount]
+    return tuple(name for name in posonly if name in names)
+
+
 _ABSENT: Final = object()
 
 
@@ -462,6 +475,21 @@ class PluginManager:
                 f"hookimpl definition: {_formatdef(hookimpl.function)}\n"
                 f"Argument(s) {notinspec} are declared in the hookimpl but "
                 "can not be found in the hookspec",
+            )
+
+        posonly = _positional_only_names(
+            hookimpl.function, hookimpl.argnames + hookimpl.kwargnames
+        )
+        if posonly:
+            _warn_for_function(
+                DeprecationWarning(
+                    f"Plugin {hookimpl.plugin_name!r} for hook {hook.name!r}\n"
+                    f"hookimpl definition: {_formatdef(hookimpl.function)}\n"
+                    f"Positional-only parameter(s) {posonly} are deprecated, "
+                    "hook arguments are matched by name. "
+                    "This will become an error in pluggy 2.0."
+                ),
+                hookimpl.function,
             )
 
         if hook.spec.warn_on_impl_args:

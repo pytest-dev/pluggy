@@ -152,6 +152,51 @@ def test_warn_when_deprecated_args_with_defaults_specified() -> None:
     assert record.lineno == Plugin.foo.__code__.co_firstlineno
 
 
+@pytest.mark.parametrize("spec_first", [True, False])
+def test_warn_on_positional_only_impl_args(spec_first: bool) -> None:
+    class Spec:
+        @hookspec
+        def foo(self, arg, other=None):
+            raise NotImplementedError()
+
+    class Plugin:
+        @hookimpl
+        def foo(self, arg, /, other=None):
+            raise NotImplementedError()
+
+    pm = PluginManager(hookspec.project_name)
+    if spec_first:
+        pm.add_hookspecs(Spec)
+        with pytest.warns(DeprecationWarning, match="Positional-only") as records:
+            pm.register(Plugin(), name="plugin")
+    else:
+        pm.register(Plugin(), name="plugin")
+        with pytest.warns(DeprecationWarning, match="Positional-only") as records:
+            pm.add_hookspecs(Spec)
+    (record,) = records
+    assert "('arg',)" in str(record.message)
+    assert record.filename == Plugin.foo.__code__.co_filename
+    assert record.lineno == Plugin.foo.__code__.co_firstlineno
+
+
+def test_no_warning_for_positional_only_self(recwarn) -> None:
+    class Spec:
+        @hookspec
+        def foo(self, arg):
+            raise NotImplementedError()
+
+    class Plugin:
+        @hookimpl
+        def foo(self, /, arg):
+            return arg
+
+    pm = PluginManager(hookspec.project_name)
+    pm.add_hookspecs(Spec)
+    pm.register(Plugin())
+    assert pm.hook.foo(arg=1) == [1]
+    assert not recwarn.list
+
+
 def test_plugin_getattr_raises_errors() -> None:
     """Pluggy must be able to handle plugins which raise weird exceptions
     when getattr() gets called (#11).
