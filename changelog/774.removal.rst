@@ -1,0 +1,2 @@
+Positional-only parameters in hook implementations are deprecated and now emit a :class:`DeprecationWarning` when the implementation is verified against its specification.
+Hook arguments are matched by name, so declare them as regular parameters. This will become an error in pluggy 2.0.
